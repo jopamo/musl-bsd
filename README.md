@@ -1,5 +1,5 @@
 <div style="background-color: #1e1e1e; padding: 1em; display: inline-block; border-radius: 8px;">
-  <img src=".github/musl-bsd-dark.png" alt="musl-bsd logo" width="300">
+  <img src=".github/musl-bsd.png" alt="musl-bsd logo" width="300">
 </div>
 
 **musl-bsd** is a lightweight compatibility library that provides BSD-style functionality and macros for systems using [musl libc](https://musl.libc.org/). It includes portable implementations of common BSD APIs such as `fts(3)` and `obstack(3)`, along with supporting headers like `queue.h`, `tree.h`, and `cdefs.h`.
