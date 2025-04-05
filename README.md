@@ -3,7 +3,7 @@
 
 **musl-bsd** is a lightweight compatibility library that provides BSD-style functionality and macros for systems using [musl libc](https://musl.libc.org/). It includes portable implementations of common BSD APIs such as `fts(3)` and `obstack(3)`, along with supporting headers like `queue.h`, `tree.h`, and `cdefs.h`.
 
-This project is useful when porting BSD-licensed software or building legacy Unix code on Linux systems using musl, such as Void Linux or Alpine.
+This project is useful when porting BSD-licensed software or building legacy Unix code on Linux systems using musl.
 
 ---
 
@@ -13,7 +13,6 @@ This project is useful when porting BSD-licensed software or building legacy Uni
 - 📦 **`obstack(3)`**: Efficient stack-based memory allocation.
 - 🧩 **`queue.h`, `tree.h`**: BSD-style macros for linked lists, tail queues, and binary trees.
 - 🧠 **`cdefs.h`**: Standard macro definitions for compiler features and visibility.
-- 💡 Designed for **modern GCC (13+) and Clang (17+)** on musl-based systems.
 
 ---
 
