@@ -8,7 +8,6 @@ cc = meson.get_compiler('c')
 
 config_data = configuration_data()
 
-# Optional: simple checks for headers or functions
 foreach hdr : [
   'assert.h',
   'dirent.h',
@@ -46,7 +45,7 @@ libobstack = shared_library(
 
 install_headers(
   'include/obstack.h',
-  subdir : ''      # Install directly into /usr/include
+  subdir : ''
 )
 
 # --- libfts ---
@@ -60,15 +59,14 @@ libfts = shared_library(
 
 install_headers(
   'include/fts.h',
-  subdir : ''      # Install directly into /usr/include
+  subdir : ''
 )
 
-# Install the remaining headers (cdefs.h, queue.h, tree.h) directly too.
 install_headers(
   [
     'include/cdefs.h',
     'include/queue.h',
     'include/tree.h'
   ],
-  subdir : ''      # /usr/include
+  subdir : 'sys'
 )
