@@ -1,0 +1,37 @@
+name: CI with Clang + Sanitizers
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # Install Clang, Meson, and Ninja
+          sudo apt-get install -y clang meson ninja-build
+
+      - name: Configure build with Meson (Clang + ASan + UBSan)
+        run: |
+          # We override the default compiler with CC=clang
+          # Enable AddressSanitizer + UndefinedBehaviorSanitizer
+          # -Db_lundef=false helps if linking might fail with certain symbols
+          CC=clang meson setup builddir \
+            --buildtype=debug \
+            -Db_sanitize=address,undefined \
+            -Db_lundef=false
+
+      - name: Build
+        run: meson compile -C builddir
+
+      - name: Test
+        run: meson test -C builddir
