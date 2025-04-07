@@ -7,8 +7,6 @@
 #include <string.h>
 #include <errno.h>
 
-#warning usage of non-standard <error.h> is experimental
-
 #if !defined(program_invocation_name)
 static const char* global_program_name = "unknown";
 
