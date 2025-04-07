@@ -82,3 +82,5 @@ test_all_exe = executable(
   install : false
 )
 
+test('test_all', test_all_exe)
+
