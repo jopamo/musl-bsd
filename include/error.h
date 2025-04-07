@@ -1,11 +1,11 @@
 #ifndef _ERROR_H_
 #define _ERROR_H_
 
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #if !defined(program_invocation_name)
 static const char* global_program_name = "unknown";
