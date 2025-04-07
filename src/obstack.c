@@ -6,6 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
+#ifndef RESULT_TYPE
+#define RESULT_TYPE int
+#define OBSTACK_PRINTF obstack_printf
+#define OBSTACK_VPRINTF obstack_vprintf
+#endif
 
 static _Noreturn void obstack_default_alloc_failed(void) {
     fprintf(stderr, "obstack: memory exhausted\n");
@@ -13,6 +20,7 @@ static _Noreturn void obstack_default_alloc_failed(void) {
 }
 
 void (*obstack_alloc_failed_handler)(void) = obstack_default_alloc_failed;
+int obstack_vprintf(struct obstack* obs, const char* format, va_list args);
 
 #ifndef __BPTR_ALIGN
 #define __BPTR_ALIGN(B, P, A) ((B) + ((((P) - (B)) + (A)) & ~(A)))
@@ -165,10 +173,12 @@ void _obstack_free(struct obstack* h, void* obj) {
             h->chunk = lp;
             h->chunk_limit = lp->limit;
             h->object_base = h->next_free = (char*)obj;
+
             return;
         }
         {
             struct _obstack_chunk* prev = lp->prev;
+
             call_freefun(h, lp);
             lp = prev;
         }
@@ -176,34 +186,82 @@ void _obstack_free(struct obstack* h, void* obj) {
         h->maybe_empty_object = 1;
     }
 
+    printf("[ERROR] Object not found in any chunk, aborting.\n");
     abort();
 }
 
 _OBSTACK_SIZE_T _obstack_memory_used(struct obstack* h) {
     _OBSTACK_SIZE_T total = 0;
     struct _obstack_chunk* chunk = h->chunk;
+
     while (chunk) {
         total += (_OBSTACK_SIZE_T)((char*)chunk->limit - (char*)chunk);
         chunk = chunk->prev;
     }
+
     return total;
 }
 
-int obstack_printf(struct obstack* ob, const char* __restrict fmt, ...) {
-    char buffer[1024];
-    va_list ap;
-    int length;
+size_t obstack_object_size(struct obstack* ob) {
+    size_t size = (size_t)(ob->next_free - ob->object_base);
+    return size;
+}
 
-    va_start(ap, fmt);
-    length = vsnprintf(buffer, sizeof(buffer), fmt, ap);
-    va_end(ap);
+RESULT_TYPE
+OBSTACK_PRINTF(struct obstack* obs, const char* format, ...) {
+    va_list args;
+    RESULT_TYPE result;
 
-    if (length >= (int)sizeof(buffer)) {
-        fprintf(stderr, "Warning: obstack_printf truncated!\n");
-        length = (int)(sizeof(buffer) - 1);
-        buffer[length] = '\0';
+    va_start(args, format);
+    result = OBSTACK_VPRINTF(obs, format, args);
+    va_end(args);
+    return result;
+}
+
+RESULT_TYPE
+OBSTACK_VPRINTF(struct obstack* obs, const char* format, va_list args) {
+    enum { CUTOFF = 1024 };
+    char buf[CUTOFF];
+    char* base = obstack_next_free(obs);
+    size_t len = obstack_room(obs);
+    int result;
+    char* str;
+
+    if (len < CUTOFF) {
+        base = buf;
+        len = CUTOFF;
     }
 
-    obstack_grow(ob, buffer, length);
-    return length;
+    result = vsnprintf(base, len, format, args);
+
+    if (result < 0) {
+        if (errno == ENOMEM)
+            obstack_alloc_failed_handler();
+        return -1;
+    }
+
+    if ((size_t)result < len) {
+        obstack_blank(obs, result);
+        return result;
+    }
+
+    len = result + 1;
+    str = (char*)malloc(len);
+    if (!str) {
+        obstack_alloc_failed_handler();
+        return -1;
+    }
+
+    result = vsnprintf(str, len, format, args);
+
+    if (result < 0) {
+        free(str);
+        if (errno == ENOMEM)
+            obstack_alloc_failed_handler();
+        return -1;
+    }
+
+    obstack_grow(obs, str, result);
+    free(str);
+    return result;
 }
