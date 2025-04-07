@@ -158,9 +158,13 @@ void _obstack_newchunk(struct obstack* h, _OBSTACK_SIZE_T length) {
 void _obstack_free(struct obstack* h, void* obj) {
     struct _obstack_chunk* lp = h->chunk;
 
+    printf("[DEBUG] Starting _obstack_free. Freeing object at: %p\n", obj);
+
     if (obj == NULL) {
+        printf("[DEBUG] obj is NULL, freeing all chunks.\n");
         while (lp) {
             struct _obstack_chunk* prev = lp->prev;
+            printf("[DEBUG] Freeing chunk at: %p\n", lp);
             call_freefun(h, lp);
             lp = prev;
         }
@@ -173,17 +177,14 @@ void _obstack_free(struct obstack* h, void* obj) {
             h->chunk = lp;
             h->chunk_limit = lp->limit;
             h->object_base = h->next_free = (char*)obj;
-
+            printf("[DEBUG] Found object in chunk. Resetting chunk and object base.\n");
             return;
         }
-        {
-            struct _obstack_chunk* prev = lp->prev;
 
-            call_freefun(h, lp);
-            lp = prev;
-        }
-
-        h->maybe_empty_object = 1;
+        struct _obstack_chunk* prev = lp->prev;
+        printf("[DEBUG] Freeing chunk at: %p\n", lp);
+        call_freefun(h, lp);
+        lp = prev;
     }
 
     printf("[ERROR] Object not found in any chunk, aborting.\n");
