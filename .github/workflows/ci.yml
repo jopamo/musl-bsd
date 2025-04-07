@@ -34,5 +34,5 @@ jobs:
         run: meson compile -C builddir
 
       - name: Test
-          run: |
-          	meson test -C builddir || (cat builddir/meson-logs/testlog.txt && false)
+        run: |
+          meson test -C builddir || (cat builddir/meson-logs/testlog.txt && false)
