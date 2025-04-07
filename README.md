@@ -1,25 +1,23 @@
-<div style="background-color: #1e1e1e; padding: 1em; display: inline-block; border-radius: 8px;">
-  <img src=".github/musl-bsd.png" alt="musl-bsd logo" width="300">
-</div>
+![musl-bsd logo](.github/musl-bsd.png "musl-bsd Logo")
 
-**musl-bsd** is a lightweight compatibility library that provides BSD-style functionality and macros for systems using [musl libc](https://musl.libc.org/). It includes portable implementations of common BSD APIs such as `fts(3)` and `obstack(3)`, along with supporting headers like `queue.h`, `tree.h`, and `cdefs.h`.
+**musl-bsd** is a lightweight compatibility library offering BSD-style functionality and macros for systems using [musl libc](https://musl.libc.org/). It includes portable implementations of common BSD APIs—like `fts(3)` for directory traversal and `obstack(3)` for efficient stack-based memory allocation—plus supporting headers (`queue.h`, `tree.h`, `cdefs.h`) derived from BSD sources.
 
-This project is useful when porting BSD-licensed software or building legacy Unix code on Linux systems using musl.
+This project is especially useful when **porting BSD-licensed software** or building **legacy Unix code** on Linux systems that rely on musl.
 
 ---
 
 ## Features
 
-- 🗂️ **`fts(3)`**: Directory traversal API (`fts_open`, `fts_read`, etc.).
-- 📦 **`obstack(3)`**: Efficient stack-based memory allocation.
-- 🧩 **`queue.h`, `tree.h`**: BSD-style macros for linked lists, tail queues, and binary trees.
-- 🧠 **`cdefs.h`**: Standard macro definitions for compiler features and visibility.
+- **`fts(3)`** – Directory traversal API (`fts_open`, `fts_read`, `fts_children`, etc.)
+- **`obstack(3)`** – Stack-like memory allocation (from GNU)
+- **`queue.h`, `tree.h`** – BSD-style macros for linked lists, tail queues, and binary trees
+- **`cdefs.h`** – Macros for compiler attributes, visibility, and more
 
 ---
 
 ## Installation
 
-### Using Meson
+Using **Meson**:
 
 ```sh
 meson setup build --prefix=/usr
@@ -27,15 +25,15 @@ meson compile -C build
 sudo meson install -C build
 ```
 
-This will install:
-- `libfts.so`, `libobstack.so` → `/usr/lib/`
-- `fts.h`, `obstack.h`, `queue.h`, `tree.h`, `cdefs.h` → `/usr/include/`
+This installs:
+- **Libraries**: `libfts.so`, `libobstack.so` → `/usr/lib/`
+- **Headers**: `fts.h`, `obstack.h`, `queue.h`, `tree.h`, `cdefs.h` → `/usr/include/`
 
 ---
 
 ## Usage
 
-To link against the provided libraries:
+**Include** them in your code:
 
 ```c
 #include <fts.h>
@@ -45,7 +43,7 @@ To link against the provided libraries:
 #include <cdefs.h>
 ```
 
-Compile your programs with:
+Then compile and link against both libraries:
 
 ```sh
 cc myapp.c -lfts -lobstack
@@ -55,32 +53,34 @@ cc myapp.c -lfts -lobstack
 
 ## Compatibility
 
-- Requires **GCC 13+** or **Clang 17+**
-- Tested on **musl-based Linux systems**
-- C99 and POSIX.1-2008 compliant
+- Designed for **musl-based** Linux systems
+- C99- and POSIX.1-2008-compatible
 
 ---
 
-## License
+## Licensing
 
-Each component retains its original permissive license:
+- **`fts.c` / `fts.h`**: BSD 2-Clause License
+- **`obstack.*`**: GNU LGPL (2.1+)
+- **`queue.h`, `tree.h`, `cdefs.h`**: BSD-derived
 
-- `fts.c` and `fts.h`: BSD 2-Clause License
-- `obstack.c`, `obstack_printf.c`, `obstack.h`: GNU LGPL (2.1+)
-- `queue.h`, `tree.h`, `cdefs.h`: Derived from BSD-licensed sources
-
-See the relevant license headers in each file for details.
+See each file’s header for specific license details.
 
 ---
 
 ## Credits
 
-- [Void Linux](https://github.com/void-linux) for maintaining portable musl-based patches.
-- NetBSD/OpenBSD for original queue/tree/cdefs macros.
-- GNU for `obstack`.
+- Adapted from NetBSD/OpenBSD for `queue.h`, `tree.h`, and `cdefs.h`
+- Based on GNU `obstack` for the obstack API
+- Inspired by various musl patches from projects like [Void Linux](https://github.com/void-linux)
 
 ---
 
-## Contributions
+## Contributing
 
-Contributions and portability improvements welcome! Please ensure that your changes remain musl-compatible and BSD-licensed.
+Pull requests and patches are welcome! If adding new BSD or musl-specific functionality, please ensure:
+
+1. The code remains compatible with musl and POSIX.
+2. The licensing is maintained (BSD or similarly permissive).
+
+For major changes, open an issue first so we can discuss design and scope.
