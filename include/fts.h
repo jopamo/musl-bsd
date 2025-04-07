@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <stddef.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #define FTS_COMFOLLOW 0x0001
 #define FTS_LOGICAL 0x0002

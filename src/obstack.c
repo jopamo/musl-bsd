@@ -1,11 +1,11 @@
 #include "obstack.h"
-#include <stdio.h>
+#include <assert.h>
 #include <stdarg.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 static _Noreturn void obstack_default_alloc_failed(void) {
     fprintf(stderr, "obstack: memory exhausted\n");

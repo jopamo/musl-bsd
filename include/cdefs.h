@@ -1,12 +1,12 @@
 #ifndef _CDEFS_H_
 #define _CDEFS_H_
 
-#include <sys/stat.h>
-#include <fnmatch.h>
+#include <alloca.h>
 #include <errno.h>
+#include <fnmatch.h>
 #include <stdlib.h>
 #include <string.h>
-#include <alloca.h>
+#include <sys/stat.h>
 
 #ifndef ACCESSPERMS
 #define ACCESSPERMS (S_IRWXU | S_IRWXG | S_IRWXO)
@@ -41,6 +41,58 @@
         char* __out = (char*)alloca(__len);    \
         __out[__len - 1] = '\0';               \
         (char*)memcpy(__out, __in, __len - 1); \
+    }))
+#endif
+
+#ifndef mempcpy
+#define mempcpy(to, from, size)     \
+    (__extension__({                \
+        void* __dst = (to);         \
+        const void* __src = (from); \
+        size_t __sz = (size);       \
+        memcpy(__dst, __src, __sz); \
+        (char*)__dst + __sz;        \
+    }))
+#endif
+
+#ifndef strcasecmp
+#define strcasecmp(_l, _r)                                                         \
+    (__extension__({                                                               \
+        const unsigned char* __l = (const unsigned char*)(_l);                     \
+        const unsigned char* __r = (const unsigned char*)(_r);                     \
+        while (*__l && *__r && (*__l == *__r || tolower(*__l) == tolower(*__r))) { \
+            __l++;                                                                 \
+            __r++;                                                                 \
+        }                                                                          \
+        tolower(*__l) - tolower(*__r);                                             \
+    }))
+#endif
+
+#ifndef strchrnul
+#define strchrnul(p, c)                    \
+    (__extension__({                       \
+        const char* __str = (p);           \
+        int __ch = (c);                    \
+        while (*__str && (*__str != __ch)) \
+            __str++;                       \
+        (char*)__str;                      \
+    }))
+#endif
+
+#ifndef strndup
+#define strndup(s, n)                             \
+    (__extension__({                              \
+        const char* __src = (s);                  \
+        size_t __size = (n);                      \
+        char* __end = memchr(__src, 0, __size);   \
+        if (__end)                                \
+            __size = (size_t)(__end - __src + 1); \
+        char* __out = (char*)malloc(__size);      \
+        if (__out && __size > 0) {                \
+            memcpy(__out, __src, __size - 1);     \
+            __out[__size - 1] = '\0';             \
+        }                                         \
+        __out;                                    \
     }))
 #endif
 
