@@ -35,8 +35,7 @@ inc = include_directories('include')
 libobstack = shared_library(
   'obstack',
   [
-    'src/obstack.c',
-    'src/obstack_printf.c'
+    'src/obstack.c'
   ],
   include_directories : inc,
   install : true,
