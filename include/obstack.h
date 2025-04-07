@@ -130,9 +130,10 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
 #define obstack_alignment_mask(h) ((h)->alignment_mask)
 #define obstack_memory_used(h) _obstack_memory_used(h)
 
-#define obstack_int_grow(H, aint)                                                      \
-    (((obstack_room(H) < sizeof(int)) ? (_obstack_newchunk((H), sizeof(int)), 0) : 0), \
-     ((*((int*)((H)->next_free += sizeof(int))) = (aint)), 0))
+#undef obstack_int_grow
+#define obstack_int_grow(H, aint)                                                    \
+    ((obstack_room(H) < sizeof(int) ? (_obstack_newchunk((H), sizeof(int)), 0) : 0), \
+     (void)(*((int*)((H)->next_free += sizeof(int))) = (aint)))
 
 #if defined __GNUC__
 #if !defined __GNUC_MINOR__ || __GNUC__ * 1000 + __GNUC_MINOR__ < 2008
