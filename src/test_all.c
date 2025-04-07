@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <errno.h>
 #include <time.h>     /* for printing timestamps if you like */
 #include <sys/stat.h> /* if you want to show st_mode, etc. */
