@@ -135,16 +135,17 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
     ((obstack_room(H) < sizeof(int) ? (_obstack_newchunk((H), sizeof(int)), 0) : 0), \
      (void)(*((int*)((H)->next_free += sizeof(int))) = (aint)))
 
+#define obstack_alloc(H, length) (obstack_blank((H), (length)), obstack_finish(H))
+
+#define _obstack_object_size(H)                           \
+    struct obstack const* __o = (H);                      \
+    (_OBSTACK_SIZE_T)(__o->next_free - __o->object_base); \
+    })
+
 #if defined __GNUC__
 #if !defined __GNUC_MINOR__ || __GNUC__ * 1000 + __GNUC_MINOR__ < 2008
 #define __extension__
 #endif
-
-#define obstack_object_size(H)                                \
-    __extension__({                                           \
-        struct obstack const* __o = (H);                      \
-        (_OBSTACK_SIZE_T)(__o->next_free - __o->object_base); \
-    })
 
 #define obstack_room(H)                                         \
     __extension__({                                             \
@@ -263,8 +264,6 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
 #define obstack_blank(H, length)                                                                             \
     ((H)->temp.i = (length), (obstack_room(H) < (H)->temp.i ? (_obstack_newchunk((H), (H)->temp.i), 0) : 0), \
      ((H)->next_free += (H)->temp.i))
-
-#define obstack_alloc(H, length) (obstack_blank((H), (length)), obstack_finish(H))
 
 #define obstack_copy(H, where, length) (obstack_grow((H), (where), (length)), obstack_finish(H))
 
