@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h> /* for size_t, offsetof */
 #include "obstack.h"
