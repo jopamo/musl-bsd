@@ -78,24 +78,20 @@ struct obstack {
     unsigned alloc_failed : 1;
 };
 
-extern int _obstack_begin(struct obstack* h,
-                          _OBSTACK_SIZE_T size,
-                          _OBSTACK_SIZE_T alignment,
-                          void* (*chunkfun)(size_t),
-                          void (*freefun)(void*));
+extern int _obstack_begin(struct obstack*, _OBSTACK_SIZE_T, _OBSTACK_SIZE_T, void* (*)(size_t), void (*)(void*));
 
-extern int _obstack_begin_1(struct obstack* h,
-                            _OBSTACK_SIZE_T size,
-                            _OBSTACK_SIZE_T alignment,
-                            void* (*chunkfun)(void*, size_t),
-                            void (*freefun)(void*, void*),
-                            void* arg);
+extern int _obstack_begin_1(struct obstack*,
+                            _OBSTACK_SIZE_T,
+                            _OBSTACK_SIZE_T,
+                            void* (*)(void*, size_t),
+                            void (*)(void*, void*),
+                            void*);
 
 extern void _obstack_newchunk(struct obstack*, _OBSTACK_SIZE_T);
 
 extern void _obstack_free(struct obstack*, void*);
 
-extern _OBSTACK_SIZE_T _obstack_memory_used(struct obstack* h);
+extern _OBSTACK_SIZE_T _obstack_memory_used(struct obstack*);
 
 extern void (*obstack_alloc_failed_handler)(void);
 
@@ -106,6 +102,52 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
 #endif
 #ifndef obstack_chunk_free
 #define obstack_chunk_free free
+#endif
+
+#ifndef obstack_int_grow
+#define obstack_int_grow(h, aint)                     \
+    __extension__({                                   \
+        struct obstack* __o = (h);                    \
+        if (obstack_room(__o) < (int)sizeof(int))     \
+            _obstack_newchunk(__o, sizeof(int));      \
+        memcpy(__o->next_free, &(aint), sizeof(int)); \
+        __o->next_free += sizeof(int);                \
+    })
+#endif
+
+#ifndef obstack_ptr_grow
+#define obstack_ptr_grow(h, aptr)                       \
+    __extension__({                                     \
+        struct obstack* __o = (h);                      \
+        if (obstack_room(__o) < sizeof(void*))          \
+            _obstack_newchunk(__o, sizeof(void*));      \
+        memcpy(__o->next_free, &(aptr), sizeof(void*)); \
+        __o->next_free += sizeof(void*);                \
+    })
+#endif
+
+#ifndef obstack_int_grow_fast
+#define obstack_int_grow_fast(h, aint)                \
+    __extension__({                                   \
+        memcpy((h)->next_free, &(aint), sizeof(int)); \
+        (h)->next_free += sizeof(int);                \
+    })
+#endif
+
+#ifndef obstack_ptr_grow_fast
+#define obstack_ptr_grow_fast(h, aptr)                  \
+    __extension__({                                     \
+        memcpy((h)->next_free, &(aptr), sizeof(void*)); \
+        (h)->next_free += sizeof(void*);                \
+    })
+#endif
+
+#ifndef obstack_1grow_fast
+#define obstack_1grow_fast(h, c) __extension__({ *((h)->next_free)++ = (char)(c); })
+#endif
+
+#ifndef obstack_blank_fast
+#define obstack_blank_fast(h, n) __extension__({ (h)->next_free += (n); })
 #endif
 
 #define obstack_init(h) _obstack_begin((h), 0, 0, obstack_chunk_alloc, obstack_chunk_free)
@@ -119,10 +161,8 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
     _obstack_begin_1((h), (size), (alignment), (chunkfun), (freefun), (arg))
 
 #define obstack_base(h) ((void*)((h)->object_base))
+
 #define obstack_next_free(h) ((void*)((h)->next_free))
-#define obstack_chunk_size(h) ((h)->chunk_size)
-#define obstack_alignment_mask(h) ((h)->alignment_mask)
-#define obstack_memory_used(h) _obstack_memory_used(h)
 
 #define obstack_object_size(h) ((_OBSTACK_SIZE_T)((h)->next_free - (h)->object_base))
 
@@ -131,6 +171,13 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
 #define obstack_empty_p(h)    \
     ((h)->chunk->prev == 0 && \
      (h)->next_free == __PTR_ALIGN((char*)(h)->chunk, (h)->chunk->contents, (h)->alignment_mask))
+
+#ifndef __PTR_ALIGN
+#include <stdint.h>
+#define __BPTR_ALIGN(B, P, A) ((B) + ((((P) - (B)) + (A)) & ~(A)))
+#define __PTR_ALIGN(B, P, A) \
+    (sizeof(ptrdiff_t) < sizeof(void*) ? __BPTR_ALIGN(B, P, A) : (char*)(((uintptr_t)(P) + (A)) & ~(A)))
+#endif
 
 #ifdef __GNUC__
 
@@ -198,16 +245,16 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
         __value;                                                                            \
     })
 
-#define obstack_free(h, obj)                                                \
-    __extension__({                                                         \
-        struct obstack* __o = (h);                                          \
-        void* __obj = (obj);                                                \
-        if (__obj > (void*)__o->chunk && __obj < (void*)__o->chunk_limit) { \
-            __o->next_free = __o->object_base = (char*)__obj;               \
-        }                                                                   \
-        else {                                                              \
-            _obstack_free(__o, __obj);                                      \
-        }                                                                   \
+#define obstack_free(h, obj)                                                              \
+    __extension__({                                                                       \
+        struct obstack* __o = (h);                                                        \
+        void* __obj = (obj);                                                              \
+        if ((char*)__obj > (char*)__o->chunk && (char*)__obj < (char*)__o->chunk_limit) { \
+            __o->next_free = __o->object_base = (char*)__obj;                             \
+        }                                                                                 \
+        else {                                                                            \
+            _obstack_free(__o, __obj);                                                    \
+        }                                                                                 \
     })
 
 #else
