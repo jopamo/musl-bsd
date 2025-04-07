@@ -1,53 +1,19 @@
-/*
- * queue.h
- *
- * Provides:
- *   - SLIST   (singly-linked list)
- *   - LIST    (doubly-linked list)
- *   - SIMPLEQ (simple FIFO queue with single links)
- *   - STAILQ  (singly-linked tail queue)
- *   - TAILQ   (tail queue with full double links)
- *   - XSIMPLEQ (XOR simple queue; requires entropy from getrandom())
- *
- */
-
 #ifndef _SYS_QUEUE_H_
 #define _SYS_QUEUE_H_
 
-#include <stddef.h>     /* for NULL, offsetof */
-#include <sys/random.h> /* for getrandom() */
+#include <stddef.h>
+#include <sys/random.h>
 
-/*
- * If you want to debug use-after-free errors, redefine this before
- * including queue.h. For example:
- *
- *   #define _Q_INVALIDATE(a)  ((a) = (void *)-1)
- */
 #ifndef _Q_INVALIDATE
-#define _Q_INVALIDATE(a) /* no-op by default */
+#define _Q_INVALIDATE(a)
 #endif
 
-/******************************************************************************
- *                          Helper: getrandom() wrapper
- ******************************************************************************/
-
 static inline void queue_getrandom(void* buf, size_t len) {
-    /*
-     * We use a simple loop to ensure we read 'len' bytes total, as getrandom()
-     * may return partial data. In production, you might also handle EINTR,
-     * EAGAIN, etc., but typically blocking until enough entropy is available
-     * is correct for cryptographic usage.
-     */
     unsigned char* p = buf;
     size_t bytes_read = 0;
     while (bytes_read < len) {
         ssize_t ret = getrandom(p + bytes_read, len - bytes_read, 0);
         if (ret < 0) {
-            /*
-             * Production code might handle errors carefully. For simplicity,
-             * we just set all bytes to zero and return. You can also abort()
-             * or fallback to /dev/urandom, etc.
-             */
             while (bytes_read < len) {
                 p[bytes_read++] = 0;
             }
@@ -57,35 +23,29 @@ static inline void queue_getrandom(void* buf, size_t len) {
     }
 }
 
-/******************************************************************************
- *                            Singly-linked List (SLIST)
- ******************************************************************************/
-#define SLIST_HEAD(name, type)                      \
-    struct name {                                   \
-        struct type* slh_first; /* first element */ \
+#define SLIST_HEAD(name, type)  \
+    struct name {               \
+        struct type* slh_first; \
     }
 
 #define SLIST_HEAD_INITIALIZER(head) {NULL}
 
-#define SLIST_ENTRY(type)                         \
-    struct {                                      \
-        struct type* sle_next; /* next element */ \
+#define SLIST_ENTRY(type)      \
+    struct {                   \
+        struct type* sle_next; \
     }
 
-/* Access methods */
 #define SLIST_FIRST(head) ((head)->slh_first)
 #define SLIST_END(head) NULL
 #define SLIST_EMPTY(head) (SLIST_FIRST((head)) == SLIST_END(head))
 #define SLIST_NEXT(elm, field) ((elm)->field.sle_next)
 
-/* Traversal */
 #define SLIST_FOREACH(var, head, field) \
     for ((var) = SLIST_FIRST((head)); (var) != SLIST_END(head); (var) = SLIST_NEXT((var), field))
 
 #define SLIST_FOREACH_SAFE(var, head, field, tvar) \
     for ((var) = SLIST_FIRST((head)); (var) && ((tvar) = SLIST_NEXT((var), field), 1); (var) = (tvar))
 
-/* Functions */
 #define SLIST_INIT(head)                       \
     do {                                       \
         SLIST_FIRST((head)) = SLIST_END(head); \
@@ -127,36 +87,30 @@ static inline void queue_getrandom(void* buf, size_t len) {
         _Q_INVALIDATE((elm)->field.sle_next);                                \
     } while (0)
 
-/******************************************************************************
- *                            Doubly-linked List (LIST)
- ******************************************************************************/
-#define LIST_HEAD(name, type)                      \
-    struct name {                                  \
-        struct type* lh_first; /* first element */ \
+#define LIST_HEAD(name, type)  \
+    struct name {              \
+        struct type* lh_first; \
     }
 
 #define LIST_HEAD_INITIALIZER(head) {NULL}
 
-#define LIST_ENTRY(type)                                  \
-    struct {                                              \
-        struct type* le_next;  /* next element */         \
-        struct type** le_prev; /* ptr to previous link */ \
+#define LIST_ENTRY(type)       \
+    struct {                   \
+        struct type* le_next;  \
+        struct type** le_prev; \
     }
 
-/* Access methods */
 #define LIST_FIRST(head) ((head)->lh_first)
 #define LIST_END(head) NULL
 #define LIST_EMPTY(head) (LIST_FIRST((head)) == LIST_END(head))
 #define LIST_NEXT(elm, field) ((elm)->field.le_next)
 
-/* Traversal */
 #define LIST_FOREACH(var, head, field) \
     for ((var) = LIST_FIRST((head)); (var) != LIST_END(head); (var) = LIST_NEXT((var), field))
 
 #define LIST_FOREACH_SAFE(var, head, field, tvar) \
     for ((var) = LIST_FIRST((head)); (var) && ((tvar) = LIST_NEXT((var), field), 1); (var) = (tvar))
 
-/* Functions */
 #define LIST_INIT(head)                      \
     do {                                     \
         LIST_FIRST((head)) = LIST_END(head); \
@@ -205,36 +159,30 @@ static inline void queue_getrandom(void* buf, size_t len) {
         _Q_INVALIDATE((elm)->field.le_next);                               \
     } while (0)
 
-/******************************************************************************
- *                         Simple queue (SIMPLEQ)
- ******************************************************************************/
-#define SIMPLEQ_HEAD(name, type)                            \
-    struct name {                                           \
-        struct type* sqh_first; /* first element */         \
-        struct type** sqh_last; /* ptr to last next elem */ \
+#define SIMPLEQ_HEAD(name, type) \
+    struct name {                \
+        struct type* sqh_first;  \
+        struct type** sqh_last;  \
     }
 
 #define SIMPLEQ_HEAD_INITIALIZER(head) {NULL, &(head).sqh_first}
 
-#define SIMPLEQ_ENTRY(type)                    \
-    struct {                                   \
-        struct type* sqe_next; /* next elem */ \
+#define SIMPLEQ_ENTRY(type)    \
+    struct {                   \
+        struct type* sqe_next; \
     }
 
-/* Access methods */
 #define SIMPLEQ_FIRST(head) ((head)->sqh_first)
 #define SIMPLEQ_END(head) NULL
 #define SIMPLEQ_EMPTY(head) (SIMPLEQ_FIRST((head)) == SIMPLEQ_END(head))
 #define SIMPLEQ_NEXT(elm, field) ((elm)->field.sqe_next)
 
-/* Traversal */
 #define SIMPLEQ_FOREACH(var, head, field) \
     for ((var) = SIMPLEQ_FIRST((head)); (var) != SIMPLEQ_END(head); (var) = SIMPLEQ_NEXT((var), field))
 
 #define SIMPLEQ_FOREACH_SAFE(var, head, field, tvar) \
     for ((var) = SIMPLEQ_FIRST((head)); (var) && ((tvar) = SIMPLEQ_NEXT((var), field), 1); (var) = (tvar))
 
-/* Functions */
 #define SIMPLEQ_INIT(head)                     \
     do {                                       \
         (head)->sqh_first = NULL;              \
@@ -283,29 +231,20 @@ static inline void queue_getrandom(void* buf, size_t len) {
         }                                            \
     } while (0)
 
-/******************************************************************************
- *                 XOR Simple queue (XSIMPLEQ)
- *
- * Like SIMPLEQ but each pointer is XORed with a random cookie to help detect
- * certain pointer corruption. The cookie is generated by getrandom() in
- * XSIMPLEQ_INIT(). If your environment lacks getrandom(), modify queue_getrandom().
- ******************************************************************************/
-#define XSIMPLEQ_HEAD(name, type)                     \
-    struct name {                                     \
-        struct type* sqx_first;   /* XORed ptr */     \
-        struct type** sqx_last;   /* XORed ptr */     \
-        unsigned long sqx_cookie; /* random cookie */ \
+#define XSIMPLEQ_HEAD(name, type) \
+    struct name {                 \
+        struct type* sqx_first;   \
+        struct type** sqx_last;   \
+        unsigned long sqx_cookie; \
     }
 
-#define XSIMPLEQ_ENTRY(type)                   \
-    struct {                                   \
-        struct type* sqx_next; /* XORed ptr */ \
+#define XSIMPLEQ_ENTRY(type)   \
+    struct {                   \
+        struct type* sqx_next; \
     }
 
-/* XOR encoding/decoding */
 #define XSIMPLEQ_XOR(head, ptr) ((__typeof(ptr))((head)->sqx_cookie ^ (unsigned long)(ptr)))
 
-/* Access methods */
 #define XSIMPLEQ_FIRST(head) XSIMPLEQ_XOR((head), (head)->sqx_first)
 
 #define XSIMPLEQ_END(head) NULL
@@ -314,19 +253,15 @@ static inline void queue_getrandom(void* buf, size_t len) {
 
 #define XSIMPLEQ_NEXT(head, elm, field) XSIMPLEQ_XOR((head), (elm)->field.sqx_next)
 
-/* Traversal */
 #define XSIMPLEQ_FOREACH(var, head, field) \
     for ((var) = XSIMPLEQ_FIRST(head); (var) != XSIMPLEQ_END(head); (var) = XSIMPLEQ_NEXT(head, var, field))
 
 #define XSIMPLEQ_FOREACH_SAFE(var, head, field, tvar) \
     for ((var) = XSIMPLEQ_FIRST(head); (var) && ((tvar) = XSIMPLEQ_NEXT(head, var, field), 1); (var) = (tvar))
 
-/* Functions */
 static inline void XSIMPLEQ_INIT_impl(void** first, void*** last, unsigned long* cookie) {
-    /* Fill cookie with random bytes. */
     queue_getrandom(cookie, sizeof(*cookie));
 
-    /* XOR with NULL => just the cookie. */
     *first = (void*)(*cookie ^ (unsigned long)NULL);
     *last = (void**)(*cookie ^ (unsigned long)(&(*first)));
 }
@@ -357,10 +292,6 @@ static inline void XSIMPLEQ_INIT_impl(void** first, void*** last, unsigned long*
         (listelm)->field.sqx_next = XSIMPLEQ_XOR(head, (elm));                               \
     } while (0)
 
-/*
- * The next two macros need an intermediate pointer to decode the current head,
- * so we do a small inline struct hack. The __xhead struct is just for clarity.
- */
 struct __xhead {
     void* sqx_next;
 };
@@ -379,35 +310,29 @@ struct __xhead {
             (head)->sqx_last = XSIMPLEQ_XOR(head, &(elm)->field.sqx_next);                           \
     } while (0)
 
-/******************************************************************************
- *                         Tail queue (TAILQ)
- ******************************************************************************/
-#define TAILQ_HEAD(name, type)                              \
-    struct name {                                           \
-        struct type* tqh_first; /* first element */         \
-        struct type** tqh_last; /* ptr to last next elem */ \
+#define TAILQ_HEAD(name, type)  \
+    struct name {               \
+        struct type* tqh_first; \
+        struct type** tqh_last; \
     }
 
 #define TAILQ_HEAD_INITIALIZER(head) {NULL, &(head).tqh_first}
 
-#define TAILQ_ENTRY(type)                                  \
-    struct {                                               \
-        struct type* tqe_next;  /* next elem */            \
-        struct type** tqe_prev; /* ptr to previous link */ \
+#define TAILQ_ENTRY(type)       \
+    struct {                    \
+        struct type* tqe_next;  \
+        struct type** tqe_prev; \
     }
 
-/* Access methods */
 #define TAILQ_FIRST(head) ((head)->tqh_first)
 #define TAILQ_END(head) NULL
 #define TAILQ_NEXT(elm, field) ((elm)->field.tqe_next)
 #define TAILQ_EMPTY(head) (TAILQ_FIRST((head)) == TAILQ_END(head))
 
-/* Reverse access (BSD extension) */
 #define TAILQ_LAST(head, headname) (*(((struct headname*)((head)->tqh_last))->tqh_last))
 
 #define TAILQ_PREV(elm, headname, field) (*(((struct headname*)((elm)->field.tqe_prev))->tqh_last))
 
-/* Traversal */
 #define TAILQ_FOREACH(var, head, field) \
     for ((var) = TAILQ_FIRST((head)); (var) != TAILQ_END(head); (var) = TAILQ_NEXT((var), field))
 
@@ -421,7 +346,6 @@ struct __xhead {
     for ((var) = TAILQ_LAST((head), headname); (var) && ((tvar) = TAILQ_PREV((var), headname, field), 1); \
          (var) = (tvar))
 
-/* Functions */
 #define TAILQ_INIT(head)                       \
     do {                                       \
         (head)->tqh_first = NULL;              \
@@ -497,36 +421,30 @@ struct __xhead {
         }                                                           \
     } while (0)
 
-/******************************************************************************
- *                  Singly-linked Tail queue (STAILQ)
- ******************************************************************************/
-#define STAILQ_HEAD(name, type)                              \
-    struct name {                                            \
-        struct type* stqh_first; /* first element */         \
-        struct type** stqh_last; /* ptr to last next elem */ \
+#define STAILQ_HEAD(name, type)  \
+    struct name {                \
+        struct type* stqh_first; \
+        struct type** stqh_last; \
     }
 
 #define STAILQ_HEAD_INITIALIZER(head) {NULL, &(head).stqh_first}
 
-#define STAILQ_ENTRY(type)                      \
-    struct {                                    \
-        struct type* stqe_next; /* next elem */ \
+#define STAILQ_ENTRY(type)      \
+    struct {                    \
+        struct type* stqe_next; \
     }
 
-/* Access methods */
 #define STAILQ_FIRST(head) ((head)->stqh_first)
 #define STAILQ_END(head) NULL
 #define STAILQ_EMPTY(head) (STAILQ_FIRST((head)) == STAILQ_END(head))
 #define STAILQ_NEXT(elm, field) ((elm)->field.stqe_next)
 
-/* Traversal */
 #define STAILQ_FOREACH(var, head, field) \
     for ((var) = STAILQ_FIRST((head)); (var) != STAILQ_END(head); (var) = STAILQ_NEXT((var), field))
 
 #define STAILQ_FOREACH_SAFE(var, head, field, tvar) \
     for ((var) = STAILQ_FIRST((head)); (var) && ((tvar) = STAILQ_NEXT((var), field), 1); (var) = (tvar))
 
-/* Functions */
 #define STAILQ_INIT(head)                          \
     do {                                           \
         STAILQ_FIRST((head)) = NULL;               \
@@ -591,4 +509,4 @@ struct __xhead {
 #define STAILQ_LAST(head, type, field) \
     (STAILQ_EMPTY((head)) ? NULL : (struct type*)((char*)((head)->stqh_last) - offsetof(struct type, field)))
 
-#endif /* !_SYS_QUEUE_H_ */
+#endif
