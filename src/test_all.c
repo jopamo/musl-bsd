@@ -1,30 +1,14 @@
-/******************************************************************************
- * test_all.c (expanded debugging)
- *
- * A demonstration program testing:
- *   1) The fts(3)-like API (fts_open, fts_read, fts_children, fts_set, fts_close)
- *      with extra debug prints.
- *   2) The obstack API (_obstack_begin, obstack_* macros, etc.)
- *      also with extra debug prints.
- *
- * Example build:
- *   cc -o test_all test_all.c fts.c obstack.c \
- *       -I./include -D_POSIX_C_SOURCE=200809L -D_XOPEN_SOURCE=700
- *
- ******************************************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
-#include <time.h>     /* for printing timestamps if you like */
-#include <sys/stat.h> /* if you want to show st_mode, etc. */
+#include <time.h>
+#include <sys/stat.h>
 
 #include "fts.h"
 #include "obstack.h"
 
-/* If you want to use standard malloc/free for obstack, define these macros: */
 #ifndef obstack_chunk_alloc
 #define obstack_chunk_alloc malloc
 #endif
@@ -32,13 +16,10 @@
 #define obstack_chunk_free free
 #endif
 
-/* Forward declarations for test functions */
 static void test_fts(int argc, char* argv[]);
 static void test_obstack(void);
 
 int main(int argc, char* argv[]) {
-    /* If you run with arguments, we'll treat them as paths for the FTS test.
-     * Otherwise, we default to "." for demonstration. */
     if (argc > 1) {
         test_fts(argc, argv);
     }
@@ -49,48 +30,40 @@ int main(int argc, char* argv[]) {
         test_fts(1, fake_argv);
     }
 
-    /* Also demonstrate an obstack usage so you can see how it works. */
     test_obstack();
 
     return 0;
 }
 
-/******************************************************************************
- * test_fts
- *  Demonstrate usage of fts_open, fts_read, fts_children, fts_set, fts_close
- *  with more verbose debug prints.
- *****************************************************************************/
 static void test_fts(int argc, char* argv[]) {
     FTS* fts_handle;
     FTSENT* ent;
-    int fts_options = FTS_NOCHDIR | FTS_PHYSICAL; /* example options */
+    int fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
 
     char** paths = NULL;
     int i;
     int offset = 0;
 
-    /* We skip argv[0] if multiple arguments are provided. */
     if (argc > 1) {
         offset = 1;
     }
-    paths = calloc((argc - offset) + 1, sizeof(char*));
+
+    paths = calloc((size_t)(argc - offset) + 1, sizeof(char*));
     if (!paths) {
         fprintf(stderr, "Out of memory building path array!\n");
         return;
     }
 
-    /* Fill the 'paths' array with the user-supplied arguments (or "." by default). */
     for (i = offset; i < argc; i++) {
         paths[i - offset] = argv[i];
     }
-    paths[argc - offset] = NULL; /* Null terminator */
+    paths[argc - offset] = NULL;
 
     printf("\n[FTS TEST] Attempting fts_open with the following path list:\n");
     for (i = 0; paths[i] != NULL; i++) {
         printf("  paths[%d] = \"%s\"\n", i, paths[i]);
     }
 
-    /* Open the file hierarchy for traversal. */
     fts_handle = fts_open(paths, fts_options, NULL);
     if (!fts_handle) {
         fprintf(stderr, "fts_open failed: %s\n", strerror(errno));
@@ -99,27 +72,16 @@ static void test_fts(int argc, char* argv[]) {
     }
     printf("[FTS TEST] fts_open succeeded, pointer = %p\n", (void*)fts_handle);
 
-    /* Read entries in a loop. */
     printf("[FTS TEST] Traversing file hierarchy...\n");
     while ((ent = fts_read(fts_handle)) != NULL) {
-        /*
-         * ent->fts_info gives us the type of the current node,
-         * ent->fts_path is the full path string,
-         * ent->fts_level is the depth in the tree,
-         * ent->fts_errno if there's an error, etc.
-         */
         printf("  [fts_read] Node at level=%d: \"%s\"\n", ent->fts_level, ent->fts_path);
 
-        /* If we have stat info stored, we could show st_mode, etc.
-         * That depends on fts usage. E.g.:
-         */
         if (ent->fts_statp) {
             struct stat* st = ent->fts_statp;
             printf("    Dev/Ino: %lu/%lu, Mode: 0%o\n", (unsigned long)st->st_dev, (unsigned long)st->st_ino,
                    (unsigned)st->st_mode);
         }
 
-        /* Show the fts_info classification in a more descriptive manner. */
         switch (ent->fts_info) {
             case FTS_D:
                 printf("    => Directory (pre-order)\n");
@@ -153,15 +115,10 @@ static void test_fts(int argc, char* argv[]) {
                 break;
         }
 
-        /*
-         * Optionally demonstrate fts_children to see the subitems of a directory
-         * before continuing the normal read. Usually you might not need this.
-         */
         if (ent->fts_info == FTS_D) {
             printf("    => Attempting fts_children on this directory...\n");
             FTSENT* ch = fts_children(fts_handle, 0);
             if (!ch) {
-                /* Either no children or an error. Check errno. */
                 if (errno) {
                     fprintf(stderr, "      fts_children error: %s\n", strerror(errno));
                 }
@@ -170,10 +127,8 @@ static void test_fts(int argc, char* argv[]) {
                 }
             }
             else {
-                /* We can iterate the returned linked list of children. */
                 FTSENT* c = ch;
                 while (c) {
-                    /* Example: if it's a dot dir, skip it. */
                     if (c->fts_info == FTS_DOT) {
                         printf("      Child: \"%s\" is DOT, skipping.\n", c->fts_name);
                         fts_set(fts_handle, c, FTS_SKIP);
@@ -187,12 +142,10 @@ static void test_fts(int argc, char* argv[]) {
         }
     }
 
-    /* If the loop ended because of an error, errno will be nonzero. */
     if (errno != 0) {
         fprintf(stderr, "[FTS TEST] fts_read returned NULL with errno: %s\n", strerror(errno));
     }
 
-    /* Close the FTS handle. */
     if (fts_close(fts_handle) < 0) {
         fprintf(stderr, "[FTS TEST] fts_close failed: %s\n", strerror(errno));
     }
@@ -201,47 +154,179 @@ static void test_fts(int argc, char* argv[]) {
     printf("[FTS TEST] Done with file hierarchy.\n\n");
 }
 
-/******************************************************************************
- * test_obstack
- *  Demonstrate usage of obstack: building string objects, etc. with extra info.
- *****************************************************************************/
+static void test_failed_allocation_handler(void) {
+    fprintf(stderr, "obstack_alloc_failed_handler: Allocation failed!\n");
+    exit(1);
+}
+
+static void* custom_allocator(size_t size) {
+    printf("[custom_allocator] Called with size = %zu\n", size);
+    return malloc(size);
+}
+
+static void custom_deallocator(void* ptr) {
+    printf("[custom_deallocator] Called on ptr = %p\n", ptr);
+    free(ptr);
+}
+
+static void* custom_allocator_with_arg(void* arg, size_t size) {
+    printf("[custom_allocator_with_arg] arg = %p, size = %zu\n", arg, size);
+    return malloc(size);
+}
+
+static void custom_deallocator_with_arg(void* arg, void* ptr) {
+    printf("[custom_deallocator_with_arg] arg = %p, ptr = %p\n", arg, ptr);
+    free(ptr);
+}
+
 static void test_obstack(void) {
-    struct obstack myobstack;
-    char *str1, *str2, *str3;
-    size_t total_used;
+    {
+        struct obstack myobstack;
+        char *str1, *str2, *str3;
+        size_t total_used;
 
-    /* Initialize with a default chunk alloc & free. */
-    printf("[OBSTACK TEST] Initializing obstack...\n");
-    obstack_init(&myobstack);
+        printf("[OBSTACK TEST] Initializing obstack...\n");
+        obstack_init(&myobstack);
 
-    /* Build a small string object. */
-    printf("[OBSTACK TEST] Creating first object (\"Hello, World!\")...\n");
-    obstack_grow(&myobstack, "Hello, ", 7);
-    obstack_grow0(&myobstack, "World!", 6);
-    str1 = obstack_finish(&myobstack);
-    printf("  => Built string: \"%s\" (ptr=%p)\n", str1, (void*)str1);
+        printf("[OBSTACK TEST] Creating first object (\"Hello, World!\")...\n");
+        obstack_grow(&myobstack, "Hello, ", 7);
+        obstack_grow0(&myobstack, "World!", 6);
+        str1 = obstack_finish(&myobstack);
+        printf("  => Built string: \"%s\" (ptr=%p)\n", str1, (void*)str1);
 
-    /* Build another string object quickly. */
-    printf("[OBSTACK TEST] Creating second object (\"Another string\")...\n");
-    obstack_grow0(&myobstack, "Another string", 14);
-    str2 = obstack_finish(&myobstack);
-    printf("  => Built string: \"%s\" (ptr=%p)\n", str2, (void*)str2);
+        printf("[OBSTACK TEST] Creating second object (\"Another string\")...\n");
+        obstack_grow0(&myobstack, "Another string", 14);
+        str2 = obstack_finish(&myobstack);
+        printf("  => Built string: \"%s\" (ptr=%p)\n", str2, (void*)str2);
 
-    /* We can also format strings into an obstack. */
-    printf("[OBSTACK TEST] Using obstack_printf (\"Number: 42 [the answer]\")...\n");
-    obstack_printf(&myobstack, "%s %d %s", "Number:", 42, "[the answer]");
-    str3 = obstack_finish(&myobstack);
-    printf("  => Formatted string: \"%s\" (ptr=%p)\n", str3, (void*)str3);
+        printf("[OBSTACK TEST] Using obstack_printf (\"Number: 42 [the answer]\")...\n");
+        obstack_printf(&myobstack, "%s %d %s", "Number:", 42, "[the answer]");
+        str3 = obstack_finish(&myobstack);
+        printf("  => Formatted string: \"%s\" (ptr=%p)\n", str3, (void*)str3);
 
-    /* Show how many bytes the obstack has allocated in total. */
-    total_used = _obstack_memory_used(&myobstack);
-    printf("[OBSTACK TEST] Currently using %zu bytes in obstack.\n", (size_t)total_used);
+        total_used = _obstack_memory_used(&myobstack);
+        printf("[OBSTACK TEST] Currently using %zu bytes in obstack.\n", (size_t)total_used);
 
-    /* Example: free everything in the obstack with obstack_free(..., NULL). */
-    printf("[OBSTACK TEST] Freeing all data in the obstack...\n");
-    obstack_free(&myobstack, NULL);
-    printf("  => Freed all data. Now _obstack_memory_used = %zu\n", (size_t)_obstack_memory_used(&myobstack));
+        printf("[OBSTACK TEST] Freeing all data in the obstack...\n");
+        obstack_free(&myobstack, NULL);
+        printf("  => Freed all data. Now _obstack_memory_used = %zu\n", (size_t)_obstack_memory_used(&myobstack));
 
-    /* The obstack can still be used further if desired. */
-    printf("[OBSTACK TEST] Done.\n\n");
+        printf("[OBSTACK TEST] Done with simpler demonstration.\n\n");
+    }
+
+    {
+        printf("=== [OBSTACK ADVANCED TEST] ===\n\n");
+
+        obstack_alloc_failed_handler = test_failed_allocation_handler;
+
+        {
+            printf("=== Test 1: obstack_init / basic usage ===\n");
+            struct obstack adv_obstack;
+            obstack_init(&adv_obstack);
+
+            printf("Initially, obstack_empty_p? %d\n", obstack_empty_p(&adv_obstack));
+
+            obstack_1grow(&adv_obstack, 'A');
+            obstack_1grow(&adv_obstack, 'B');
+            obstack_1grow(&adv_obstack, 'C');
+
+            printf("Object size after 3 chars: %zu\n", obstack_object_size(&adv_obstack));
+            printf("Room left in current chunk: %zu\n", obstack_room(&adv_obstack));
+            printf("Memory used (so far): %zu\n", obstack_memory_used(&adv_obstack));
+
+            const char* testStr = "Hello, obstack!";
+            obstack_grow(&adv_obstack, testStr, strlen(testStr));
+            obstack_1grow(&adv_obstack, '\0');
+
+            char* myString = obstack_finish(&adv_obstack);
+            printf("Finished object/string: \"%s\"\n", myString);
+            printf("Now obstack_empty_p? %d\n", obstack_empty_p(&adv_obstack));
+
+            obstack_free(&adv_obstack, myString);
+            printf("After free, obstack_empty_p? %d\n\n", obstack_empty_p(&adv_obstack));
+
+            printf("=== Test 2: obstack_printf ===\n");
+            obstack_printf(&adv_obstack, "This is a test: %d + %d = %d\n", 2, 3, 5);
+            char* fmtString = obstack_finish(&adv_obstack);
+            printf("Result from obstack_printf:\n%s", fmtString);
+
+            obstack_free(&adv_obstack, fmtString);
+            printf("After freeing printf-string, empty? %d\n\n", obstack_empty_p(&adv_obstack));
+
+            printf("=== Test 3: obstack_int_grow ===\n");
+            obstack_int_grow(&adv_obstack, 42);
+            obstack_int_grow(&adv_obstack, 999);
+
+            int* intArray = obstack_finish(&adv_obstack);
+            printf("Two ints stored: [%d, %d]\n", intArray[0], intArray[1]);
+
+            obstack_free(&adv_obstack, intArray);
+            printf("After freeing int array, empty? %d\n\n", obstack_empty_p(&adv_obstack));
+
+            printf("=== Test 4: obstack_blank / obstack_make_room ===\n");
+            obstack_blank(&adv_obstack, 20);
+            printf("Object size after obstack_blank(20): %zu\n", obstack_object_size(&adv_obstack));
+            obstack_make_room(&adv_obstack, 50);
+            printf("Room after obstack_make_room(50): %zu\n", obstack_room(&adv_obstack));
+
+            void* blankObject = obstack_finish(&adv_obstack);
+            printf("Blank object pointer = %p\n", blankObject);
+
+            obstack_free(&adv_obstack, blankObject);
+            printf("After freeing blank object, empty? %d\n\n", obstack_empty_p(&adv_obstack));
+
+            printf("=== Test 5: obstack_specify_allocation ===\n");
+            struct obstack customObstack;
+            obstack_specify_allocation(&customObstack, 0, 0, custom_allocator, custom_deallocator);
+            obstack_1grow(&customObstack, 'X');
+            obstack_1grow(&customObstack, 'Y');
+            obstack_1grow(&customObstack, 'Z');
+            char* xyz = obstack_finish(&customObstack);
+            printf("Custom-obstack string = \"%s\"\n", xyz);
+
+            obstack_free(&customObstack, xyz);
+            obstack_free(&customObstack, 0);
+            printf("Freed entire custom obstack region.\n\n");
+
+            printf("=== Test 6: obstack_specify_allocation_with_arg ===\n");
+            struct obstack customArgObstack;
+            int extraValue = 1234;
+            obstack_specify_allocation_with_arg(&customArgObstack, 0, 0, custom_allocator_with_arg,
+                                                custom_deallocator_with_arg, &extraValue);
+
+            obstack_grow(&customArgObstack, "CustomArg", 9);
+            obstack_1grow(&customArgObstack, '\0');
+            char* customArgStr = obstack_finish(&customArgObstack);
+            printf("String in customArgObstack: \"%s\"\n", customArgStr);
+
+            obstack_free(&customArgObstack, customArgStr);
+            obstack_free(&customArgObstack, 0);
+            printf("Freed entire customArgObstack region.\n\n");
+
+            printf("=== Test 7: direct usage of _obstack_begin_1 etc. ===\n");
+            struct obstack directObstack;
+            _obstack_begin_1(&directObstack, 64, 16, custom_allocator_with_arg, custom_deallocator_with_arg,
+                             &extraValue);
+
+            printf("Calling _obstack_newchunk(&directObstack, 128)\n");
+            _obstack_newchunk(&directObstack, 128);
+
+            memset(directObstack.next_free, '@', 10);
+            directObstack.next_free += 10;
+            *directObstack.next_free++ = '\0';
+
+            char* directStr = obstack_finish(&directObstack);
+            printf("String from direct usage: \"%s\"\n", directStr);
+
+            printf("Calling _obstack_free(&directObstack, directStr)...\n");
+            _obstack_free(&directObstack, directStr);
+
+            obstack_free(&directObstack, 0);
+            printf("=== Test 7 done. ===\n\n");
+
+            printf("All advanced tests done! Cleaning up adv_obstack.\n");
+            obstack_free(&adv_obstack, 0);
+            printf("=== [OBSTACK ADVANCED TEST] COMPLETE ===\n\n");
+        }
+    }
 }
