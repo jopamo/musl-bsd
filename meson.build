@@ -62,6 +62,19 @@ install_headers(
   subdir : ''
 )
 
+libargp = shared_library(
+  'argp',
+  ['src/argp.c'],
+  include_directories : inc,
+  install : true,
+  version : '2.0.0'
+)
+
+install_headers(
+  'include/argp.h',
+  subdir : ''
+)
+
 install_headers(
   [
     'include/cdefs.h',
