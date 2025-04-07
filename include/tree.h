@@ -1,25 +1,11 @@
 #ifndef _SYS_TREE_H_
 #define _SYS_TREE_H_
 
-#include <stddef.h> /* for NULL, offsetof */
+#include <stddef.h>
 
-/*
- * This file defines data structures for:
- *  - Splay trees
- *  - Red-black trees
- *  - Additional OpenBSD RB tree interface (struct rb_type, rb_tree, etc.)
- */
-
-/*
- * ==============
- *  SPLAY TREES
- * ==============
- */
-
-/* Splay tree definitions and macros */
-#define SPLAY_HEAD(name, type)                        \
-    struct name {                                     \
-        struct type* sph_root; /* root of the tree */ \
+#define SPLAY_HEAD(name, type) \
+    struct name {              \
+        struct type* sph_root; \
     }
 
 #define SPLAY_INITIALIZER(root) {NULL}
@@ -29,10 +15,10 @@
         (root)->sph_root = NULL; \
     } while (0)
 
-#define SPLAY_ENTRY(type)                           \
-    struct {                                        \
-        struct type* spe_left;  /* left element  */ \
-        struct type* spe_right; /* right element */ \
+#define SPLAY_ENTRY(type)       \
+    struct {                    \
+        struct type* spe_left;  \
+        struct type* spe_right; \
     }
 
 #define SPLAY_LEFT(elm, field) (elm)->field.spe_left
@@ -40,7 +26,6 @@
 #define SPLAY_ROOT(head) ((head)->sph_root)
 #define SPLAY_EMPTY(head) (SPLAY_ROOT(head) == NULL)
 
-/* Rotations and links for splay */
 #define SPLAY_ROTATE_RIGHT(head, tmp, field)                           \
     do {                                                               \
         SPLAY_LEFT((head)->sph_root, field) = SPLAY_RIGHT(tmp, field); \
@@ -77,10 +62,6 @@
         SPLAY_RIGHT((head)->sph_root, field) = SPLAY_LEFT(node, field);  \
     } while (0)
 
-/*
- * Macros that define the splay API. SPLAY_PROTOTYPE() declares the
- * functions; SPLAY_GENERATE() implements them.
- */
 #define SPLAY_PROTOTYPE(name, type, field, cmp)                                                  \
     void name##_SPLAY(struct name*, struct type*);                                               \
     void name##_SPLAY_MINMAX(struct name*, int);                                                 \
@@ -228,7 +209,6 @@
         SPLAY_ASSEMBLE(head, &__node, __left, __right, field);                  \
     }
 
-/* Splay min/max definitions */
 #define SPLAY_NEGINF (-1)
 #define SPLAY_INF 1
 
@@ -241,16 +221,9 @@
 
 #define SPLAY_FOREACH(x, name, head) for ((x) = SPLAY_MIN(name, head); (x) != NULL; (x) = SPLAY_NEXT(name, head, x))
 
-/*
- * ==================
- *  RED-BLACK TREES
- * ==================
- */
-
-/* Red-Black tree definitions and macros */
-#define RB_HEAD(name, type)                           \
-    struct name {                                     \
-        struct type* rbh_root; /* root of the tree */ \
+#define RB_HEAD(name, type)    \
+    struct name {              \
+        struct type* rbh_root; \
     }
 
 #define RB_INITIALIZER(root) {NULL}
@@ -263,12 +236,12 @@
 #define RB_BLACK 0
 #define RB_RED 1
 
-#define RB_ENTRY(type)                             \
-    struct {                                       \
-        struct type* rbe_left;   /* left child  */ \
-        struct type* rbe_right;  /* right child */ \
-        struct type* rbe_parent; /* parent node */ \
-        int rbe_color;           /* node color  */ \
+#define RB_ENTRY(type)           \
+    struct {                     \
+        struct type* rbe_left;   \
+        struct type* rbe_right;  \
+        struct type* rbe_parent; \
+        int rbe_color;           \
     }
 
 #define RB_LEFT(elm, field) ((elm)->field.rbe_left)
@@ -297,7 +270,6 @@
     } while (0)
 #endif
 
-/* Rotations */
 #define RB_ROTATE_LEFT(head, elm, tmp, field)                   \
     do {                                                        \
         (tmp) = RB_RIGHT(elm, field);                           \
@@ -344,17 +316,6 @@
             RB_AUGMENT(RB_PARENT(tmp, field));                  \
     } while (0)
 
-/*
- * RB_PROTOTYPE / RB_GENERATE define the usual "RB_*" functions:
- *   - RB_INSERT
- *   - RB_REMOVE
- *   - RB_FIND
- *   - RB_NFIND
- *   - RB_NEXT
- *   - RB_PREV
- *   - RB_MINMAX
- * plus internal color fixups.
- */
 #define RB_PROTOTYPE(name, type, field, cmp) RB_PROTOTYPE_INTERNAL(name, type, field, cmp, )
 
 #define RB_PROTOTYPE_STATIC(name, type, field, cmp) \
@@ -371,7 +332,6 @@
     attr struct type* name##_RB_PREV(struct type*);                             \
     attr struct type* name##_RB_MINMAX(struct name*, int);
 
-/* We then define the actual RB_GENERATE macros which produce the code. */
 #define RB_GENERATE(name, type, field, cmp) RB_GENERATE_INTERNAL(name, type, field, cmp, )
 
 #define RB_GENERATE_STATIC(name, type, field, cmp) \
@@ -675,7 +635,6 @@
         return parent;                                                                                       \
     }
 
-/* Constants for min or max. */
 #define RB_NEGINF -1
 #define RB_INF 1
 
@@ -698,20 +657,10 @@
 #define RB_FOREACH_REVERSE_SAFE(x, name, head, y) \
     for ((x) = RB_MAX(name, head); ((x) != NULL) && ((y) = name##_RB_PREV(x), 1); (x) = (y))
 
-/*
- * =============================================================================
- *  Additional OpenBSD RB-tree interface from <sys/tree.h>:
- *    - struct rb_type
- *    - struct rb_tree
- *    - struct rb_entry
- *    - RBT_* macros
- * =============================================================================
- */
-
 struct rb_type {
     int (*t_compare)(const void*, const void*);
     void (*t_augment)(void*);
-    unsigned int t_offset; /* offset of rb_entry in type */
+    unsigned int t_offset;
 };
 
 struct rb_tree {
@@ -877,4 +826,4 @@ int _rb_check(const struct rb_type*, void*, unsigned long);
 #define RBT_FOREACH_REVERSE_SAFE(_e, _name, _head, _n) \
     for ((_e) = RBT_MAX(_name, (_head)); (_e) != NULL && ((_n) = RBT_PREV(_name, (_e)), 1); (_e) = (_n))
 
-#endif /* _SYS_TREE_H_ */
+#endif

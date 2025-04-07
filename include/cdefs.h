@@ -1,6 +1,69 @@
 #ifndef _CDEFS_H_
 #define _CDEFS_H_
 
+#include <sys/stat.h>
+#include <fnmatch.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <alloca.h>
+
+#ifndef ACCESSPERMS
+#define ACCESSPERMS (S_IRWXU | S_IRWXG | S_IRWXO)
+#endif
+#ifndef ALLPERMS
+#define ALLPERMS (S_ISUID | S_ISGID | S_ISVTX | S_IRWXU | S_IRWXG | S_IRWXO)
+#endif
+#ifndef DEFFILEMODE
+#define DEFFILEMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+#endif
+
+#ifndef FNM_EXTMATCH
+#define FNM_EXTMATCH 0
+#endif
+
+#ifndef TEMP_FAILURE_RETRY
+#define TEMP_FAILURE_RETRY(expression)               \
+    (__extension__({                                 \
+        long int __result;                           \
+        do {                                         \
+            __result = (long int)(expression);       \
+        } while (__result == -1L && errno == EINTR); \
+        __result;                                    \
+    }))
+#endif
+
+#ifndef strndupa
+#define strndupa(s, n)                         \
+    (__extension__({                           \
+        const char* __in = (s);                \
+        size_t __len = strnlen(__in, (n)) + 1; \
+        char* __out = (char*)alloca(__len);    \
+        __out[__len - 1] = '\0';               \
+        (char*)memcpy(__out, __in, __len - 1); \
+    }))
+#endif
+
+#if !defined(HAVE_QSORT_R)
+
+static void* qsort_r_global_arg;
+
+typedef int (*qsort_r_compar_fn_t)(const void*, const void*, void*);
+static qsort_r_compar_fn_t qsort_r_user_compar;
+
+static int qsort_r_global_shim(const void* a, const void* b) {
+    return qsort_r_user_compar(a, b, qsort_r_global_arg);
+}
+
+#define qsort_r(base, nmemb, size, compar, arg)              \
+    do {                                                     \
+        qsort_r_user_compar = (qsort_r_compar_fn_t)(compar); \
+        qsort_r_global_arg = (void*)(arg);                   \
+        qsort((base), (nmemb), (size), qsort_r_global_shim); \
+    } while (0)
+
+#endif
+
 #define __dead __attribute__((__noreturn__))
 #define __pure __attribute__((__const__))
 #define __used __attribute__((__used__))
@@ -54,4 +117,4 @@
 #define __BSD_VISIBLE 1
 #endif
 
-#endif /* _CDEFS_H_ */
+#endif
