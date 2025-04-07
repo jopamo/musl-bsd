@@ -1,7 +1,11 @@
 project(
   'musl-bsd',
   'c',
-  version : '2.0.0'
+  version : '2.0.0',
+  default_options : [
+    'c_std=c11',
+    'warning_level=2'
+  ]
 )
 
 cc = meson.get_compiler('c')
@@ -31,12 +35,9 @@ endif
 
 inc = include_directories('include')
 
-# --- libobstack ---
 libobstack = shared_library(
   'obstack',
-  [
-    'src/obstack.c'
-  ],
+  ['src/obstack.c'],
   include_directories : inc,
   install : true,
   version : '2.0.0'
@@ -47,7 +48,6 @@ install_headers(
   subdir : ''
 )
 
-# --- libfts ---
 libfts = shared_library(
   'fts',
   ['src/fts.c'],
@@ -69,3 +69,16 @@ install_headers(
   ],
   subdir : 'sys'
 )
+
+test_all_exe = executable(
+  'test_all',
+  ['src/test_all.c'],
+  include_directories : inc,
+  link_with : [libobstack, libfts],
+  c_args : [
+    '-D_XOPEN_SOURCE=700',
+    '-D_DEFAULT_SOURCE'
+  ],
+  install : false
+)
+
