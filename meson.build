@@ -58,6 +58,7 @@ libfts = shared_library(
 
 install_headers(
   'include/fts.h',
+  'include/error.h',
   subdir : ''
 )
 
