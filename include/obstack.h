@@ -131,6 +131,8 @@ extern void (*obstack_alloc_failed_handler)(void);
 /* Exit value used by the default handler. */
 extern int obstack_exit_failure;
 
+extern int obstack_printf(struct obstack*, const char* __restrict, ...);
+
 /*------------------- Basic Helper Macros -------------------*/
 
 /* Return pointer to beginning of the currently built object.  */
