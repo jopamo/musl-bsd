@@ -97,47 +97,44 @@ extern void (*obstack_alloc_failed_handler)(void);
 
 extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attribute__((format(printf, 2, 3)));
 
-#ifndef obstack_chunk_alloc
-#define obstack_chunk_alloc malloc
-#endif
 #ifndef obstack_chunk_free
 #define obstack_chunk_free free
 #endif
 
 #ifndef obstack_int_grow
-#define obstack_int_grow(h, aint)                          \
-  do {                                                      \
-    if (obstack_room(h) < (int)sizeof(int))                 \
-      _obstack_newchunk(h, sizeof(int));                    \
-    memcpy((h)->next_free, &(aint), sizeof(int));           \
-    (h)->next_free += sizeof(int);                          \
-  } while (0)
+#define obstack_int_grow(h, aint)                     \
+    do {                                              \
+        if (obstack_room(h) < (int)sizeof(int))       \
+            _obstack_newchunk((h), sizeof(int));      \
+        memcpy((h)->next_free, &(aint), sizeof(int)); \
+        (h)->next_free += sizeof(int);                \
+    } while (0)
 #endif
 
 #ifndef obstack_ptr_grow
-#define obstack_ptr_grow(h, aptr)                           \
-  do {                                                      \
-    if (obstack_room(h) < sizeof(void*))                    \
-      _obstack_newchunk(h, sizeof(void*));                  \
-    memcpy((h)->next_free, &(aptr), sizeof(void*));         \
-    (h)->next_free += sizeof(void*);                        \
-  } while (0)
+#define obstack_ptr_grow(h, aptr)                       \
+    do {                                                \
+        if (obstack_room(h) < sizeof(void*))            \
+            _obstack_newchunk((h), sizeof(void*));      \
+        memcpy((h)->next_free, &(aptr), sizeof(void*)); \
+        (h)->next_free += sizeof(void*);                \
+    } while (0)
 #endif
 
 #ifndef obstack_int_grow_fast
-#define obstack_int_grow_fast(h, aint)                      \
-  do {                                                      \
-    memcpy((h)->next_free, &(aint), sizeof(int));           \
-    (h)->next_free += sizeof(int);                          \
-  } while (0)
+#define obstack_int_grow_fast(h, aint)                \
+    do {                                              \
+        memcpy((h)->next_free, &(aint), sizeof(int)); \
+        (h)->next_free += sizeof(int);                \
+    } while (0)
 #endif
 
 #ifndef obstack_ptr_grow_fast
-#define obstack_ptr_grow_fast(h, aptr)                      \
-  do {                                                      \
-    memcpy((h)->next_free, &(aptr), sizeof(void*));         \
-    (h)->next_free += sizeof(void*);                        \
-  } while (0)
+#define obstack_ptr_grow_fast(h, aptr)                  \
+    do {                                                \
+        memcpy((h)->next_free, &(aptr), sizeof(void*)); \
+        (h)->next_free += sizeof(void*);                \
+    } while (0)
 #endif
 
 #ifndef obstack_ptr_grow_fast
