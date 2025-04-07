@@ -20,6 +20,7 @@ static _Noreturn void obstack_default_alloc_failed(void) {
 }
 
 void (*obstack_alloc_failed_handler)(void) = obstack_default_alloc_failed;
+
 int obstack_vprintf(struct obstack* obs, const char* format, va_list args);
 
 #ifndef __BPTR_ALIGN
@@ -158,13 +159,10 @@ void _obstack_newchunk(struct obstack* h, _OBSTACK_SIZE_T length) {
 void _obstack_free(struct obstack* h, void* obj) {
     struct _obstack_chunk* lp = h->chunk;
 
-    printf("[DEBUG] Starting _obstack_free. Freeing object at: %p\n", obj);
-
     if (obj == NULL) {
-        printf("[DEBUG] obj is NULL, freeing all chunks.\n");
+        // Free all chunks and reset the stack
         while (lp) {
             struct _obstack_chunk* prev = lp->prev;
-            printf("[DEBUG] Freeing chunk at: %p\n", lp);
             call_freefun(h, lp);
             lp = prev;
         }
@@ -172,22 +170,20 @@ void _obstack_free(struct obstack* h, void* obj) {
         return;
     }
 
+    // Search for the object and reset the chunk without accessing freed memory
     while (lp) {
         if ((obj >= (void*)lp) && (obj < (void*)lp->limit)) {
             h->chunk = lp;
             h->chunk_limit = lp->limit;
             h->object_base = h->next_free = (char*)obj;
-            printf("[DEBUG] Found object in chunk. Resetting chunk and object base.\n");
             return;
         }
 
         struct _obstack_chunk* prev = lp->prev;
-        printf("[DEBUG] Freeing chunk at: %p\n", lp);
         call_freefun(h, lp);
         lp = prev;
     }
 
-    printf("[ERROR] Object not found in any chunk, aborting.\n");
     abort();
 }
 
