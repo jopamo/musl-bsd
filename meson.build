@@ -35,6 +35,7 @@ endif
 
 inc = include_directories('include')
 
+# Libraries
 libobstack = shared_library(
   'obstack',
   ['src/obstack.c'],
@@ -84,11 +85,12 @@ install_headers(
   subdir : 'sys'
 )
 
-test_all_exe = executable(
-  'test_all',
-  ['src/test_all.c'],
+# Test Executables
+test_argp_exe = executable(
+  'test_argp',
+  ['tests/test_argp.c'],
   include_directories : inc,
-  link_with : [libobstack, libfts],
+  link_with : libargp,
   c_args : [
     '-D_XOPEN_SOURCE=700',
     '-D_DEFAULT_SOURCE'
@@ -96,5 +98,31 @@ test_all_exe = executable(
   install : false
 )
 
-test('test_all', test_all_exe)
+test_fts_exe = executable(
+  'test_fts',
+  ['tests/test_fts.c'],
+  include_directories : inc,
+  link_with : libfts,
+  c_args : [
+    '-D_XOPEN_SOURCE=700',
+    '-D_DEFAULT_SOURCE'
+  ],
+  install : false
+)
 
+test_obstack_exe = executable(
+  'test_obstack',
+  ['tests/test_obstack.c'],
+  include_directories : inc,
+  link_with : libobstack,
+  c_args : [
+    '-D_XOPEN_SOURCE=700',
+    '-D_DEFAULT_SOURCE'
+  ],
+  install : false
+)
+
+# Tests
+test('test_argp', test_argp_exe)
+test('test_fts', test_fts_exe)
+test('test_obstack', test_obstack_exe)
