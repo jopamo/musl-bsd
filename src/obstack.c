@@ -50,7 +50,7 @@ static int _obstack_begin_worker(struct obstack* h, _OBSTACK_SIZE_T size, _OBSTA
     if (size == 0) {
         int extra = ((((12 + DEFAULT_ROUNDING - 1) & ~(DEFAULT_ROUNDING - 1)) + 4 + DEFAULT_ROUNDING - 1) &
                      ~(DEFAULT_ROUNDING - 1));
-        size = 4096 - extra;
+        size = 8192 - extra;
     }
 
     h->chunk_size = size;
