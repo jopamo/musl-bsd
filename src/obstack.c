@@ -217,6 +217,19 @@ void _obstack_free(struct obstack* h, void* obj) {
     }
 }
 
+int obstack_printf(struct obstack* obstack, const char* __restrict fmt, ...) {
+    char buf[1024];
+    va_list ap;
+    int len;
+
+    va_start(ap, fmt);
+    len = vsnprintf(buf, sizeof(buf), fmt, ap);
+    obstack_grow(obstack, buf, len);
+    va_end(ap);
+
+    return len;
+}
+
 /*
  * _obstack_memory_used -- Return total memory (bytes) used by H.
  */
