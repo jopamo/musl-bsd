@@ -2,17 +2,21 @@
 #include <argp.h>
 #include <stdlib.h>
 
+// Prevent redefinition of argp_program_version
+#define argp_program_version "1.0"  // Define it here instead of declaring a global variable
+
 static error_t parse_opt(int key, char* arg __attribute__((unused)), struct argp_state* state);
 static void test_argp(int argc, char* argv[]);
 
-const char* argp_program_version = "1.0";
 const char* argp_program_bug_address = "<bug-report@example.com>";
 
-static struct argp_option options[] = {{"help", 'h', 0, 0, "Display this help message", 0},
-                                       {"version", 'v', 0, 0, "Display version information", 0},
-                                       {"verbose", 'V', 0, 0, "Enable verbose output", 0},
-                                       {"input", 'i', "FILE", 0, "Input file", 0},
-                                       {0}};
+static struct argp_option options[] = {
+    {"help", 'h', 0, 0, "Display this help message", 0},
+    {"version", 'v', 0, 0, "Display version information", 0},
+    {"verbose", 'V', 0, 0, "Enable verbose output", 0},
+    {"input", 'i', "FILE", 0, "Input file", 0},
+    {0}  // End of the options array
+};
 
 static error_t parse_opt(int key, char* arg __attribute__((unused)), struct argp_state* state) {
     switch (key) {
