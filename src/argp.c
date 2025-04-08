@@ -619,6 +619,7 @@ static error_t parser_finalize(struct parser* p, error_t err, int arg_ebadkey, i
             err = ARGP_EBADKEY;
         }
     }
+
     if (err) {
         if (err == ARGP_EBADKEY) {
             argp_state_help(&p->state, p->state.err_stream, ARGP_HELP_STD_ERR);
@@ -639,8 +640,6 @@ static error_t parser_finalize(struct parser* p, error_t err, int arg_ebadkey, i
     for (struct group* g = p->egroup; g-- > p->groups;) {
         group_parse(g, &p->state, ARGP_KEY_FINI, NULL);
     }
-    if (err == ARGP_EBADKEY)
-        err = EINVAL;
 
     free(p->storage);
     return err;
@@ -941,7 +940,7 @@ error_t argp_parse(const struct argp* in_argp, int argc, char** argv, unsigned f
         kids[i++].argp = &default_help_argp;
 
         if (argp_program_version || argp_program_version_hook)
-            kids[i++].argp = &default_version_argp;  // Use default_version_argp here
+            kids[i++].argp = &default_version_argp;
 
         top.children = kids;
         argp = &top;
