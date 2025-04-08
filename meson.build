@@ -4,9 +4,15 @@ project(
   version : '2.0.0',
   default_options : [
     'c_std=c11',
-    'warning_level=2'
+    'warning_level=2',
+    'buildtype=debug'
   ]
 )
+
+env = environment()
+env.set('CC', 'clang')
+env.set('CXX', 'clang++')
+env.set('LD', 'ld.lld')
 
 cc = meson.get_compiler('c')
 
@@ -35,13 +41,18 @@ endif
 
 inc = include_directories('include')
 
-# Libraries
+c_flags = [
+  '-D_XOPEN_SOURCE=700',
+  '-D_DEFAULT_SOURCE'
+]
+
 libobstack = shared_library(
   'obstack',
   ['src/obstack.c'],
   include_directories : inc,
   install : true,
-  version : '2.0.0'
+  version : '2.0.0',
+  c_args : c_flags
 )
 
 install_headers(
@@ -54,7 +65,8 @@ libfts = shared_library(
   ['src/fts.c'],
   include_directories : inc,
   install : true,
-  version : '2.0.0'
+  version : '2.0.0',
+  c_args : c_flags
 )
 
 install_headers(
@@ -68,7 +80,8 @@ libargp = shared_library(
   ['src/argp.c'],
   include_directories : inc,
   install : true,
-  version : '2.0.0'
+  version : '2.0.0',
+  c_args : c_flags
 )
 
 install_headers(
@@ -85,16 +98,12 @@ install_headers(
   subdir : 'sys'
 )
 
-# Test Executables
 test_argp_exe = executable(
   'test_argp',
   ['tests/test_argp.c'],
   include_directories : inc,
   link_with : libargp,
-  c_args : [
-    '-D_XOPEN_SOURCE=700',
-    '-D_DEFAULT_SOURCE'
-  ],
+  c_args : c_flags,
   install : false
 )
 
@@ -103,10 +112,7 @@ test_fts_exe = executable(
   ['tests/test_fts.c'],
   include_directories : inc,
   link_with : libfts,
-  c_args : [
-    '-D_XOPEN_SOURCE=700',
-    '-D_DEFAULT_SOURCE'
-  ],
+  c_args : c_flags,
   install : false
 )
 
@@ -115,14 +121,10 @@ test_obstack_exe = executable(
   ['tests/test_obstack.c'],
   include_directories : inc,
   link_with : libobstack,
-  c_args : [
-    '-D_XOPEN_SOURCE=700',
-    '-D_DEFAULT_SOURCE'
-  ],
+  c_args : c_flags,
   install : false
 )
 
-# Tests
 test('test_argp', test_argp_exe)
 test('test_fts', test_fts_exe)
 test('test_obstack', test_obstack_exe)

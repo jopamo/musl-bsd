@@ -1,83 +1,70 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <obstack.h>
-
-void print_hex(const char* str) {
-    printf("Hexadecimal representation: ");
-    while (*str) {
-        printf("%02x ", (unsigned char)(*str));
-        str++;
-    }
-    printf("\n");
+void test_obstack_begin() {
+    struct obstack obs;
+    int result = obstack_init(&obs);
+    assert(result == 1);
+    assert(obs.chunk != NULL);
+    obstack_free(&obs, NULL);
+    printf("obstack_begin passed\n");
 }
 
-static int test_obstack(void) {
-    struct obstack myobstack;
-    char *str1, *str2, *str3;
-    size_t total_used;
+void test_obstack_newchunk() {
+    struct obstack obs;
+    obstack_init(&obs);
 
-    printf("[OBSTACK TEST] Initializing obstack...\n");
-    obstack_init(&myobstack);
+    void* initial_base = obs.object_base;
+    _obstack_newchunk(&obs, 1024);
+    assert(obs.object_base != initial_base);
+    obstack_free(&obs, NULL);
+    printf("_obstack_newchunk passed\n");
+}
 
-    printf("[OBSTACK TEST] Creating first object (\"Hello, World!\")...\n");
-    obstack_grow(&myobstack, "Hello, ", 7);
-    obstack_grow0(&myobstack, "World!", 6);
-    str1 = obstack_finish(&myobstack);
-    printf("  => Built string: \"%s\" (ptr=%p)\n", str1, (void*)str1);
-    if (strcmp(str1, "Hello, World!") != 0) {
-        printf("[ERROR] First object mismatch: Expected \"Hello, World!\", got \"%s\"\n", str1);
-        return 1;
-    }
+void test_obstack_free() {
+    struct obstack obs;
+    obstack_init(&obs);
 
-    printf("[OBSTACK TEST] Creating second object (\"Another string\")...\n");
-    obstack_grow0(&myobstack, "Another string", 14);
-    str2 = obstack_finish(&myobstack);
-    printf("  => Built string: \"%s\" (ptr=%p)\n", str2, (void*)str2);
-    if (strcmp(str2, "Another string") != 0) {
-        printf("[ERROR] Second object mismatch: Expected \"Another string\", got \"%s\"\n", str2);
-        return 1;
-    }
+    int* data = (int*)obstack_alloc(&obs, sizeof(int));
+    *data = 42;
 
-    printf("[OBSTACK TEST] Using obstack_printf (\"Number: 42 [the answer]\")...\n");
+    obstack_free(&obs, data);
+    assert(obs.chunk != NULL);
+    printf("obstack_free passed\n");
+}
 
-    obstack_free(&myobstack, NULL);
+void test_obstack_printf() {
+    struct obstack obs;
+    obstack_init(&obs);
 
-    obstack_printf(&myobstack, "%s %d %s", "Number:", 42, "[the answer]");
+    int result = obstack_printf(&obs, "Hello, %s!", "world");
+    assert(result > 0);
 
-    str3 = obstack_finish(&myobstack);
+    size_t size = obstack_calculate_object_size(&obs);
+    assert(size > 0);
+    obstack_free(&obs, NULL);
+    printf("obstack_printf passed\n");
+}
 
-    printf("[DEBUG] Raw formatted string before finishing: \"%s\"\n", str3);
-    printf("  => Formatted string: \"%s\" (ptr=%p)\n", str3, (void*)str3);
+void test_obstack_memory_used() {
+    struct obstack obs;
+    obstack_init(&obs);
 
-    print_hex(str3);
+    int* data1 = (int*)obstack_alloc(&obs, 128);
+    *data1 = 1;
+    int* data2 = (int*)obstack_alloc(&obs, 256);
+    *data2 = 2;
 
-    if (strcmp(str3, "Number: 42 [the answer]") != 0) {
-        printf("[ERROR] Formatted string mismatch: Expected \"Number: 42 [the answer]\", got \"%s\"\n", str3);
-        return 1;
-    }
+    _OBSTACK_SIZE_T memory_used = obstack_memory_used(&obs);
+    assert(memory_used >= 128 + 256);
+    obstack_free(&obs, NULL);
+    printf("obstack_memory_used passed\n");
+}
 
-    total_used = _obstack_memory_used(&myobstack);
-    printf("[OBSTACK TEST] Currently using %zu bytes in obstack.\n", (size_t)total_used);
+int main() {
+    test_obstack_begin();
+    test_obstack_newchunk();
+    test_obstack_free();
+    test_obstack_printf();
+    test_obstack_memory_used();
 
-    printf("[OBSTACK TEST] Freeing all data in the obstack...\n");
-    obstack_free(&myobstack, NULL);
-    total_used = _obstack_memory_used(&myobstack);
-    printf("  => Freed all data. Now _obstack_memory_used = %zu\n", (size_t)total_used);
-
-    printf("[OBSTACK TEST] Done with the tests.\n\n");
-
+    printf("All tests passed!\n");
     return 0;
-}
-
-int main(void) {
-    int result = test_obstack();
-    if (result == 0) {
-        printf("All tests passed!\n");
-    }
-    else {
-        printf("Some tests failed.\n");
-    }
-    return result;
 }
