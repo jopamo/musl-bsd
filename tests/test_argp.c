@@ -5,8 +5,6 @@
 static error_t parse_opt(int key, char* arg __attribute__((unused)), struct argp_state* state);
 static void test_argp(int argc, char* argv[]);
 
-const char* argp_program_bug_address = "<bug-report@example.com>";
-
 static struct argp_option options[] = {
     {"help", 'h', 0, 0, "Display this help message", 0},
     {"version", 'v', 0, 0, "Display version information", 0},
