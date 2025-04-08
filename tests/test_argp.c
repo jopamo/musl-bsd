@@ -2,9 +2,6 @@
 #include <argp.h>
 #include <stdlib.h>
 
-// Prevent redefinition of argp_program_version
-#define argp_program_version "1.0"  // Define it here instead of declaring a global variable
-
 static error_t parse_opt(int key, char* arg __attribute__((unused)), struct argp_state* state);
 static void test_argp(int argc, char* argv[]);
 
