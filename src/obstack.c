@@ -21,8 +21,6 @@ static _Noreturn void obstack_default_alloc_failed(void) {
 
 void (*obstack_alloc_failed_handler)(void) = obstack_default_alloc_failed;
 
-int obstack_vprintf(struct obstack* obs, const char* format, va_list args);
-
 #ifndef __BPTR_ALIGN
 #define __BPTR_ALIGN(B, P, A) ((B) + ((((P) - (B)) + (A)) & ~(A)))
 #endif
