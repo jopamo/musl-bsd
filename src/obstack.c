@@ -26,6 +26,7 @@ int obstack_vprintf(struct obstack* obs, const char* format, va_list args);
 #ifndef __BPTR_ALIGN
 #define __BPTR_ALIGN(B, P, A) ((B) + ((((P) - (B)) + (A)) & ~(A)))
 #endif
+
 #ifndef __PTR_ALIGN
 #define __PTR_ALIGN(B, P, A) \
     (sizeof(ptrdiff_t) < sizeof(void*) ? __BPTR_ALIGN(B, P, A) : (char*)(((ptrdiff_t)(P) + (A)) & ~(A)))
@@ -115,30 +116,27 @@ void _obstack_newchunk(struct obstack* h, _OBSTACK_SIZE_T length) {
     struct _obstack_chunk* new_chunk = NULL;
     size_t obj_size = (size_t)(h->next_free - h->object_base);
 
-    {
-        size_t sum1 = obj_size + length;
-        size_t sum2 = sum1 + h->alignment_mask;
-        size_t new_size = sum2 + (obj_size >> 3) + 100;
+    size_t sum1 = obj_size + length;
+    size_t sum2 = sum1 + h->alignment_mask;
+    size_t new_size = sum2 + (obj_size >> 3) + 100;
 
-        if (new_size < sum2) {
-            new_size = sum2;
-        }
-        if (new_size < h->chunk_size) {
-            new_size = h->chunk_size;
-        }
-
-        new_chunk = (struct _obstack_chunk*)call_chunkfun(h, new_size);
-        if (!new_chunk) {
-            (*obstack_alloc_failed_handler)();
-        }
-        new_chunk->prev = old_chunk;
-        new_chunk->limit = (char*)new_chunk + new_size;
-        h->chunk_limit = new_chunk->limit;
+    if (new_size < sum2) {
+        new_size = sum2;
     }
+    if (new_size < h->chunk_size) {
+        new_size = h->chunk_size;
+    }
+
+    new_chunk = (struct _obstack_chunk*)call_chunkfun(h, new_size);
+    if (!new_chunk) {
+        (*obstack_alloc_failed_handler)();
+    }
+    new_chunk->prev = old_chunk;
+    new_chunk->limit = (char*)new_chunk + new_size;
+    h->chunk_limit = new_chunk->limit;
 
     {
         char* aligned = __PTR_ALIGN((char*)new_chunk, new_chunk->contents, h->alignment_mask);
-
         memcpy(aligned, h->object_base, obj_size);
         h->object_base = aligned;
         h->next_free = aligned + obj_size;
@@ -160,7 +158,6 @@ void _obstack_free(struct obstack* h, void* obj) {
     struct _obstack_chunk* lp = h->chunk;
 
     if (obj == NULL) {
-        // Free all chunks and reset the stack
         while (lp) {
             struct _obstack_chunk* prev = lp->prev;
             call_freefun(h, lp);
@@ -170,7 +167,6 @@ void _obstack_free(struct obstack* h, void* obj) {
         return;
     }
 
-    // Search for the object and reset the chunk without accessing freed memory
     while (lp) {
         if ((obj >= (void*)lp) && (obj < (void*)lp->limit)) {
             h->chunk = lp;
@@ -199,66 +195,20 @@ _OBSTACK_SIZE_T _obstack_memory_used(struct obstack* h) {
     return total;
 }
 
-size_t obstack_object_size(struct obstack* ob) {
+size_t obstack_calculate_object_size(struct obstack* ob) {
     size_t size = (size_t)(ob->next_free - ob->object_base);
     return size;
 }
 
-RESULT_TYPE
-OBSTACK_PRINTF(struct obstack* obs, const char* format, ...) {
-    va_list args;
-    RESULT_TYPE result;
+int obstack_printf(struct obstack* obstack, const char* __restrict fmt, ...) {
+    char buf[1024];
+    va_list ap;
+    int len;
 
-    va_start(args, format);
-    result = OBSTACK_VPRINTF(obs, format, args);
-    va_end(args);
-    return result;
-}
+    va_start(ap, fmt);
+    len = vsnprintf(buf, sizeof(buf), fmt, ap);
+    obstack_grow(obstack, buf, len);
+    va_end(ap);
 
-RESULT_TYPE
-OBSTACK_VPRINTF(struct obstack* obs, const char* format, va_list args) {
-    enum { CUTOFF = 1024 };
-    char buf[CUTOFF];
-    char* base = obstack_next_free(obs);
-    size_t len = obstack_room(obs);
-    int result;
-    char* str;
-
-    if (len < CUTOFF) {
-        base = buf;
-        len = CUTOFF;
-    }
-
-    result = vsnprintf(base, len, format, args);
-
-    if (result < 0) {
-        if (errno == ENOMEM)
-            obstack_alloc_failed_handler();
-        return -1;
-    }
-
-    if ((size_t)result < len) {
-        obstack_blank(obs, result);
-        return result;
-    }
-
-    len = result + 1;
-    str = (char*)malloc(len);
-    if (!str) {
-        obstack_alloc_failed_handler();
-        return -1;
-    }
-
-    result = vsnprintf(str, len, format, args);
-
-    if (result < 0) {
-        free(str);
-        if (errno == ENOMEM)
-            obstack_alloc_failed_handler();
-        return -1;
-    }
-
-    obstack_grow(obs, str, result);
-    free(str);
-    return result;
+    return len;
 }
