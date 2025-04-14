@@ -64,7 +64,7 @@ libfts = shared_library(
   c_args: c_flags
 )
 
-install_headers('include/fts.h', 'include/error.h', subdir: '')
+install_headers('include/fts.h', subdir: '')
 
 argp_source = files([
     'src/argp/argp-ba.c',
