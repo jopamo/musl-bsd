@@ -288,6 +288,9 @@ FTSENT* fts_read(FTS* sp) {
     if (!sp->fts_cur || ISSET(FTS_STOP))
         return NULL;
 
+    /*--------------------------------------------------------------*
+     * Handle any pending instruction (AGAIN, FOLLOW, SKIP …)
+     *--------------------------------------------------------------*/
     p = sp->fts_cur;
     instr = p->fts_instr;
     p->fts_instr = FTS_NOINSTR;
@@ -299,7 +302,6 @@ FTSENT* fts_read(FTS* sp) {
 
     if (instr == FTS_FOLLOW && (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
         p->fts_info = fts_stat(sp, p, 1, -1);
-
         if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
             p->fts_symfd = open(".", O_RDONLY | O_CLOEXEC);
             if (p->fts_symfd == -1) {
@@ -313,6 +315,9 @@ FTSENT* fts_read(FTS* sp) {
         return p;
     }
 
+    /*--------------------------------------------------------------*
+     * Descend into directory (pre-order) unless told to skip
+     *--------------------------------------------------------------*/
     if (p->fts_info == FTS_D) {
         if (instr == FTS_SKIP || (ISSET(FTS_XDEV) && p->fts_dev != sp->fts_dev)) {
             if (p->fts_flags & FTS_SYMFOLLOW)
@@ -321,45 +326,51 @@ FTSENT* fts_read(FTS* sp) {
                 fts_lfree(sp->fts_child);
                 sp->fts_child = NULL;
             }
-            p->fts_info = FTS_DP;
+            p->fts_info = FTS_DP; /* deliver post-order now   */
             return p;
         }
 
+        /* flush cached children if NAMEONLY previously used */
         if (sp->fts_child && ISSET(FTS_NAMEONLY)) {
             CLR(FTS_NAMEONLY);
             fts_lfree(sp->fts_child);
             sp->fts_child = NULL;
         }
 
+        /* Build child list if we don’t have one yet                         */
         if (!sp->fts_child) {
             sp->fts_child = fts_build(sp, BREAD);
-            if (!sp->fts_child) {
+            if (!sp->fts_child) { /* error or empty             */
                 if (ISSET(FTS_STOP))
                     return NULL;
-                return p;
+                return p; /* return dir itself (DP)     */
             }
         }
-        else {
-            if (fts_safe_changedir(sp, p, -1, p->fts_accpath)) {
-                p->fts_errno = errno;
-                p->fts_flags |= FTS_DONTCHDIR;
-
-                for (FTSENT* xx = sp->fts_child; xx; xx = xx->fts_link)
-                    xx->fts_accpath = xx->fts_parent->fts_accpath;
-            }
+        else if (fts_safe_changedir(sp, p, -1, p->fts_accpath)) {
+            /* couldn’t chdir → mark children as having same accpath      */
+            p->fts_errno = errno;
+            p->fts_flags |= FTS_DONTCHDIR;
+            for (FTSENT* xx = sp->fts_child; xx; xx = xx->fts_link)
+                xx->fts_accpath = xx->fts_parent->fts_accpath;
         }
 
+        /* shift iterator to first child                                   */
         p = sp->fts_child;
         sp->fts_child = NULL;
         goto name;
     }
 
+    /*--------------------------------------------------------------*
+     * Sibling / post-order walk
+     *--------------------------------------------------------------*/
 next:
-    tmp = p;
-    p = p->fts_link;
-    free(tmp);
+    tmp = p;         /* node we are about to leave              */
+    p = p->fts_link; /* move to sibling (may be NULL)           */
 
-    if (p) {
+    if (p) { /* there *is* a sibling -------------------*/
+        free(tmp);
+
+        /* Top-level sibling: restore original cwd if needed */
         if (p->fts_level == FTS_ROOTLEVEL) {
             if (!ISSET(FTS_NOCHDIR) && fchdir(sp->fts_rfd)) {
                 SET(FTS_STOP);
@@ -368,6 +379,8 @@ next:
             fts_load(sp, p);
             return (sp->fts_cur = p);
         }
+
+        /* honour per-entry instructions before descent                   */
         if (p->fts_instr == FTS_SKIP)
             goto next;
         if (p->fts_instr == FTS_FOLLOW) {
@@ -385,25 +398,32 @@ next:
             p->fts_instr = FTS_NOINSTR;
         }
     name:
+        /* rebuild incremental path buffer                                */
         t = sp->fts_path + NAPPEND(p->fts_parent);
         *t++ = '/';
         memmove(t, p->fts_name, p->fts_namelen + 1);
         return (sp->fts_cur = p);
     }
 
-    p = tmp->fts_parent;
+    /*--------------  No sibling → move to parent (post-order)  ----------*/
+    FTSENT* up = tmp->fts_parent; /* save before freeing tmp */
+    free(tmp);
+    p = up;
+
     if (!p) {
         errno = EFAULT;
         return NULL;
     }
-    sp->fts_path[p->fts_pathlen] = '\0';
+    sp->fts_path[p->fts_pathlen] = '\0'; /* trim path buffer            */
 
+    /* root parent sentinel → traversal finished                          */
     if (p->fts_level == FTS_ROOTPARENTLEVEL) {
         free(p);
         errno = 0;
         return (sp->fts_cur = NULL);
     }
 
+    /* If returning to a different directory, restore cwd as needed       */
     if (p->fts_level == FTS_ROOTLEVEL) {
         if (!ISSET(FTS_NOCHDIR) && fchdir(sp->fts_rfd)) {
             SET(FTS_STOP);
@@ -427,7 +447,8 @@ next:
         sp->fts_cur = p;
         return NULL;
     }
-    p->fts_info = p->fts_errno ? FTS_ERR : FTS_DP;
+
+    p->fts_info = p->fts_errno ? FTS_ERR : FTS_DP; /* directory post-order */
     return (sp->fts_cur = p);
 }
 
