@@ -111,20 +111,11 @@ static inline int ISDOT(const char* a) {
 #define SET(opt) (sp->fts_options |= (opt))
 #define CLR(opt) (sp->fts_options &= ~(opt))
 
-static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size) {
-    if (newnmemb && size && newnmemb > (SIZE_MAX / size)) {
-        errno = ENOMEM;
-        return NULL;
-    }
-    size_t oldsz = oldnmemb * size;
-    size_t newsz = newnmemb * size;
-    void* ret = realloc(ptr, newsz);
-    if (ret && newsz > oldsz) {
-        memset((char*)ret + oldsz, 0, newsz - oldsz);
-    }
-    return ret;
-}
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
 
+static void* safe_recallocarray(void*, size_t, size_t, size_t);
 static FTSENT* fts_alloc(FTS*, const char*, size_t);
 static FTSENT* fts_build(FTS*, int);
 static void fts_lfree(FTSENT*);
@@ -142,11 +133,24 @@ static int fts_safe_changedir(FTS*, FTSENT*, int, const char*);
 
 #define NAPPEND(p) ((p)->fts_path[(p)->fts_pathlen - 1] == '/' ? (p)->fts_pathlen - 1 : (p)->fts_pathlen)
 
+static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size) {
+    if (newnmemb && size && newnmemb > (SIZE_MAX / size)) {
+        errno = ENOMEM;
+        return NULL;
+    }
+    size_t oldsz = oldnmemb * size;
+    size_t newsz = newnmemb * size;
+    void* ret = realloc(ptr, newsz);
+    if (ret && newsz > oldsz) {
+        memset((char*)ret + oldsz, 0, newsz - oldsz);
+    }
+    return ret;
+}
+
 FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, const FTSENT**)) {
     FTS* sp;
-    FTSENT *p, *root;
+    FTSENT *p, *root, *parent, *prev;
     int nitems;
-    FTSENT *parent, *prev;
 
     if ((options & ~FTS_OPTIONMASK) || (argv == NULL) || (*argv == NULL)) {
         errno = EINVAL;
@@ -165,9 +169,8 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
 
     {
         size_t need = fts_maxarglen(argv);
-        if (need < PATH_MAX) {
+        if (need < PATH_MAX)
             need = PATH_MAX;
-        }
         if (fts_palloc(sp, need)) {
             free(sp);
             return NULL;
@@ -195,6 +198,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
         p->fts_level = FTS_ROOTLEVEL;
         p->fts_parent = parent;
         p->fts_accpath = p->fts_name;
+
         p->fts_info = fts_stat(sp, p, ISSET(FTS_COMFOLLOW), -1);
         if (p->fts_info == FTS_DOT)
             p->fts_info = FTS_D;
@@ -205,7 +209,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
         }
         else {
             p->fts_link = NULL;
-            if (root == NULL)
+            if (!root)
                 root = p;
             else
                 prev->fts_link = p;
@@ -252,7 +256,6 @@ int fts_close(FTS* sp) {
             p = p->fts_link ? p->fts_link : p->fts_parent;
             free(freep);
         }
-
         free(p);
     }
 
@@ -263,7 +266,6 @@ int fts_close(FTS* sp) {
 
     free(sp->fts_array);
     free(sp->fts_path);
-
     free(sp);
 
     if (rfd != -1) {
@@ -274,7 +276,6 @@ int fts_close(FTS* sp) {
         close(rfd);
         errno = saved_errno;
     }
-
     return error;
 }
 
@@ -298,6 +299,7 @@ FTSENT* fts_read(FTS* sp) {
 
     if (instr == FTS_FOLLOW && (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
         p->fts_info = fts_stat(sp, p, 1, -1);
+
         if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
             p->fts_symfd = open(".", O_RDONLY | O_CLOEXEC);
             if (p->fts_symfd == -1) {
@@ -341,6 +343,7 @@ FTSENT* fts_read(FTS* sp) {
             if (fts_safe_changedir(sp, p, -1, p->fts_accpath)) {
                 p->fts_errno = errno;
                 p->fts_flags |= FTS_DONTCHDIR;
+
                 for (FTSENT* xx = sp->fts_child; xx; xx = xx->fts_link)
                     xx->fts_accpath = xx->fts_parent->fts_accpath;
             }
@@ -354,18 +357,17 @@ FTSENT* fts_read(FTS* sp) {
 next:
     tmp = p;
     p = p->fts_link;
-    if (p) {
-        free(tmp);
+    free(tmp);
 
+    if (p) {
         if (p->fts_level == FTS_ROOTLEVEL) {
-            if (!(ISSET(FTS_NOCHDIR)) && fchdir(sp->fts_rfd)) {
+            if (!ISSET(FTS_NOCHDIR) && fchdir(sp->fts_rfd)) {
                 SET(FTS_STOP);
                 return NULL;
             }
             fts_load(sp, p);
             return (sp->fts_cur = p);
         }
-
         if (p->fts_instr == FTS_SKIP)
             goto next;
         if (p->fts_instr == FTS_FOLLOW) {
@@ -390,15 +392,17 @@ next:
     }
 
     p = tmp->fts_parent;
-    free(tmp);
+    if (!p) {
+        errno = EFAULT;
+        return NULL;
+    }
+    sp->fts_path[p->fts_pathlen] = '\0';
 
     if (p->fts_level == FTS_ROOTPARENTLEVEL) {
         free(p);
         errno = 0;
         return (sp->fts_cur = NULL);
     }
-
-    sp->fts_path[p->fts_pathlen] = '\0';
 
     if (p->fts_level == FTS_ROOTLEVEL) {
         if (!ISSET(FTS_NOCHDIR) && fchdir(sp->fts_rfd)) {
@@ -457,15 +461,14 @@ FTSENT* fts_children(FTS* sp, int instr) {
     if (sp->fts_child)
         fts_lfree(sp->fts_child);
 
-    if (instr == FTS_NAMEONLY) {
+    if (instr == FTS_NAMEONLY)
         SET(FTS_NAMEONLY);
-    }
 
     if ((p->fts_level == FTS_ROOTLEVEL) && p->fts_accpath[0] != '/' && !ISSET(FTS_NOCHDIR)) {
         fd = open(".", O_RDONLY | O_CLOEXEC);
         if (fd == -1)
             return NULL;
-        sp->fts_child = fts_build(sp, instr == FTS_NAMEONLY ? BNAMES : BCHILD);
+        sp->fts_child = fts_build(sp, (instr == FTS_NAMEONLY ? BNAMES : BCHILD));
         if (fchdir(fd)) {
             close(fd);
             return NULL;
@@ -474,7 +477,7 @@ FTSENT* fts_children(FTS* sp, int instr) {
         return sp->fts_child;
     }
 
-    sp->fts_child = fts_build(sp, instr == FTS_NAMEONLY ? BNAMES : BCHILD);
+    sp->fts_child = fts_build(sp, (instr == FTS_NAMEONLY ? BNAMES : BCHILD));
     return sp->fts_child;
 }
 
@@ -484,18 +487,43 @@ static FTSENT* fts_build(FTS* sp, int type) {
     FTSENT *p, *head, *tail, *cur;
     size_t len, maxlen;
     int nitems = 0;
-    int cderrno = 0, descend = 0, level;
-    int nlinks, nostat;
+    int cderrno = 0, descend = 0;
+    int level, nlinks, nostat;
     int saved_errno;
     char* cp;
 
     cur = sp->fts_cur;
-    dirp = opendir(cur->fts_accpath);
-    if (!dirp) {
+
+    if (cur->fts_level >= SHRT_MAX) {
+        errno = ENAMETOOLONG;
+        cur->fts_info = FTS_ERR;
+        SET(FTS_STOP);
+        return NULL;
+    }
+
+    int open_flags = O_RDONLY | O_DIRECTORY | O_CLOEXEC;
+
+    if (ISSET(FTS_PHYSICAL))
+        open_flags |= O_NOFOLLOW;
+
+    int fd = open(cur->fts_accpath, open_flags);
+    if (fd == -1) {
         if (type == BREAD) {
             cur->fts_info = FTS_DNR;
             cur->fts_errno = errno;
         }
+        return NULL;
+    }
+
+    dirp = fdopendir(fd);
+    if (!dirp) {
+        saved_errno = errno;
+        close(fd);
+        if (type == BREAD) {
+            cur->fts_info = FTS_DNR;
+            cur->fts_errno = saved_errno;
+        }
+        errno = saved_errno;
         return NULL;
     }
 
@@ -518,17 +546,17 @@ static FTSENT* fts_build(FTS* sp, int type) {
             cderrno = 0;
             cur->fts_flags |= FTS_DONTCHDIR;
         }
-        else if (fts_safe_changedir(sp, cur, dirfd(dirp), NULL)) {
-            if (nlinks && type == BREAD)
-                cur->fts_errno = errno;
-            cur->fts_flags |= FTS_DONTCHDIR;
-            descend = 0;
-            cderrno = errno;
-            closedir(dirp);
-            dirp = NULL;
-        }
         else {
-            descend = 1;
+            if (fts_safe_changedir(sp, cur, dirfd(dirp), NULL)) {
+                if (nlinks && type == BREAD)
+                    cur->fts_errno = errno;
+                cur->fts_flags |= FTS_DONTCHDIR;
+                descend = 0;
+                cderrno = errno;
+            }
+            else {
+                descend = 1;
+            }
         }
     }
     else {
@@ -547,108 +575,114 @@ static FTSENT* fts_build(FTS* sp, int type) {
     if (level < FTS_MAXLEVEL)
         level++;
 
-    int doadjust = 0;
     head = tail = NULL;
 
-    if (dirp) {
-        while ((dp = readdir(dirp))) {
-            if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
-                continue;
+    errno = 0;
+    while ((dp = readdir(dirp))) {
+        if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
+            continue;
 
-            size_t d_namlen = strlen(dp->d_name);
+        size_t d_namlen = strlen(dp->d_name);
+        p = fts_alloc(sp, dp->d_name, d_namlen);
+        if (!p) {
+        mem1:
+            saved_errno = errno;
+            free(p);
+            fts_lfree(head);
+            closedir(dirp);
+            cur->fts_info = FTS_ERR;
+            SET(FTS_STOP);
+            errno = saved_errno;
+            return NULL;
+        }
 
-            p = fts_alloc(sp, dp->d_name, d_namlen);
-            if (!p) {
-            mem1:
-                saved_errno = errno;
-                free(p);
-                fts_lfree(head);
-                closedir(dirp);
-                cur->fts_info = FTS_ERR;
-                SET(FTS_STOP);
-                errno = saved_errno;
-                return NULL;
+        if (d_namlen >= maxlen) {
+            void* oldaddr = sp->fts_path;
+            if (fts_palloc(sp, d_namlen + len + 1))
+                goto mem1;
+            if (oldaddr != sp->fts_path) {
+                fts_padjust(sp, head);
+                if (ISSET(FTS_NOCHDIR))
+                    cp = sp->fts_path + (len - 1);
             }
+            maxlen = sp->fts_pathlen - len;
+        }
 
-            if (d_namlen >= maxlen) {
-                void* oldaddr = sp->fts_path;
-                if (fts_palloc(sp, d_namlen + len + 1))
-                    goto mem1;
+        p->fts_level = level;
+        p->fts_parent = cur;
+        p->fts_pathlen = len + d_namlen;
+        if (p->fts_pathlen < len) {
+            free(p);
+            fts_lfree(head);
+            closedir(dirp);
+            cur->fts_info = FTS_ERR;
+            SET(FTS_STOP);
+            errno = ENAMETOOLONG;
+            return NULL;
+        }
 
-                if (oldaddr != sp->fts_path) {
-                    doadjust = 1;
-                    if (ISSET(FTS_NOCHDIR))
-                        cp = sp->fts_path + (len - 1);
-                }
-                maxlen = sp->fts_pathlen - len;
-            }
-
-            p->fts_level = level;
-            p->fts_parent = cur;
-            p->fts_pathlen = len + d_namlen;
-            if (p->fts_pathlen < len) {
-                free(p);
-                fts_lfree(head);
-                closedir(dirp);
-                cur->fts_info = FTS_ERR;
-                SET(FTS_STOP);
-                errno = ENAMETOOLONG;
-                return NULL;
-            }
-
-            if (cderrno) {
-                if (nlinks)
-                    p->fts_info = FTS_NS;
-                else
-                    p->fts_info = FTS_NSOK;
-                p->fts_errno = cderrno;
-                p->fts_accpath = cur->fts_accpath;
-            }
-            else if (nlinks == 0
+        if (cderrno) {
+            if (nlinks)
+                p->fts_info = FTS_NS;
+            else
+                p->fts_info = FTS_NSOK;
+            p->fts_errno = cderrno;
+            p->fts_accpath = cur->fts_accpath;
+        }
+        else if (nlinks == 0
 #ifdef DT_DIR
 
-                     || (nostat && dp->d_type != DT_DIR && dp->d_type != DT_UNKNOWN)
+                 || (nostat && dp->d_type != DT_DIR && dp->d_type != DT_UNKNOWN)
 #endif
-            ) {
-                p->fts_info = FTS_NSOK;
-                p->fts_accpath = (ISSET(FTS_NOCHDIR) ? p->fts_path : p->fts_name);
-            }
-            else {
-                if (ISSET(FTS_NOCHDIR)) {
-                    p->fts_accpath = p->fts_path;
-                    memcpy(cp, p->fts_name, p->fts_namelen + 1);
-                    p->fts_info = fts_stat(sp, p, 0, dirfd(dirp));
-                }
-                else {
-                    p->fts_accpath = p->fts_name;
-                    p->fts_info = fts_stat(sp, p, 0, -1);
-                }
-                if (nlinks > 0 && (p->fts_info == FTS_D || p->fts_info == FTS_DC || p->fts_info == FTS_DOT))
-                    --nlinks;
-            }
-
-            p->fts_link = NULL;
-            if (!head) {
-                head = tail = p;
-            }
-            else {
-                tail->fts_link = p;
-                tail = p;
-            }
-            nitems++;
+        ) {
+            p->fts_info = FTS_NSOK;
+            p->fts_accpath = (ISSET(FTS_NOCHDIR) ? p->fts_path : p->fts_name);
         }
+        else {
+            if (ISSET(FTS_NOCHDIR)) {
+                p->fts_accpath = p->fts_path;
+                memcpy(cp, p->fts_name, p->fts_namelen + 1);
+                p->fts_info = fts_stat(sp, p, 0, dirfd(dirp));
+            }
+            else {
+                p->fts_accpath = p->fts_name;
+                p->fts_info = fts_stat(sp, p, 0, -1);
+            }
+            if (nlinks > 0 && (p->fts_info == FTS_D || p->fts_info == FTS_DC || p->fts_info == FTS_DOT)) {
+                --nlinks;
+            }
+        }
+
+        p->fts_link = NULL;
+        if (!head) {
+            head = tail = p;
+        }
+        else {
+            tail->fts_link = p;
+            tail = p;
+        }
+        nitems++;
+    }
+
+    if (errno != 0) {
+        saved_errno = errno;
+        fts_lfree(head);
         closedir(dirp);
+        cur->fts_info = FTS_ERR;
+        SET(FTS_STOP);
+        errno = saved_errno;
+        return NULL;
+    }
+    closedir(dirp);
+
+    if (!nitems) {
+        if (type == BREAD)
+            cur->fts_info = FTS_DP;
+        return NULL;
     }
 
-    if (doadjust)
-        fts_padjust(sp, head);
-
-    if (ISSET(FTS_NOCHDIR)) {
-        if (nitems == 0) {
-            cp = sp->fts_path + (len - 1);
-        }
-        *cp = '\0';
-    }
+    if (sp->fts_compar && nitems > 1)
+        head = fts_sort(sp, head, nitems);
 
     if (descend && ((type == BCHILD) || (nitems == 0))) {
         if (cur->fts_level == FTS_ROOTLEVEL) {
@@ -665,20 +699,11 @@ static FTSENT* fts_build(FTS* sp, int type) {
         }
     }
 
-    if (!nitems) {
-        if (type == BREAD)
-            cur->fts_info = FTS_DP;
-        return NULL;
-    }
-
-    if (sp->fts_compar && nitems > 1)
-        head = fts_sort(sp, head, nitems);
-
     return head;
 }
 
 static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
-    struct stat *sbp, sb;
+    struct stat sb, *sbp;
     int saved_errno;
     const char* path;
 
@@ -689,12 +714,12 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
     else {
         path = p->fts_name;
     }
-
     sbp = (ISSET(FTS_NOSTAT)) ? &sb : p->fts_statp;
 
     if (ISSET(FTS_LOGICAL) || follow) {
         if (fstatat(dfd, path, sbp, 0)) {
             saved_errno = errno;
+
             if (!fstatat(dfd, path, sbp, AT_SYMLINK_NOFOLLOW)) {
                 errno = 0;
                 return FTS_SLNONE;
@@ -738,9 +763,7 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
 
 static FTSENT* fts_sort(FTS* sp, FTSENT* head, int nitems) {
     if (nitems > sp->fts_nitems) {
-        FTSENT** a;
-
-        a = safe_recallocarray(sp->fts_array, sp->fts_nitems, nitems + 40, sizeof(FTSENT*));
+        FTSENT** a = safe_recallocarray(sp->fts_array, sp->fts_nitems, nitems + 40, sizeof(FTSENT*));
         if (!a) {
             free(sp->fts_array);
             sp->fts_array = NULL;
@@ -750,7 +773,6 @@ static FTSENT* fts_sort(FTS* sp, FTSENT* head, int nitems) {
         sp->fts_nitems = nitems + 40;
         sp->fts_array = a;
     }
-
     FTSENT** ap = sp->fts_array;
     for (FTSENT* p = head; p; p = p->fts_link)
         *ap++ = p;
@@ -769,9 +791,8 @@ static FTSENT* fts_sort(FTS* sp, FTSENT* head, int nitems) {
 static FTSENT* fts_alloc(FTS* sp, const char* name, size_t namelen) {
     size_t len = sizeof(FTSENT) + namelen + 1;
 
-    if (!ISSET(FTS_NOSTAT)) {
+    if (!ISSET(FTS_NOSTAT))
         len += sizeof(struct stat) + ALIGNBYTES;
-    }
 
     FTSENT* p = calloc(1, len);
     if (!p)
@@ -786,9 +807,9 @@ static FTSENT* fts_alloc(FTS* sp, const char* name, size_t namelen) {
         base = ALIGN(base);
         p->fts_statp = (struct stat*)base;
     }
-
     memcpy(p->fts_name, name, namelen);
     p->fts_name[namelen] = '\0';
+
     return p;
 }
 
@@ -809,7 +830,6 @@ static int fts_palloc(FTS* sp, size_t more) {
         errno = ENAMETOOLONG;
         return 1;
     }
-
     void* r = safe_recallocarray(sp->fts_path, sp->fts_pathlen, need, 1);
     if (!r) {
         free(sp->fts_path);
@@ -823,7 +843,6 @@ static int fts_palloc(FTS* sp, size_t more) {
 
 static void fts_padjust(FTS* sp, FTSENT* head) {
     char* addr = sp->fts_path;
-
 #define ADJUST(e)                                                      \
     do {                                                               \
         if ((e)->fts_accpath != (e)->fts_name) {                       \
@@ -862,7 +881,8 @@ static int fts_safe_changedir(FTS* sp, FTSENT* p, int fd, const char* path) {
 
     int newfd = fd;
     if (fd == -1) {
-        newfd = open(path, O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+        int open_flags = O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOFOLLOW;
+        newfd = open(path ? path : p->fts_accpath, open_flags);
         if (newfd == -1)
             return -1;
     }
@@ -875,6 +895,7 @@ static int fts_safe_changedir(FTS* sp, FTSENT* p, int fd, const char* path) {
         errno = oerrno;
         return -1;
     }
+
     if (p->fts_dev != sb.st_dev || p->fts_ino != sb.st_ino) {
         errno = ENOENT;
         if (fd == -1)
@@ -891,18 +912,15 @@ static int fts_safe_changedir(FTS* sp, FTSENT* p, int fd, const char* path) {
 }
 
 static void fts_load(FTS* sp, FTSENT* p) {
-    size_t len;
-    char* cp;
-
-    len = p->fts_pathlen = p->fts_namelen;
+    size_t len = p->fts_pathlen = p->fts_namelen;
     memmove(sp->fts_path, p->fts_name, len + 1);
 
+    char* cp;
     if ((cp = strrchr(p->fts_name, '/')) && (cp != p->fts_name || cp[1])) {
         len = strlen(++cp);
         memmove(p->fts_name, cp, len + 1);
         p->fts_namelen = len;
     }
-
     p->fts_accpath = p->fts_path = sp->fts_path;
     sp->fts_dev = p->fts_dev;
 }
