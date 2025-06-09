@@ -105,7 +105,7 @@ extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attrib
 extern size_t obstack_calculate_object_size(struct obstack* ob);
 
 #ifndef obstack_chunk_alloc
-#define obstack_chunk_alloc malloc
+#define obstack_chunk_alloc xmalloc
 #endif
 #ifndef obstack_chunk_free
 #define obstack_chunk_free free
