@@ -30,6 +30,21 @@ void (*obstack_alloc_failed_handler)(void) = obstack_default_alloc_failed;
     (sizeof(ptrdiff_t) < sizeof(void*) ? __BPTR_ALIGN(B, P, A) : (char*)(((ptrdiff_t)(P) + (A)) & ~(A)))
 #endif
 
+void xmalloc_failed(size_t size) {
+    fprintf(stderr, "\nout of memory allocating %lu bytes\n", (unsigned long)size);
+    exit(1);
+}
+
+void* xmalloc(size_t size) {
+    void* newmem;
+    if (size == 0)
+        size = 1;
+    newmem = malloc(size);
+    if (!newmem)
+        xmalloc_failed(size);
+    return (newmem);
+}
+
 static void* call_chunkfun(struct obstack* h, size_t size) {
     if (h->use_extra_arg) {
         return h->chunkfun.extra(h->extra_arg, size);
