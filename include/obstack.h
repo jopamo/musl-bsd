@@ -104,6 +104,11 @@ extern int obstack_exit_failure;
 extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attribute__((format(printf, 2, 3)));
 extern size_t obstack_calculate_object_size(struct obstack* ob);
 
+extern void* xmalloc(size_t size);
+extern void xmalloc_failed(size_t size);
+
+extern const char* name;
+
 #ifndef obstack_chunk_alloc
 #define obstack_chunk_alloc xmalloc
 #endif
