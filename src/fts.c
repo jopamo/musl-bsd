@@ -523,7 +523,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     cur = sp->fts_cur;
 
     /* Protect against runaway depth                                    */
-    if (cur->fts_level >= FTS_MAXLEVEL) {
+    if ((int)cur->fts_level >= FTS_MAXLEVEL) {
         errno = ENAMETOOLONG;
         cur->fts_info = FTS_ERR;
         SET(FTS_STOP);
@@ -532,24 +532,24 @@ static FTSENT* fts_build(FTS* sp, int type) {
 
     /* Open directory with best‑effort O_NOFOLLOW                       */
     int open_flags = O_RDONLY | O_DIRECTORY | O_CLOEXEC;
-#ifdef O_NOFOLLOW
+#if O_NOFOLLOW
     if (ISSET(FTS_PHYSICAL))
         open_flags |= O_NOFOLLOW;
 #endif
     int fd = open(cur->fts_accpath, open_flags);
     if (fd == -1) {
-        cur->fts_info = (type == BREAD) ? FTS_DNR : FTS_ERR;
+        cur->fts_info  = (type == BREAD) ? FTS_DNR : FTS_ERR;
         cur->fts_errno = errno;
         return NULL;
     }
 
     dirp = fdopendir(fd);
     if (!dirp) {
-        saved_errno = errno;
+        saved_errno    = errno;
         close(fd);
-        cur->fts_info = FTS_ERR; /* always mark error             */
+        cur->fts_info  = FTS_ERR;
         cur->fts_errno = saved_errno;
-        errno = saved_errno;
+        errno          = saved_errno;
         return NULL;
     }
 
@@ -725,8 +725,8 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
     int saved_errno;
 
     /* Guard against pathological depth                                     */
-    if (p->fts_level >= FTS_MAXLEVEL) {
-        errno = ERANGE;
+    if ((int)p->fts_level >= FTS_MAXLEVEL) {
+        errno        = ERANGE;
         p->fts_errno = ERANGE;
         return FTS_ERR;
     }
