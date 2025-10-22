@@ -297,10 +297,13 @@ static int build_many(const char* root, const char* sub, int n) {
     snprintf(dir, sizeof(dir), "%s/%s", root, sub);
     if (ensure_dir(dir, 0755) == -1) return -1;
 
-    /* names with fixed width so lexicographic order is well defined */
-    int width = 1;
-    for (int x = n; x >= 10; x /= 10) width++;
     char name[64];
+    /* names with fixed width so lexicographic order is well defined */
+    int width = (n > 0) ? (int)snprintf(NULL, 0, "%d", n - 1) : 1;
+    if (width < 1)
+        width = 1;
+    if (width >= (int)sizeof(name))
+        width = (int)sizeof(name) - 1;
     for (int i = 0; i < n; i++) {
         snprintf(name, sizeof(name), "%0*d", width, i);
         char* p = join2(dir, name);
