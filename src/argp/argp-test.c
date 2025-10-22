@@ -32,20 +32,21 @@
 
 const char* argp_program_version = "argp-test 1.0";
 
-struct argp_option sub_options[] = {{"subopt1", 's', 0, 0, "Nested option 1"},
-                                    {"subopt2", 'S', 0, 0, "Nested option 2"},
+struct argp_option sub_options[] = {{"subopt1", 's', 0, 0, "Nested option 1", 0},
+                                    {"subopt2", 'S', 0, 0, "Nested option 2", 0},
 
                                     {0, 0, 0, 0, "Some more nested options:", 10},
-                                    {"subopt3", 'p', 0, 0, "Nested option 3"},
+                                    {"subopt3", 'p', 0, 0, "Nested option 3", 10},
 
                                     {"subopt4", 'q', 0, 0, "Nested option 4", 1},
 
-                                    {0}};
+                                    {0, 0, 0, 0, 0, 0}};
 
 static const char sub_args_doc[] = "STRING...\n-";
 static const char sub_doc[] = "\vThis is the doc string from the sub-arg-parser.";
 
 static error_t sub_parse_opt(int key, char* arg, struct argp_state* state) {
+    (void)state;
     switch (key) {
         case ARGP_KEY_NO_ARGS:
             printf("NO SUB ARGS\n");
@@ -68,6 +69,7 @@ static error_t sub_parse_opt(int key, char* arg, struct argp_state* state) {
 }
 
 static char* sub_help_filter(int key, const char* text, void* input) {
+    (void)input;
     if (key == ARGP_KEY_HELP_EXTRA)
         return strdup(
             "This is some extra text from the sub parser (note that it \
@@ -76,7 +78,7 @@ is preceded by a blank line).");
         return (char*)text;
 }
 
-static struct argp sub_argp = {sub_options, sub_parse_opt, sub_args_doc, sub_doc, 0, sub_help_filter};
+static struct argp sub_argp = {sub_options, sub_parse_opt, sub_args_doc, sub_doc, 0, sub_help_filter, 0};
 
 /* Structure used to communicate with the parsing functions.  */
 struct params {
@@ -87,27 +89,29 @@ struct params {
 #define OPT_PGRP 1
 #define OPT_SESS 2
 
-struct argp_option options[] = {{"pid", 'p', "PID", 0, "List the process PID"},
-                                {"pgrp", OPT_PGRP, "PGRP", 0, "List processes in the process group PGRP"},
-                                {"no-parent", 'P', 0, 0, "Include processes without parents"},
-                                {0, 'x', 0, OPTION_ALIAS},
+struct argp_option options[] = {{"pid", 'p', "PID", 0, "List the process PID", 0},
+                                {"pgrp", OPT_PGRP, "PGRP", 0, "List processes in the process group PGRP", 0},
+                                {"no-parent", 'P', 0, 0, "Include processes without parents", 0},
+                                {0, 'x', 0, OPTION_ALIAS, 0, 0},
                                 {"all-fields", 'Q', 0, 0,
                                  "Don't elide unusable fields (normally"
                                  " if there's some reason ps can't"
                                  " print a field for any process, it's"
-                                 " removed from the output entirely)"},
-                                {"reverse", 'r', 0, 0, "Reverse the order of any sort"},
-                                {"gratuitously-long-reverse-option", 0, 0, OPTION_ALIAS},
+                                 " removed from the output entirely)",
+                                 0},
+                                {"reverse", 'r', 0, 0, "Reverse the order of any sort", 0},
+                                {"gratuitously-long-reverse-option", 0, 0, OPTION_ALIAS, 0, 0},
                                 {"session", OPT_SESS, "SID", OPTION_ARG_OPTIONAL,
                                  "Add the processes from the session"
                                  " SID (which defaults to the sid of"
-                                 " the current process)"},
+                                 " the current process)",
+                                 0},
 
-                                {0, 0, 0, 0, "Here are some more options:"},
-                                {"foonly", 'f', "ZOT", OPTION_ARG_OPTIONAL, "Glork a foonly"},
-                                {"zaza", 'z', 0, 0, "Snit a zar"},
+                                {0, 0, 0, 0, "Here are some more options:", 0},
+                                {"foonly", 'f', "ZOT", OPTION_ARG_OPTIONAL, "Glork a foonly", 0},
+                                {"zaza", 'z', 0, 0, "Snit a zar", 0},
 
-                                {0}};
+                                {0, 0, 0, 0, 0, 0}};
 
 static const char args_doc[] = "STRING";
 static const char doc[] =
@@ -184,8 +188,8 @@ static char* help_filter(int key, const char* text, void* input) {
     return new_text;
 }
 
-static struct argp_child argp_children[] = {{&sub_argp}, {0}};
-static struct argp argp = {options, parse_opt, args_doc, doc, argp_children, help_filter};
+static struct argp_child argp_children[] = {{&sub_argp, 0, 0, 0}, {0, 0, 0, 0}};
+static struct argp argp = {options, parse_opt, args_doc, doc, argp_children, help_filter, 0};
 
 int main(int argc, char** argv) {
     struct params params;
