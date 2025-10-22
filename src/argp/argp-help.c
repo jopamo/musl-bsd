@@ -76,8 +76,11 @@ char* strchrnul(const char* s, int c);
 #endif /* !_LIBC */
 
 /* can't use macro due to double evaluation */
-static char* dgettext_safe(const char* d, const char* m) {
-    return m ? dgettext(d, m) : NULL;
+static const char* dgettext_safe(const char* d, const char* m) {
+    if (!m)
+        return NULL;
+    (void)d; /* avoid unused warnings when dgettext() is a stub */
+    return dgettext(d, m);
 }
 
 #include "argp.h"
@@ -552,6 +555,9 @@ static inline int until_short(const struct argp_option* opt,
                               const struct argp_option* real,
                               const char* domain,
                               void* cookie) {
+    (void)real;
+    (void)domain;
+    (void)cookie;
     return oshort(opt) ? opt->key : 0;
 }
 
@@ -852,10 +858,11 @@ static void arg(const struct argp_option* real,
                 const char* domain,
                 argp_fmtstream_t stream) {
     if (real->arg) {
+        const char* translated = dgettext_safe(domain, real->arg);
         if (real->flags & OPTION_ARG_OPTIONAL)
-            __argp_fmtstream_printf(stream, opt_fmt, dgettext(domain, real->arg));
+            __argp_fmtstream_printf(stream, opt_fmt, translated);
         else
-            __argp_fmtstream_printf(stream, req_fmt, dgettext(domain, real->arg));
+            __argp_fmtstream_printf(stream, req_fmt, translated);
     }
 }
 
@@ -1111,6 +1118,7 @@ static int add_argless_short_opt(const struct argp_option* opt,
                                  const char* domain,
                                  void* cookie) {
     char** snao_end = cookie;
+    (void)domain;
     if (!(opt->arg || real->arg) && !((opt->flags | real->flags) & OPTION_NO_USAGE))
         *(*snao_end)++ = opt->key;
     return 0;
@@ -1130,7 +1138,7 @@ static int usage_argful_short_opt(const struct argp_option* opt,
         arg = real->arg;
 
     if (arg && !(flags & OPTION_NO_USAGE)) {
-        arg = dgettext(domain, arg);
+        arg = dgettext_safe(domain, arg);
 
         if (flags & OPTION_ARG_OPTIONAL)
             __argp_fmtstream_printf(stream, " [-%c[%s]]", opt->key, arg);
@@ -1160,7 +1168,7 @@ static int usage_long_opt(const struct argp_option* opt,
 
     if (!(flags & OPTION_NO_USAGE)) {
         if (arg) {
-            arg = dgettext(domain, arg);
+            arg = dgettext_safe(domain, arg);
             if (flags & OPTION_ARG_OPTIONAL)
                 __argp_fmtstream_printf(stream, " [--%s[=%s]]", opt->name, arg);
             else
@@ -1527,13 +1535,8 @@ char* __argp_short_program_name(const struct argp_state* state) {
 #elif HAVE_DECL_PROGRAM_INVOCATION_NAME
     return __argp_basename(program_invocation_name);
 #else /* !HAVE_DECL_PROGRAM_INVOCATION_NAME */
-    /* FIXME: What now? Miles suggests that it is better to use NULL,
-       but currently the value is passed on directly to fputs_unlocked,
-       so that requires more changes. */
-#if __GNUC__
-#warning No reasonable value to return
-    return "";
-#endif /* __GNUC__ */
+    static char empty[] = "";
+    return empty;
 #endif /* !HAVE_DECL_PROGRAM_INVOCATION_NAME */
 }
 
@@ -1562,7 +1565,8 @@ weak_alias(__argp_state_help, argp_state_help)
     /* If appropriate, print the printf string FMT and following args, preceded
        by the program name and `:', to stderr, and followed by a `Try ... --help'
        message, then exit (1).  */
-    void __argp_error_internal(const struct argp_state* state, const char* fmt, va_list ap, unsigned int mode_flags) {
+void __argp_error_internal(const struct argp_state* state, const char* fmt, va_list ap, unsigned int mode_flags) {
+    (void)mode_flags;
     if (!state || !(state->flags & ARGP_NO_ERRS)) {
         FILE* stream = state ? state->err_stream : stderr;
 
@@ -1617,12 +1621,13 @@ weak_alias(__argp_error, argp_error)
        difference between this function and argp_error is that the latter is for
        *parsing errors*, and the former is for other problems that occur during
        parsing but don't reflect a (syntactic) problem with the input.  */
-    void __argp_failure_internal(const struct argp_state* state,
-                                 int status,
-                                 int errnum,
-                                 const char* fmt,
-                                 va_list ap,
-                                 unsigned int mode_flags) {
+void __argp_failure_internal(const struct argp_state* state,
+                             int status,
+                             int errnum,
+                             const char* fmt,
+                             va_list ap,
+                             unsigned int mode_flags) {
+    (void)mode_flags;
     if (!state || !(state->flags & ARGP_NO_ERRS)) {
         FILE* stream = state ? state->err_stream : stderr;
 
@@ -1657,9 +1662,9 @@ weak_alias(__argp_error, argp_error)
             }
 
             if (errnum) {
+#if 0
                 char buf[200];
 
-#if 0
 	      __fxprintf (stream, ": %s",
 			  __strerror_r (errnum, buf, sizeof (buf)));
 #else
