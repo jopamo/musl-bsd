@@ -39,6 +39,9 @@ static void extra_free(void* arg, void* p) {
     free(p);
 }
 
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((unused))
+#endif
 static void fill_pattern(char* p, size_t n, unsigned seed) {
     for (size_t i = 0; i < n; i++)
         p[i] = (char)('A' + ((i + seed) % 26));
