@@ -3,7 +3,9 @@
 # undef _GNU_SOURCE
 #endif
 
+#if !defined(HAVE_CONFIG_H)
 #mesondefine HAVE_CONFIG_H
+#endif
 
 #mesondefine HAVE_UNISTD_H
 #mesondefine HAVE_ALLOCA_H
