@@ -27,7 +27,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#elif !defined(_WIN32)
 #include <unistd.h>
 #endif
 

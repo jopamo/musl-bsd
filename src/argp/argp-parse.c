@@ -50,6 +50,8 @@ char* alloca();
 #include <string.h>
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
+#elif !defined(_WIN32)
+#include <unistd.h>
 #endif
 #include <limits.h>
 #include <assert.h>
@@ -156,7 +158,8 @@ static const struct argp argp_default_argp = {
 static const struct argp_option argp_version_options[] = {{"version", 'V', 0, 0, N_("Print program version"), -1},
                                                           {0, 0, 0, 0, 0, 0}};
 
-static error_t argp_version_parser(int key, char* arg UNUSED, struct argp_state* state) {
+static error_t argp_version_parser(int key, char* arg, struct argp_state* state) {
+    (void)arg;
     switch (key) {
         case 'V':
             if (argp_program_version_hook)
