@@ -523,7 +523,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     cur = sp->fts_cur;
 
     /* Protect against runaway depth                                    */
-    if ((int)cur->fts_level >= FTS_MAXLEVEL) {
+    if (cur->fts_level >= SHRT_MAX) {
         errno = ENAMETOOLONG;
         cur->fts_info = FTS_ERR;
         SET(FTS_STOP);
@@ -560,12 +560,18 @@ static FTSENT* fts_build(FTS* sp, int type) {
     }
     else if (ISSET(FTS_NOSTAT) && ISSET(FTS_PHYSICAL)) {
         nlinks = (int)cur->fts_nlink - (ISSET(FTS_SEEDOT) ? 0 : 2);
+        if (nlinks < 0)
+            nlinks = 0;
         nostat = 1;
     }
     else {
         nlinks = -1;
         nostat = 0;
     }
+
+#ifndef DT_DIR
+    (void)nostat;
+#endif
 
     /* Try changing into directory if we intend to descend              */
     if ((nlinks != 0) || (type == BREAD)) {
@@ -590,7 +596,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     len++; /* account for separator          */
     maxlen = sp->fts_pathlen - len;
 
-    level = (cur->fts_level < FTS_MAXLEVEL) ? cur->fts_level + 1 : FTS_MAXLEVEL;
+    level = (cur->fts_level < SHRT_MAX) ? (int)cur->fts_level + 1 : SHRT_MAX;
 
     /* Main readdir loop                                                */
     errno = 0;
@@ -725,7 +731,7 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
     int saved_errno;
 
     /* Guard against pathological depth                                     */
-    if ((int)p->fts_level >= FTS_MAXLEVEL) {
+    if (p->fts_level >= SHRT_MAX) {
         errno        = ERANGE;
         p->fts_errno = ERANGE;
         return FTS_ERR;
