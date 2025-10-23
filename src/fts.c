@@ -80,6 +80,7 @@ typedef struct _ftsent {
 typedef struct _fts {
     FTSENT* fts_cur;
     FTSENT* fts_child;
+    FTSENT* fts_parent;
     FTSENT** fts_array;
     int fts_nitems;
     char* fts_path;
@@ -177,6 +178,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
 
     sp->fts_compar = compar;
     sp->fts_options = options;
+    sp->fts_parent = NULL;
 
     if (ISSET(FTS_LOGICAL)) /* POSIX: logical == implicit NOCHDIR */
         SET(FTS_NOCHDIR);
@@ -199,6 +201,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
         free(sp);
         return NULL;
     }
+    sp->fts_parent = parent;
     parent->fts_level = FTS_ROOTPARENTLEVEL;
 
     /* Build singly‑linked list of root paths                               */
@@ -248,8 +251,10 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
     if (!ISSET(FTS_NOCHDIR) && (sp->fts_rfd = open(".", O_RDONLY | O_CLOEXEC)) == -1)
         SET(FTS_NOCHDIR);
 
-    if (nitems == 0)
+    if (nitems == 0) {
         free(parent);
+        sp->fts_parent = NULL;
+    }
     return sp;
 
 oom_roots:
@@ -271,6 +276,11 @@ int fts_close(FTS* sp) {
             free(p);
             p = next;
         }
+    }
+
+    if (sp->fts_parent) {
+        free(sp->fts_parent);
+        sp->fts_parent = NULL;
     }
 
     if (sp->fts_child)
@@ -427,6 +437,7 @@ next:
     /* root parent sentinel → traversal finished                          */
     if (p->fts_level == FTS_ROOTPARENTLEVEL) {
         free(p);
+        sp->fts_parent = NULL;
         errno = 0;
         return (sp->fts_cur = NULL);
     }
