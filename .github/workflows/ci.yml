@@ -17,10 +17,10 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          # Install Clang, Meson, and Ninja
-          sudo apt-get install -y clang meson ninja-build
+          # Install Clang, Meson, Ninja, and Valgrind for leak checking
+          sudo apt-get install -y clang meson ninja-build valgrind
 
-      - name: Configure build with Meson (Clang + ASan + UBSan)
+      - name: Configure build with Meson (Clang + sanitizers)
         run: |
           # We override the default compiler with CC=clang
           # Enable AddressSanitizer + UndefinedBehaviorSanitizer
@@ -35,5 +35,20 @@ jobs:
 
       - name: Test
         run: |
-          export ASAN_OPTIONS="detect_odr_violation=0"
           meson test -C builddir || (cat builddir/meson-logs/testlog.txt && false)
+
+      - name: Configure build for Valgrind run
+        run: |
+          meson setup build-valgrind \
+            --buildtype=debug \
+            -Db_sanitize=none
+
+      - name: Build (Valgrind)
+        run: meson compile -C build-valgrind
+
+      - name: Test under Valgrind
+        run: >
+          meson test -C build-valgrind
+          --wrap='valgrind --leak-check=full --show-leak-kinds=all
+          --errors-for-leak-kinds=all --error-exitcode=1'
+          || (cat build-valgrind/meson-logs/testlog.txt && false)
