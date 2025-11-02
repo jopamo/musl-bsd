@@ -56,8 +56,8 @@
 
 #include <stdlib.h>
 
-const char* argp_program_version = "argp-ex3 1.0";
-const char* argp_program_bug_address = "<bug-gnu-utils@gnu.org>";
+extern const char* argp_program_version;
+extern const char* argp_program_bug_address;
 
 /* Program documentation. */
 static char doc[] = "Argp example #3 -- a program with options and arguments using argp";
@@ -123,6 +123,9 @@ static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
 
 int main(int argc, char** argv) {
     struct arguments arguments;
+
+    argp_program_version = "argp-ex3 1.0";
+    argp_program_bug_address = "<bug-gnu-utils@gnu.org>";
 
     /* Default values. */
     arguments.silent = 0;

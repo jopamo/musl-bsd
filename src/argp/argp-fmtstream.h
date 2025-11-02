@@ -1,5 +1,5 @@
 /* Word-wrapping and line-truncating streams.
-   Copyright (C) 1997-2021 Free Software Foundation, Inc.
+   Copyright (C) 1997-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -30,16 +30,6 @@
 #include <sys/types.h>
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
-#elif !defined(_WIN32)
-#include <unistd.h>
-#endif
-
-#ifndef PRINTF_STYLE
-#if __GNUC__ >= 2
-#define PRINTF_STYLE(f, a) __attribute__((__format__(__printf__, f, a)))
-#else
-#define PRINTF_STYLE(f, a)
-#endif
 #endif
 
 #ifdef _WIN32
@@ -124,8 +114,10 @@ extern argp_fmtstream_t argp_make_fmtstream(FILE* __stream, size_t __lmargin, si
 extern void __argp_fmtstream_free(argp_fmtstream_t __fs);
 extern void argp_fmtstream_free(argp_fmtstream_t __fs);
 
-extern ssize_t __argp_fmtstream_printf(argp_fmtstream_t __fs, const char* __fmt, ...) PRINTF_STYLE(2, 3);
-extern ssize_t argp_fmtstream_printf(argp_fmtstream_t __fs, const char* __fmt, ...) PRINTF_STYLE(2, 3);
+extern ssize_t __argp_fmtstream_printf(argp_fmtstream_t __fs, const char* __fmt, ...)
+    __attribute__((__format__(__printf__, 2, 3)));
+extern ssize_t argp_fmtstream_printf(argp_fmtstream_t __fs, const char* __fmt, ...)
+    __attribute__((__format__(__printf__, 2, 3)));
 
 /* Access macros for various bits of state.  */
 #define argp_fmtstream_lmargin(__fs) ((__fs)->lmargin)

@@ -1,22 +1,21 @@
-/* Hierarchial argument parsing
-   Copyright (C) 1995, 96, 97, 98, 99, 2000,2003 Free Software Foundation, Inc.
+/* Hierarchical argument parsing, layered over getopt
+   Copyright (C) 1995-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
    The GNU C Library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Library General Public License as
-   published by the Free Software Foundation; either version 2 of the
-   License, or (at your option) any later version.
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 2.1 of the License, or (at your option) any later version.
 
    The GNU C Library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-   Library General Public License for more details.
+   Lesser General Public License for more details.
 
-   You should have received a copy of the GNU Library General Public
-   License along with the GNU C Library; see the file COPYING.LIB.  If not,
-   write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-   Boston, MA 02111-1307, USA.  */
+   You should have received a copy of the GNU Lesser General Public
+   License along with the GNU C Library; if not, see
+   <https://www.gnu.org/licenses/>.  */
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
@@ -43,14 +42,9 @@ char* alloca();
 #endif
 #endif
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
 #if defined(HAVE_UNISTD_H)
-#include <unistd.h>
-#elif !defined(_WIN32)
 #include <unistd.h>
 #endif
 #include <limits.h>
@@ -59,8 +53,12 @@ char* alloca();
 #ifndef _
 /* This is for other GNU distributions with internationalized messages.
    When compiling libc, the _ macro is predefined.  */
+#if defined HAVE_LIBINTL_H
+#include <libintl.h>
+#else
 #define dgettext(domain, msgid) (msgid)
 #define gettext(msgid) (msgid)
+#endif
 #endif
 #ifndef N_
 #define N_(msgid) (msgid)
@@ -90,7 +88,7 @@ char* alloca();
    for one second intervals, decrementing _ARGP_HANG until it's zero.  Thus
    you can force the program to continue by attaching a debugger and setting
    it to 0 yourself.  */
-volatile int _argp_hang;
+static volatile int _argp_hang;
 
 #define OPT_PROGNAME -2
 #define OPT_USAGE -3
@@ -134,17 +132,13 @@ static error_t argp_default_parser(int key, char* arg, struct argp_state* state)
 
             break;
 
-        case OPT_HANG:
-            _argp_hang = atoi(arg ? arg : "3600");
-            fprintf(state->err_stream, "%s: pid = %ld\n", state->name, (long)getpid());
-            while (_argp_hang-- > 0) {
-#ifndef _WIN32
-                __sleep(1);
-#else
-                Sleep(1000);
-#endif
-            }
+        case OPT_HANG: {
+            long secs = strtol(arg ? arg : "3600", NULL, 10);
+            _argp_hang = (int)secs;
+            while (_argp_hang-- > 0)
+                sleep(1);
             break;
+        }
 
         default:
             return EBADKEY;
@@ -231,6 +225,8 @@ struct parser {
        quote, or the end of the proper options, but may be cleared again
        if the user moves the next argument pointer backwards. */
     int args_only;
+    /* True when parser should emit diagnostic messages to err_stream. */
+    int print_errors;
 
     /* Describe how to deal with options that follow non-option ARGV-elements.
 
@@ -341,15 +337,36 @@ static enum match_result match_option(const char* arg, const char* name) {
     }
 }
 
-static const struct argp_option* find_long_option(struct parser* parser, const char* arg, struct group** p) {
+static const struct argp_option* option_base(const struct argp_option* first, const struct argp_option* opt) {
+    const struct argp_option* base = opt;
+    if (!(base->flags & OPTION_ALIAS))
+        return base;
+
+    while (base > first) {
+        base--;
+        if (__option_is_end(base))
+            continue;
+        if (!(base->flags & OPTION_ALIAS))
+            return base;
+    }
+    return opt;
+}
+
+static const struct argp_option* find_long_option(struct parser* parser, const char* arg, struct group** p, int* ambiguous) {
     struct group* group;
 
     /* Partial match found so far. */
     struct group* matched_group = NULL;
     const struct argp_option* matched_option = NULL;
+    const struct argp_option* matched_base = NULL;
 
     /* Number of partial matches. */
     int num_partial = 0;
+
+    if (p)
+        *p = NULL;
+    if (ambiguous)
+        *ambiguous = 0;
 
     for (group = parser->groups; group < parser->egroup; group++) {
         const struct argp_option* opts;
@@ -361,11 +378,17 @@ static const struct argp_option* find_long_option(struct parser* parser, const c
                 case MATCH_NO:
                     break;
                 case MATCH_PARTIAL:
-                    num_partial++;
-
-                    matched_group = group;
-                    matched_option = opts;
-
+                    if (!matched_option) {
+                        matched_group = group;
+                        matched_option = opts;
+                        matched_base = option_base(group->argp->options, opts);
+                        num_partial = 1;
+                    }
+                    else {
+                        const struct argp_option* base = option_base(group->argp->options, opts);
+                        if (base != matched_base)
+                            num_partial++;
+                    }
                     break;
                 case MATCH_EXACT:
                     /* Exact match. */
@@ -378,6 +401,8 @@ static const struct argp_option* find_long_option(struct parser* parser, const c
         *p = matched_group;
         return matched_option;
     }
+    if (ambiguous)
+        *ambiguous = num_partial > 1;
 
     return NULL;
 }
@@ -556,6 +581,7 @@ static error_t parser_init(struct parser* parser,
     parser->state.argc = argc;
     parser->state.argv = argv;
     parser->state.flags = flags;
+    parser->print_errors = (flags & ARGP_NO_ERRS) == 0;
     parser->state.err_stream = stderr;
     parser->state.out_stream = stdout;
     parser->state.pstate = parser;
@@ -596,7 +622,7 @@ static error_t parser_init(struct parser* parser,
         parser->state.next = 1;
     }
     else
-        parser->state.name = __argp_short_program_name(NULL);
+        parser->state.name = __argp_short_program_name();
 
     return 0;
 }
@@ -872,16 +898,17 @@ static error_t parser_parse_next(struct parser* parser, int* arg_ebadkey) {
 
         option = find_short_option(parser, c, &group);
         if (!option) {
-            if (parser->posixly_correct)
-                /* 1003.2 specifies the format of this message.  */
-                fprintf(parser->state.err_stream,
-                        dgettext(parser->state.root_argp->argp_domain, "%s: illegal option -- %c\n"),
-                        parser->state.name, c);
-            else
-                fprintf(parser->state.err_stream,
-                        dgettext(parser->state.root_argp->argp_domain, "%s: invalid option -- %c\n"),
-                        parser->state.name, c);
-
+            if (parser->print_errors && parser->state.err_stream) {
+                if (parser->posixly_correct)
+                    /* 1003.2 specifies the format of this message.  */
+                    fprintf(parser->state.err_stream,
+                            dgettext(parser->state.root_argp->argp_domain, "%s: illegal option -- '%c'\n"),
+                            parser->state.name, c);
+                else
+                    fprintf(parser->state.err_stream,
+                            dgettext(parser->state.root_argp->argp_domain, "%s: invalid option -- '%c'\n"),
+                            parser->state.name, c);
+            }
             *arg_ebadkey = 0;
             return EBADKEY;
         }
@@ -900,9 +927,11 @@ static error_t parser_parse_next(struct parser* parser, int* arg_ebadkey) {
                 /* Missing argument */
                 {
                     /* 1003.2 specifies the format of this message.  */
-                    fprintf(parser->state.err_stream,
-                            dgettext(parser->state.root_argp->argp_domain, "%s: option requires an argument -- %c\n"),
-                            parser->state.name, c);
+                    if (parser->print_errors && parser->state.err_stream)
+                        fprintf(parser->state.err_stream,
+                                dgettext(parser->state.root_argp->argp_domain,
+                                         "%s: option requires an argument -- '%c'\n"),
+                                parser->state.name, c);
 
                     *arg_ebadkey = 0;
                     return EBADKEY;
@@ -1013,15 +1042,20 @@ static error_t parser_parse_next(struct parser* parser, int* arg_ebadkey) {
                     struct group* group;
                     const struct argp_option* option;
                     char* value;
+                    int ambiguous = 0;
 
                     parser->state.next++;
-                    option = find_long_option(parser, optstart, &group);
+                    option = find_long_option(parser, optstart, &group, &ambiguous);
 
                     if (!option) {
                         /* NOTE: This includes any "=something" in the output. */
-                        fprintf(parser->state.err_stream,
-                                dgettext(parser->state.root_argp->argp_domain, "%s: unrecognized option `%s'\n"),
-                                parser->state.name, arg);
+                        if (parser->print_errors && parser->state.err_stream) {
+                            const char* fmt = ambiguous ? "%s: option '%s' is ambiguous\n"
+                                                         : "%s: unrecognized option '%s'\n";
+                            fprintf(parser->state.err_stream,
+                                    dgettext(parser->state.root_argp->argp_domain, fmt),
+                                    parser->state.name, arg);
+                        }
                         *arg_ebadkey = 0;
                         return EBADKEY;
                     }
@@ -1033,18 +1067,20 @@ static error_t parser_parse_next(struct parser* parser, int* arg_ebadkey) {
                     if (value && !option->arg)
                     /* Unexpected argument. */
                     {
-                        if (token == ARG_LONG_OPTION)
-                            /* --option */
-                            fprintf(parser->state.err_stream,
-                                    dgettext(parser->state.root_argp->argp_domain,
-                                             "%s: option `--%s' doesn't allow an argument\n"),
-                                    parser->state.name, option->name);
-                        else
-                            /* +option or -option */
-                            fprintf(parser->state.err_stream,
-                                    dgettext(parser->state.root_argp->argp_domain,
-                                             "%s: option `%c%s' doesn't allow an argument\n"),
-                                    parser->state.name, arg[0], option->name);
+                        if (parser->print_errors && parser->state.err_stream) {
+                            if (token == ARG_LONG_OPTION)
+                                /* --option */
+                                fprintf(parser->state.err_stream,
+                                        dgettext(parser->state.root_argp->argp_domain,
+                                                 "%s: option '--%s' doesn't allow an argument\n"),
+                                        parser->state.name, option->name);
+                            else
+                                /* +option or -option */
+                                fprintf(parser->state.err_stream,
+                                        dgettext(parser->state.root_argp->argp_domain,
+                                                 "%s: option '%c%s' doesn't allow an argument\n"),
+                                        parser->state.name, arg[0], option->name);
+                        }
 
                         *arg_ebadkey = 0;
                         return EBADKEY;
@@ -1056,18 +1092,20 @@ static error_t parser_parse_next(struct parser* parser, int* arg_ebadkey) {
                         if (parser->state.next == parser->state.argc)
                         /* Missing argument */
                         {
-                            if (token == ARG_LONG_OPTION)
-                                /* --option */
-                                fprintf(parser->state.err_stream,
-                                        dgettext(parser->state.root_argp->argp_domain,
-                                                 "%s: option `--%s' requires an argument\n"),
-                                        parser->state.name, option->name);
-                            else
-                                /* +option or -option */
-                                fprintf(parser->state.err_stream,
-                                        dgettext(parser->state.root_argp->argp_domain,
-                                                 "%s: option `%c%s' requires an argument\n"),
-                                        parser->state.name, arg[0], option->name);
+                            if (parser->print_errors && parser->state.err_stream) {
+                                if (token == ARG_LONG_OPTION)
+                                    /* --option */
+                                    fprintf(parser->state.err_stream,
+                                            dgettext(parser->state.root_argp->argp_domain,
+                                                     "%s: option '--%s' requires an argument\n"),
+                                            parser->state.name, option->name);
+                                else
+                                    /* +option or -option */
+                                    fprintf(parser->state.err_stream,
+                                            dgettext(parser->state.root_argp->argp_domain,
+                                                     "%s: option '%c%s' requires an argument\n"),
+                                            parser->state.name, arg[0], option->name);
+                            }
 
                             *arg_ebadkey = 0;
                             return EBADKEY;

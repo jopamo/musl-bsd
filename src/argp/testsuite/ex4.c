@@ -27,8 +27,8 @@
 #include <stdio.h>
 #include <argp.h>
 
-const char* argp_program_version = "argp-ex4 1.0";
-const char* argp_program_bug_address = "<bug-gnu-utils@prep.ai.mit.edu>";
+extern const char* argp_program_version;
+extern const char* argp_program_bug_address;
 
 /* Program documentation. */
 static char doc[] =
@@ -92,6 +92,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state) {
 
         case ARGP_KEY_NO_ARGS:
             argp_usage(state);
+            /* fall through */
 
         case ARGP_KEY_ARG:
             /* Here we know that `state->arg_num == 0', since we
@@ -124,6 +125,9 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state) {
 static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
 
 int main(int argc, char** argv) {
+    argp_program_version = "argp-ex4 1.0";
+    argp_program_bug_address = "<bug-gnu-utils@prep.ai.mit.edu>";
+
     int i, j;
     struct arguments arguments;
 
