@@ -1,5 +1,5 @@
 /* Hierarchial argument parsing help output
-   Copyright (C) 1995-2021 Free Software Foundation, Inc.
+   Copyright (C) 1995-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Written by Miles Bader <miles@gnu.ai.mit.edu>.
 
@@ -54,11 +54,12 @@ char* alloca();
 
 #ifndef _
 /* This is for other GNU distributions with internationalized messages.  */
-#if 0
-#undef dgettext
-#define dgettext(domain, msgid) __dcgettext(domain, msgid, LC_MESSAGES)
-#endif
+#if defined HAVE_LIBINTL_H
+#include <libintl.h>
+#else
 #define dgettext(domain, msgid) (msgid)
+#define gettext(msgid) (msgid)
+#endif
 #endif
 
 #if !_LIBC
@@ -1522,23 +1523,23 @@ void __argp_help(const struct argp* argp, FILE* stream, unsigned flags, char* na
 weak_alias(__argp_help, argp_help)
 #endif
 
-    char* __argp_basename(char* name) {
+#ifndef _LIBC
+char* __argp_basename(char* name) {
     char* short_name = strrchr(name, '/');
     return short_name ? short_name + 1 : name;
 }
 
-char* __argp_short_program_name(const struct argp_state* state) {
-    if (state)
-        return state->name;
+char* __argp_short_program_name(void) {
 #if HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
     return program_invocation_short_name;
 #elif HAVE_DECL_PROGRAM_INVOCATION_NAME
     return __argp_basename(program_invocation_name);
-#else /* !HAVE_DECL_PROGRAM_INVOCATION_NAME */
+#else  /* !HAVE_DECL_PROGRAM_INVOCATION_NAME */
     static char empty[] = "";
     return empty;
 #endif /* !HAVE_DECL_PROGRAM_INVOCATION_NAME */
 }
+#endif /* !_LIBC */
 
 /* Output, if appropriate, a usage message for STATE to STREAM.  FLAGS are
    from the set ARGP_HELP_*.  */
@@ -1548,7 +1549,7 @@ void __argp_state_help(const struct argp_state* state, FILE* stream, unsigned fl
             flags |= ARGP_HELP_LONG_ONLY;
 
         _help(state ? state->root_argp : 0, state, stream, flags,
-              state ? state->name : __argp_short_program_name(state));
+              state ? state->name : __argp_short_program_name());
 
         if (!state || !(state->flags & ARGP_NO_EXIT)) {
             if (flags & ARGP_HELP_EXIT_ERR)
@@ -1565,7 +1566,7 @@ weak_alias(__argp_state_help, argp_state_help)
     /* If appropriate, print the printf string FMT and following args, preceded
        by the program name and `:', to stderr, and followed by a `Try ... --help'
        message, then exit (1).  */
-void __argp_error_internal(const struct argp_state* state, const char* fmt, va_list ap, unsigned int mode_flags) {
+    void __argp_error_internal(const struct argp_state* state, const char* fmt, va_list ap, unsigned int mode_flags) {
     (void)mode_flags;
     if (!state || !(state->flags & ARGP_NO_ERRS)) {
         FILE* stream = state ? state->err_stream : stderr;
@@ -1582,11 +1583,11 @@ void __argp_error_internal(const struct argp_state* state, const char* fmt, va_l
 	    buf = NULL;
 
 	  __fxprintf (stream, "%s: %s\n",
-		      state ? state->name : __argp_short_program_name (state), buf);
+		      state ? state->name : __argp_short_program_name(), buf);
 
 	  free (buf);
 #else
-            fputs_unlocked(state ? state->name : __argp_short_program_name(state), stream);
+            fputs_unlocked(state ? state->name : __argp_short_program_name(), stream);
             putc_unlocked(':', stream);
             putc_unlocked(' ', stream);
 
@@ -1621,12 +1622,12 @@ weak_alias(__argp_error, argp_error)
        difference between this function and argp_error is that the latter is for
        *parsing errors*, and the former is for other problems that occur during
        parsing but don't reflect a (syntactic) problem with the input.  */
-void __argp_failure_internal(const struct argp_state* state,
-                             int status,
-                             int errnum,
-                             const char* fmt,
-                             va_list ap,
-                             unsigned int mode_flags) {
+    void __argp_failure_internal(const struct argp_state* state,
+                                 int status,
+                                 int errnum,
+                                 const char* fmt,
+                                 va_list ap,
+                                 unsigned int mode_flags) {
     (void)mode_flags;
     if (!state || !(state->flags & ARGP_NO_ERRS)) {
         FILE* stream = state ? state->err_stream : stderr;
@@ -1638,9 +1639,9 @@ void __argp_failure_internal(const struct argp_state* state,
 
 #if 0
 	  __fxprintf (stream, "%s",
-		      state ? state->name : __argp_short_program_name (state));
+		      state ? state->name : __argp_short_program_name());
 #else
-            fputs_unlocked(state ? state->name : __argp_short_program_name(state), stream);
+            fputs_unlocked(state ? state->name : __argp_short_program_name(), stream);
 #endif
 
             if (fmt) {
