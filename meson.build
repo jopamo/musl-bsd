@@ -32,13 +32,13 @@ conf_data.set('HAVE_ASPRINTF', cc.has_function('asprintf', prefix: '#include <st
 conf_data.set('HAVE_STRCHRNUL', cc.has_function('strchrnul', prefix: '#include <string.h>'))
 conf_data.set('HAVE_STRNDUP', cc.has_function('strndup', prefix: '#include <string.h>'))
 conf_data.set('HAVE_STRCASECMP', cc.has_function('strcasecmp', prefix: '#include <string.h>'))
-conf_data.set('HAVE_DECL_PROGRAM_INVOCATION_NAME', cc.has_function('program_invocation_name', prefix: '#include <errno.h>'))
-conf_data.set('HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME', cc.has_function('program_invocation_short_name', prefix: '#include <errno.h>'))
+conf_data.set('HAVE_DECL_PROGRAM_INVOCATION_NAME', cc.has_header_symbol('errno.h', 'program_invocation_name'))
+conf_data.set('HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME', cc.has_header_symbol('errno.h', 'program_invocation_short_name'))
 
 configure_file(input: 'meson_config.h.in', output: 'config.h', configuration: conf_data)
 add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
 
-inc = include_directories('include')
+inc = include_directories('include', 'src/argp')
 
 c_flags = [
   '-D_GNU_SOURCE'
@@ -127,9 +127,18 @@ test_obstack_exe = executable(
 ex1 = executable('ex1', 'src/argp/testsuite/ex1.c', link_with: [libargp])
 ex3 = executable('ex3', 'src/argp/testsuite/ex3.c', link_with: [libargp])
 ex4 = executable('ex4', 'src/argp/testsuite/ex4.c', link_with: [libargp])
+test_argp_ambiguous_exe = executable(
+  'test_argp_ambiguous',
+  ['tests/test_argp_ambiguous.c'],
+  include_directories: inc,
+  link_with: libargp,
+  c_args: c_flags,
+  install: false
+)
 
 test('ex1', ex1)
 test('ex3', ex3, args: ['arg1', 'arg2'])
 test('ex4', ex4, args: ['-v', '--output=FILE', 'arg1_', 'STRING1', 'STRING2', 'STRING3'])
+test('test_argp_ambiguous', test_argp_ambiguous_exe)
 test('test_fts', test_fts_exe)
 test('test_obstack', test_obstack_exe)
