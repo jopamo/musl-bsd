@@ -41,6 +41,17 @@ static int test_failures = 0;
         }                                                                       \
     } while (0)
 
+#define CHECK(cond, fmt, ...)                                                  \
+    do {                                                                       \
+        if (!(cond)) {                                                         \
+            fprintf(stderr, C_RED "[fail] " C_RST fmt "\n", ##__VA_ARGS__);    \
+            test_failures++;                                                   \
+        }                                                                      \
+        else {                                                                 \
+            fprintf(stderr, C_GRN "[ ok ] " C_RST fmt "\n", ##__VA_ARGS__);    \
+        }                                                                      \
+    } while (0)
+
 /* map FTS info to label */
 static const char* info_label(int info) {
     switch (info) {
@@ -250,6 +261,10 @@ static int cmp_rev(const FTSENT** a, const FTSENT** b) {
     return -strcmp((*a)->fts_name, (*b)->fts_name);
 }
 
+static int cmp_asc(const FTSENT** a, const FTSENT** b) {
+    return strcmp((*a)->fts_name, (*b)->fts_name);
+}
+
 /* children lister */
 static void list_children(FTS* fts, int nameonly) {
     FTSENT* kid = fts_children(fts, nameonly ? FTS_NAMEONLY : 0);
@@ -332,6 +347,7 @@ static void run_walk(const char* label,
     }
 
     reset_stats(out);
+    int again_set = 0;
     FTSENT* e;
     while ((e = fts_read(f)) != NULL) {
         account(out, e);
@@ -349,9 +365,10 @@ static void run_walk(const char* label,
             printf("setting FOLLOW on symlink cycle\n");
             fts_set(f, e, FTS_FOLLOW);
         }
-        if (try_instr && e->fts_info == FTS_F && strcmp(e->fts_name, "file_at_root") == 0) {
+        if (try_instr && !again_set && e->fts_info == FTS_F && strcmp(e->fts_name, "file_at_root") == 0) {
             printf("setting AGAIN on %s\n", e->fts_name);
             fts_set(f, e, FTS_AGAIN);
+            again_set = 1;
         }
     }
 
@@ -457,11 +474,13 @@ static int build_symlink_loop(const char* abs_root) {
     }
 
     /* loopA/toB -> ../loopB and loopB/toA -> ../loopA */
+    unlink(a_to_b);
     if (symlink("../loopB", a_to_b) == -1) {
         free(a_to_b);
         free(b_to_a);
         return -1;
     }
+    unlink(b_to_a);
     if (symlink("../loopA", b_to_a) == -1) {
         free(a_to_b);
         free(b_to_a);
@@ -482,6 +501,114 @@ static void test_symlink_loop_follow(const char* abs_root) {
     WalkStats s;
     run_walk("symlink loop FOLLOW probe", abs_root, roots, FTS_LOGICAL | FTS_COMFOLLOW | FTS_NOCHDIR, false, true, &s);
     CHECK_SOFT(s.n_dirs >= 1, "symlink loop traversal completed");
+}
+
+static int build_order_tree(const char* abs_root) {
+    int rc = 0;
+    char* base = join2(abs_root, "order");
+    char* parent = NULL;
+    if (!base)
+        return -1;
+    if (ensure_dir(base, 0755) == -1) {
+        rc = -1;
+        goto out;
+    }
+    parent = join2(base, "parent");
+    if (!parent) {
+        rc = -1;
+        goto out;
+    }
+    if (ensure_dir(parent, 0755) == -1) {
+        rc = -1;
+        goto out;
+    }
+    char* child = join2(parent, "child.txt");
+    if (!child || write_file(child, "child\n") == -1) {
+        free(child);
+        rc = -1;
+        goto out;
+    }
+    free(child);
+
+    char* lone = join2(base, "lone.txt");
+    if (!lone || write_file(lone, "lone\n") == -1) {
+        free(lone);
+        rc = -1;
+        goto out;
+    }
+    free(lone);
+
+    char* broken = join2(base, "broken");
+    if (!broken) {
+        rc = -1;
+        goto out;
+    }
+    unlink(broken);
+    if (symlink("no-such-target", broken) == -1) {
+        free(broken);
+        rc = -1;
+        goto out;
+    }
+    free(broken);
+
+out:
+    free(parent);
+    free(base);
+    return rc;
+}
+
+static void test_traversal_order(const char* abs_root) {
+    if (build_order_tree(abs_root) == -1) {
+        perror("build_order_tree");
+        return;
+    }
+    char* order_root = join2(abs_root, "order");
+    if (!order_root) {
+        perror("join2");
+        return;
+    }
+
+    char* roots[] = {order_root, NULL};
+    FTS* f = fts_open(roots, FTS_LOGICAL | FTS_NOCHDIR, cmp_asc);
+    CHECK(f != NULL, "order traversal fts_open");
+    if (!f) {
+        free(order_root);
+        return;
+    }
+
+    struct expected {
+        const char* name;
+        int info;
+        int level;
+    } exp[] = {
+        {"order", FTS_D, FTS_ROOTLEVEL},
+        {"broken", FTS_SLNONE, 1},
+        {"lone.txt", FTS_F, 1},
+        {"parent", FTS_D, 1},
+        {"child.txt", FTS_F, 2},
+        {"parent", FTS_DP, 1},
+        {"order", FTS_DP, 0},
+    };
+    const size_t expected_len = sizeof(exp) / sizeof(exp[0]);
+
+    size_t idx = 0;
+    FTSENT* e;
+    while ((e = fts_read(f)) != NULL) {
+        if (idx >= expected_len) {
+            CHECK(false, "order traversal produced unexpected extra entry \"%s\"", e->fts_name);
+            break;
+        }
+        CHECK(strcmp(e->fts_name, exp[idx].name) == 0, "order traversal entry %zu name=%s", idx, e->fts_name);
+        CHECK(e->fts_info == exp[idx].info, "order traversal entry %zu info=%s (wanted %s)", idx, info_label(e->fts_info),
+              info_label(exp[idx].info));
+        CHECK(e->fts_level == exp[idx].level, "order traversal entry %zu level=%d expected=%d", idx, e->fts_level,
+              exp[idx].level);
+        idx++;
+    }
+    CHECK(idx == expected_len, "order traversal visited expected number of nodes (%zu)", idx);
+    CHECK(e == NULL, "order traversal ended cleanly");
+    fts_close(f);
+    free(order_root);
 }
 
 /* heavy fanout to prove comparator order and array growth */
@@ -530,6 +657,34 @@ static void test_many_children_sorted(const char* abs_root, int n) {
     free(many);
 }
 
+static void test_cycle_detection_strict(const char* abs_root) {
+    if (build_symlink_loop(abs_root) == -1) {
+        perror("build_symlink_loop");
+        return;
+    }
+
+    char* roots[] = {(char*)abs_root, NULL};
+    FTS* f = fts_open(roots, FTS_LOGICAL | FTS_NOCHDIR, cmp_asc);
+    CHECK(f != NULL, "cycle detection fts_open");
+    if (!f)
+        return;
+
+    bool saw_cycle = false;
+    FTSENT* e;
+    while ((e = fts_read(f)) != NULL) {
+        if (e->fts_info == FTS_DC) {
+            saw_cycle = true;
+            CHECK(e->fts_cycle != NULL, "cycle entry has fts_cycle pointer");
+            if (e->fts_cycle) {
+                CHECK(e->fts_cycle->fts_level < e->fts_level, "fts_cycle points to an ancestor node");
+            }
+        }
+    }
+
+    CHECK(saw_cycle, "detected symlink loop between loopA and loopB");
+    fts_close(f);
+}
+
 int main(int argc, char** argv) {
     STRICT = getenv("FTS_TEST_STRICT") && strcmp(getenv("FTS_TEST_STRICT"), "0") != 0;
 
@@ -566,6 +721,8 @@ int main(int argc, char** argv) {
     test_file_root(abs_root);
     test_seedot(abs_root);
     test_symlink_loop_follow(abs_root);
+    test_traversal_order(abs_root);
+    test_cycle_detection_strict(abs_root);
 
     /* always run heavy fanout stress */
     test_many_children_sorted(abs_root, 2000);
