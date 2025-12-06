@@ -59,7 +59,7 @@ The `build/` directory contains all generated artefacts; re-run `meson setup` wh
 
 ## Testing & Validation
 
-- Unit and behavioural tests live under `tests/`. Each test mirrors a library surface area (e.g. `tests/test_fts_walk.c`, `tests/test_obstack.c`).
+- Unit and behavioural tests live under `tests/`. FTS coverage is split into per-scenario files under `tests/fts/`, with obstack and argp covered by `tests/test_obstack.c` and `tests/test_argp*.c`.
 - Execute the suite with:
 
   ```sh
