@@ -1,4 +1,5 @@
 #include <argp.h>
+#include <assert.h>
 #include <errno.h>
 
 static error_t parse_opt(int key, char* arg, struct argp_state* state) {
@@ -23,5 +24,6 @@ int main(void) {
     int argc = 2;
 
     error_t err = argp_parse(&argp, argc, argv, ARGP_NO_EXIT | ARGP_NO_ERRS, NULL, NULL);
-    return err == EINVAL ? 0 : 1;
+    assert(err == EINVAL);
+    return 0;
 }
