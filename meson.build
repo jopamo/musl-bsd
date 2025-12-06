@@ -158,17 +158,27 @@ test_obstack_exe = executable(
 ex1 = executable('ex1', 'src/argp/testsuite/ex1.c', link_with: [libargp])
 ex3 = executable('ex3', 'src/argp/testsuite/ex3.c', link_with: [libargp])
 ex4 = executable('ex4', 'src/argp/testsuite/ex4.c', link_with: [libargp])
-test_argp_ambiguous_exe = executable(
-  'test_argp_ambiguous',
-  ['tests/test_argp_ambiguous.c'],
-  include_directories: inc,
-  link_with: libargp,
-  c_args: c_flags,
-  install: false
-)
+
+argp_tests = [
+  ['test_argp_ambiguous', 'tests/argp/test_ambiguous.c'],
+  ['test_argp_basic_options', 'tests/argp/test_basic_options.c'],
+  ['test_argp_child_parsers', 'tests/argp/test_child_parsers.c'],
+  ['test_argp_help_fmt_dup_args', 'tests/argp/test_help_fmt_dup_args.c']
+]
+
+foreach t : argp_tests
+  exe = executable(
+    t[0],
+    [t[1]],
+    include_directories: inc,
+    link_with: libargp,
+    c_args: c_flags,
+    install: false
+  )
+  test(t[0], exe)
+endforeach
 
 test('ex1', ex1)
 test('ex3', ex3, args: ['arg1', 'arg2'])
 test('ex4', ex4, args: ['-v', '--output=FILE', 'arg1_', 'STRING1', 'STRING2', 'STRING3'])
-test('test_argp_ambiguous', test_argp_ambiguous_exe)
 test('test_obstack', test_obstack_exe)
