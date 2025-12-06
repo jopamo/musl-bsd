@@ -39,6 +39,7 @@ configure_file(input: 'meson_config.h.in', output: 'config.h', configuration: co
 add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
 
 inc = include_directories('include', 'src/argp')
+fts_test_inc = include_directories('tests/fts')
 
 c_flags = [
   '-D_GNU_SOURCE'
@@ -106,14 +107,44 @@ pkg.generate(libargp,
   description: 'Hierarchical argument parsing library broken out from glibc'
 )
 
-test_fts_exe = executable(
-  'test_fts',
-  ['tests/test_fts.c'],
-  include_directories: inc,
-  link_with: libfts,
+fts_test_common = static_library(
+  'fts_test_common',
+  ['tests/fts/fts_test_common.c'],
+  include_directories: [inc, fts_test_inc],
   c_args: c_flags,
   install: false
 )
+
+fts_tests = [
+  ['fts_cwd_restore', 'test_cwd_restore.c'],
+  ['fts_file_root', 'test_file_root.c'],
+  ['fts_seedot', 'test_seedot.c'],
+  ['fts_symlink_loop_follow', 'test_symlink_loop_follow.c'],
+  ['fts_traversal_order', 'test_traversal_order.c'],
+  ['fts_cycle_detection', 'test_cycle_detection.c'],
+  ['fts_many_children_sorted', 'test_many_children_sorted.c'],
+  ['fts_walk_physical_chdir', 'test_walk_physical_chdir.c'],
+  ['fts_walk_physical_nochdir', 'test_walk_physical_nochdir.c'],
+  ['fts_walk_logical', 'test_walk_logical.c'],
+  ['fts_walk_logical_comfollow', 'test_walk_logical_comfollow.c'],
+  ['fts_two_roots', 'test_two_roots.c'],
+  ['fts_walk_nostat_seedot', 'test_walk_nostat_seedot.c'],
+  ['fts_children_api', 'test_children_api.c'],
+  ['fts_unreadable_dir', 'test_unreadable_dir.c'],
+  ['fts_xdev', 'test_xdev.c']
+]
+
+foreach t : fts_tests
+  exe = executable(
+    t[0],
+    ['tests/fts/' + t[1]],
+    include_directories: [inc, fts_test_inc],
+    link_with: [libfts, fts_test_common],
+    c_args: c_flags,
+    install: false
+  )
+  test(t[0], exe)
+endforeach
 
 test_obstack_exe = executable(
   'test_obstack',
@@ -140,5 +171,4 @@ test('ex1', ex1)
 test('ex3', ex3, args: ['arg1', 'arg2'])
 test('ex4', ex4, args: ['-v', '--output=FILE', 'arg1_', 'STRING1', 'STRING2', 'STRING3'])
 test('test_argp_ambiguous', test_argp_ambiguous_exe)
-test('test_fts', test_fts_exe)
 test('test_obstack', test_obstack_exe)
