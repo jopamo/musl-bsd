@@ -14,10 +14,6 @@
 #include <unistd.h>
 #include <fts.h>
 
-#ifndef PATH_MAX
-#define PATH_MAX 4096
-#endif
-
 static inline int ISDOT(const char* a) {
     return (a[0] == '.' && (!a[1] || (a[1] == '.' && !a[2])));
 }
@@ -53,6 +49,26 @@ static inline __fts_length_t fts_length_cap(size_t len) {
 #define BNAMES 2
 #define BREAD 3
 
+struct cycle_entry {
+    dev_t dev;
+    ino_t ino;
+    FTSENT* ent;
+    struct cycle_entry* next;
+};
+
+struct cycle_state {
+    struct cycle_entry** buckets;
+    size_t nbuckets;
+};
+
+struct fts_private {
+    FTS sp;
+    struct cycle_state cycles;
+};
+
+#define FTS_PRIV(sp) ((struct fts_private*)(sp))
+#define CYCLE_STATE(sp) (&FTS_PRIV(sp)->cycles)
+
 /* helpers */
 static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size);
 static FTSENT* fts_alloc(FTS*, const char*, size_t) __attribute__((nonnull));
@@ -66,6 +82,13 @@ static int fts_palloc(FTS*, size_t);
 static FTSENT* fts_sort(FTS*, FTSENT*, int);
 static unsigned short fts_stat(FTS*, FTSENT*, int, int);
 static int fts_safe_changedir(FTS*, FTSENT*, int, const char*);
+static int cycle_init(struct cycle_state*);
+static void cycle_free(struct cycle_state*);
+static FTSENT* cycle_lookup(struct cycle_state*, dev_t, ino_t);
+static int cycle_insert(struct cycle_state*, dev_t, ino_t, FTSENT*);
+static void cycle_remove(struct cycle_state*, dev_t, ino_t);
+static int fts_cycle_push(FTS*, FTSENT*);
+static void fts_cycle_pop(FTS*, FTSENT*);
 
 static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size) {
     if (size != 0 && newnmemb > SIZE_MAX / size) {
@@ -99,9 +122,15 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
         return NULL;
     }
 
-    sp = calloc(1, sizeof(*sp));
-    if (!sp)
+    struct fts_private* priv = calloc(1, sizeof(*priv));
+    if (!priv)
         return NULL;
+    sp = &priv->sp;
+
+    if (cycle_init(CYCLE_STATE(sp))) {
+        free(sp);
+        return NULL;
+    }
 
     sp->fts_compar = compar;
     sp->fts_options = options;
@@ -111,9 +140,12 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
 
     {
         size_t need = fts_maxarglen(argv);
+#ifdef PATH_MAX
         if (need < PATH_MAX)
             need = PATH_MAX;
+#endif
         if (fts_palloc(sp, need)) {
+            cycle_free(CYCLE_STATE(sp));
             free(sp);
             return NULL;
         }
@@ -122,6 +154,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
     parent = fts_alloc(sp, "", 0);
     if (!parent) {
         free(sp->fts_path);
+        cycle_free(CYCLE_STATE(sp));
         free(sp);
         return NULL;
     }
@@ -134,6 +167,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
             fts_lfree(root);
             free(parent);
             free(sp->fts_path);
+            cycle_free(CYCLE_STATE(sp));
             free(sp);
             return NULL;
         }
@@ -142,6 +176,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
             fts_lfree(root);
             free(parent);
             free(sp->fts_path);
+            cycle_free(CYCLE_STATE(sp));
             free(sp);
             return NULL;
         }
@@ -191,6 +226,7 @@ oom_roots:
     fts_lfree(root);
     free(parent);
     free(sp->fts_path);
+    cycle_free(CYCLE_STATE(sp));
     free(sp);
     return NULL;
 }
@@ -218,6 +254,7 @@ int fts_close(FTS* sp) {
 
     free(sp->fts_array);
     free(sp->fts_path);
+    cycle_free(CYCLE_STATE(sp));
 
     int rfd = ISSET(FTS_NOCHDIR) ? -1 : sp->fts_rfd;
     if (rfd != -1) {
@@ -278,7 +315,15 @@ FTSENT* fts_read(FTS* sp) {
                 fts_lfree(sp->fts_child);
                 sp->fts_child = NULL;
             }
+            fts_cycle_pop(sp, p);
             p->fts_info = FTS_DP;
+            return p;
+        }
+
+        if (fts_cycle_push(sp, p)) {
+            SET(FTS_STOP);
+            p->fts_errno = errno ? errno : ENOMEM;
+            p->fts_info = FTS_ERR;
             return p;
         }
 
@@ -313,6 +358,7 @@ next:
     p = p->fts_link;
 
     if (p) {
+        fts_cycle_pop(sp, tmp);
         free(tmp);
 
         if (p->fts_level == FTS_ROOTLEVEL) {
@@ -354,6 +400,7 @@ next:
 
     {
         FTSENT* up = tmp->fts_parent;
+        fts_cycle_pop(sp, tmp);
         free(tmp);
         p = up;
     }
@@ -429,6 +476,11 @@ FTSENT* fts_children(FTS* sp, int instr) {
 
     if (instr == FTS_NAMEONLY)
         SET(FTS_NAMEONLY);
+
+    if (fts_cycle_push(sp, cur)) {
+        errno = ENOMEM;
+        return NULL;
+    }
 
     if (cur->fts_level == FTS_ROOTLEVEL && cur->fts_accpath[0] != '/' && !ISSET(FTS_NOCHDIR)) {
         int cwd = open(".", O_RDONLY | O_CLOEXEC);
@@ -707,6 +759,11 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
                 return FTS_DC;
             }
         }
+        FTSENT* cyc = cycle_lookup(CYCLE_STATE(sp), p->fts_dev, p->fts_ino);
+        if (cyc) {
+            p->fts_cycle = cyc;
+            return FTS_DC;
+        }
         return FTS_D;
     }
     if (S_ISLNK(sbp->st_mode))
@@ -900,6 +957,117 @@ static int fts_safe_changedir(FTS* sp, FTSENT* p, int fd, const char* path) {
     return 0;
 }
 
+static size_t cycle_hash(dev_t dev, ino_t ino, size_t nbuckets) {
+    size_t h = ((size_t)dev << 5) ^ (size_t)ino;
+    return nbuckets ? (h & (nbuckets - 1)) : 0;
+}
+
+static int cycle_init(struct cycle_state* cs) {
+    const size_t buckets = 64;
+    cs->nbuckets = buckets;
+    cs->buckets = calloc(buckets, sizeof(*cs->buckets));
+    if (!cs->buckets) {
+        cs->nbuckets = 0;
+        return -1;
+    }
+    return 0;
+}
+
+static void cycle_free(struct cycle_state* cs) {
+    if (!cs || !cs->buckets)
+        return;
+    for (size_t i = 0; i < cs->nbuckets; i++) {
+        struct cycle_entry* e = cs->buckets[i];
+        while (e) {
+            struct cycle_entry* next = e->next;
+            free(e);
+            e = next;
+        }
+    }
+    free(cs->buckets);
+    cs->buckets = NULL;
+    cs->nbuckets = 0;
+}
+
+static FTSENT* cycle_lookup(struct cycle_state* cs, dev_t dev, ino_t ino) {
+    if (!cs || !cs->buckets)
+        return NULL;
+    size_t idx = cycle_hash(dev, ino, cs->nbuckets);
+    for (struct cycle_entry* e = cs->buckets[idx]; e; e = e->next) {
+        if (e->dev == dev && e->ino == ino)
+            return e->ent;
+    }
+    return NULL;
+}
+
+static int cycle_insert(struct cycle_state* cs, dev_t dev, ino_t ino, FTSENT* ent) {
+    if (!cs)
+        return -1;
+    if (!cs->buckets) {
+        if (cycle_init(cs))
+            return -1;
+    }
+    size_t idx = cycle_hash(dev, ino, cs->nbuckets);
+    for (struct cycle_entry* e = cs->buckets[idx]; e; e = e->next) {
+        if (e->dev == dev && e->ino == ino) {
+            if (e->ent == ent)
+                return 0;
+            return 0;
+        }
+    }
+    struct cycle_entry* e = malloc(sizeof(*e));
+    if (!e)
+        return -1;
+    e->dev = dev;
+    e->ino = ino;
+    e->ent = ent;
+    e->next = cs->buckets[idx];
+    cs->buckets[idx] = e;
+    return 0;
+}
+
+static void cycle_remove(struct cycle_state* cs, dev_t dev, ino_t ino) {
+    if (!cs || !cs->buckets)
+        return;
+    size_t idx = cycle_hash(dev, ino, cs->nbuckets);
+    struct cycle_entry** prev = &cs->buckets[idx];
+    while (*prev) {
+        struct cycle_entry* e = *prev;
+        if (e->dev == dev && e->ino == ino) {
+            *prev = e->next;
+            free(e);
+            return;
+        }
+        prev = &e->next;
+    }
+}
+
+static int fts_cycle_push(FTS* sp, FTSENT* p) {
+    if (!p || p->fts_info != FTS_D)
+        return 0;
+    if (cycle_insert(CYCLE_STATE(sp), p->fts_dev, p->fts_ino, p)) {
+        errno = ENOMEM;
+        return -1;
+    }
+    return 0;
+}
+
+static void fts_cycle_pop(FTS* sp, FTSENT* p) {
+    if (!p)
+        return;
+    switch (p->fts_info) {
+        case FTS_D:
+        case FTS_DC:
+        case FTS_DNR:
+        case FTS_DP:
+        case FTS_ERR:
+            cycle_remove(CYCLE_STATE(sp), p->fts_dev, p->fts_ino);
+            break;
+        default:
+            break;
+    }
+}
+
 static void fts_load(FTS* sp, FTSENT* p) {
     size_t len = p->fts_namelen;
     p->fts_pathlen = p->fts_namelen;
@@ -907,13 +1075,13 @@ static void fts_load(FTS* sp, FTSENT* p) {
 
     char* slash = strrchr(p->fts_name, '/');
     if (slash && (slash != p->fts_name || slash[1])) {
-        len = strlen(++slash);
-        memmove(p->fts_name, slash, len + 1);
-        p->fts_namelen = fts_length_cap(len);
+        size_t leaf_len = strlen(++slash);
+        memmove(p->fts_name, slash, leaf_len + 1);
+        p->fts_namelen = fts_length_cap(leaf_len);
     }
 
     p->fts_path = sp->fts_path;
     p->fts_accpath = sp->fts_path;
-    p->fts_pathlen = fts_length_cap(len);
+    p->fts_pathlen = fts_length_cap(strlen(sp->fts_path));
     sp->fts_dev = p->fts_dev;
 }
