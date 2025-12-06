@@ -17,6 +17,48 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+/* Meson leaves HAVE_DECL_* undefined when a symbol is missing; default to 0 so
+   the fallback macros below take effect. */
+#ifndef HAVE_DECL_CLEARERR_UNLOCKED
+#define HAVE_DECL_CLEARERR_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FEOF_UNLOCKED
+#define HAVE_DECL_FEOF_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FERROR_UNLOCKED
+#define HAVE_DECL_FERROR_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FFLUSH_UNLOCKED
+#define HAVE_DECL_FFLUSH_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FGETS_UNLOCKED
+#define HAVE_DECL_FGETS_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FPUTC_UNLOCKED
+#define HAVE_DECL_FPUTC_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FPUTS_UNLOCKED
+#define HAVE_DECL_FPUTS_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FREAD_UNLOCKED
+#define HAVE_DECL_FREAD_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_FWRITE_UNLOCKED
+#define HAVE_DECL_FWRITE_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_GETC_UNLOCKED
+#define HAVE_DECL_GETC_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_GETCHAR_UNLOCKED
+#define HAVE_DECL_GETCHAR_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_PUTC_UNLOCKED
+#define HAVE_DECL_PUTC_UNLOCKED 0
+#endif
+#ifndef HAVE_DECL_PUTCHAR_UNLOCKED
+#define HAVE_DECL_PUTCHAR_UNLOCKED 0
+#endif
+
 #if !_LIBC
 /* This code is written for inclusion in gnu-libc, and uses names in the
    namespace reserved for libc.  If we're not compiling in libc, define those
@@ -94,43 +136,43 @@
 #undef __strndup
 #define __strndup strndup
 
-#if defined(HAVE_DECL_CLEARERR_UNLOCKED) && !HAVE_DECL_CLEARERR_UNLOCKED
+#if !HAVE_DECL_CLEARERR_UNLOCKED && !defined(clearerr_unlocked)
 #define clearerr_unlocked(x) clearerr(x)
 #endif
-#if defined(HAVE_DECL_FEOF_UNLOCKED) && !HAVE_DECL_FEOF_UNLOCKED
+#if !HAVE_DECL_FEOF_UNLOCKED && !defined(feof_unlocked)
 #define feof_unlocked(x) feof(x)
 #endif
-#if defined(HAVE_DECL_FERROR_UNLOCKED) && !HAVE_DECL_FERROR_UNLOCKED
+#if !HAVE_DECL_FERROR_UNLOCKED && !defined(ferror_unlocked)
 #define ferror_unlocked(x) ferror(x)
 #endif
-#if defined(HAVE_DECL_FFLUSH_UNLOCKED) && !HAVE_DECL_FFLUSH_UNLOCKED
+#if !HAVE_DECL_FFLUSH_UNLOCKED && !defined(fflush_unlocked)
 #define fflush_unlocked(x) fflush(x)
 #endif
-#if defined(HAVE_DECL_FGETS_UNLOCKED) && !HAVE_DECL_FGETS_UNLOCKED
+#if !HAVE_DECL_FGETS_UNLOCKED && !defined(fgets_unlocked)
 #define fgets_unlocked(x, y, z) fgets(x, y, z)
 #endif
-#if defined(HAVE_DECL_FPUTC_UNLOCKED) && !HAVE_DECL_FPUTC_UNLOCKED
+#if !HAVE_DECL_FPUTC_UNLOCKED && !defined(fputc_unlocked)
 #define fputc_unlocked(x, y) fputc(x, y)
 #endif
-#if defined(HAVE_DECL_FPUTS_UNLOCKED) && !HAVE_DECL_FPUTS_UNLOCKED
+#if !HAVE_DECL_FPUTS_UNLOCKED && !defined(fputs_unlocked)
 #define fputs_unlocked(x, y) fputs(x, y)
 #endif
-#if defined(HAVE_DECL_FREAD_UNLOCKED) && !HAVE_DECL_FREAD_UNLOCKED
+#if !HAVE_DECL_FREAD_UNLOCKED && !defined(fread_unlocked)
 #define fread_unlocked(w, x, y, z) fread(w, x, y, z)
 #endif
-#if defined(HAVE_DECL_FWRITE_UNLOCKED) && !HAVE_DECL_FWRITE_UNLOCKED
+#if !HAVE_DECL_FWRITE_UNLOCKED && !defined(fwrite_unlocked)
 #define fwrite_unlocked(w, x, y, z) fwrite(w, x, y, z)
 #endif
-#if defined(HAVE_DECL_GETC_UNLOCKED) && !HAVE_DECL_GETC_UNLOCKED
+#if !HAVE_DECL_GETC_UNLOCKED && !defined(getc_unlocked)
 #define getc_unlocked(x) getc(x)
 #endif
-#if defined(HAVE_DECL_GETCHAR_UNLOCKED) && !HAVE_DECL_GETCHAR_UNLOCKED
+#if !HAVE_DECL_GETCHAR_UNLOCKED && !defined(getchar_unlocked)
 #define getchar_unlocked() getchar()
 #endif
-#if defined(HAVE_DECL_PUTC_UNLOCKED) && !HAVE_DECL_PUTC_UNLOCKED
+#if !HAVE_DECL_PUTC_UNLOCKED && !defined(putc_unlocked)
 #define putc_unlocked(x, y) putc(x, y)
 #endif
-#if defined(HAVE_DECL_PUTCHAR_UNLOCKED) && !HAVE_DECL_PUTCHAR_UNLOCKED
+#if !HAVE_DECL_PUTCHAR_UNLOCKED && !defined(putchar_unlocked)
 #define putchar_unlocked(x) putchar(x)
 #endif
 
