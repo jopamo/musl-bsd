@@ -48,20 +48,6 @@
 #define INIT_BUF_SIZE 200
 #define PRINTF_SIZE_GUESS 150
 
-#ifndef HAVE_DECL_FWRITE_UNLOCKED
-// Fallback for fwrite_unlocked if it's not available
-size_t fwrite_unlocked(const void* ptr, size_t size, size_t count, FILE* stream) {
-    return fwrite(ptr, size, count, stream);
-}
-#endif
-
-#ifndef HAVE_DECL_PUTC_UNLOCKED
-// Fallback for putc_unlocked if it's not available
-int putc_unlocked(int c, FILE* stream) {
-    return putc(c, stream);
-}
-#endif
-
 /* Return an argp_fmtstream that outputs to STREAM, and which prefixes lines
    written on it with LMARGIN spaces and limits them to RMARGIN columns
    total.  If WMARGIN >= 0, words that extend past RMARGIN are wrapped by
