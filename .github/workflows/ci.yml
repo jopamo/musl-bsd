@@ -17,8 +17,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          # Install Clang, Meson, Ninja, and Valgrind for leak checking
-          sudo apt-get install -y clang meson ninja-build valgrind
+          # Install Clang, Meson, and Ninja
+          sudo apt-get install -y clang meson ninja-build
 
       - name: Configure build with Meson (Clang + sanitizers)
         run: |
@@ -34,21 +34,8 @@ jobs:
         run: meson compile -C builddir
 
       - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:abort_on_error=1:halt_on_error=1:print_summary=1
+          UBSAN_OPTIONS: halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1
         run: |
-          meson test -C builddir || (cat builddir/meson-logs/testlog.txt && false)
-
-      - name: Configure build for Valgrind run
-        run: |
-          meson setup build-valgrind \
-            --buildtype=debug \
-            -Db_sanitize=none
-
-      - name: Build (Valgrind)
-        run: meson compile -C build-valgrind
-
-      - name: Test under Valgrind
-        run: >
-          meson test -C build-valgrind
-          --wrap='valgrind --leak-check=full --show-leak-kinds=all
-          --errors-for-leak-kinds=all --error-exitcode=1'
-          || (cat build-valgrind/meson-logs/testlog.txt && false)
+          meson test -C builddir --print-errorlogs || (cat builddir/meson-logs/testlog.txt && false)
