@@ -1,3 +1,5 @@
 /*build*
 *.user
 AGENTS.md
+.llm/
+tags
