@@ -94,6 +94,23 @@ static inline const struct fts_ops* fts_resolve_ops(void) {
     return __fts_ops_override ? __fts_ops_override : &fts_default_ops;
 }
 
+static FTS* fts_last_dir = NULL;
+
+static inline void fts_clear_last_dir(FTS* sp) {
+    if (fts_last_dir == sp)
+        fts_last_dir = NULL;
+}
+
+static inline void fts_note_last_dir(FTS* sp, FTSENT* ent) {
+    if (ent && ent->fts_info == FTS_D)
+        fts_last_dir = sp;
+}
+
+static inline FTSENT* fts_return_dir(FTS* sp, FTSENT* ent) {
+    fts_note_last_dir(sp, ent);
+    return ent;
+}
+
 /* helpers */
 static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size);
 static FTSENT* fts_alloc(FTS*, const char*, size_t) __attribute__((nonnull));
@@ -263,6 +280,8 @@ int fts_close(FTS* sp) {
     if (!sp)
         return 0;
 
+    fts_clear_last_dir(sp);
+
     if (sp->fts_cur) {
         FTSENT* p = sp->fts_cur;
         if (p->fts_flags & FTS_SYMFOLLOW)
@@ -306,6 +325,8 @@ FTSENT* fts_read(FTS* sp) {
     char* t;
     int saved_errno;
 
+    fts_clear_last_dir(sp);
+
     if (!sp->fts_cur || ISSET(FTS_STOP))
         return NULL;
 
@@ -315,7 +336,7 @@ FTSENT* fts_read(FTS* sp) {
 
     if (instr == FTS_AGAIN) {
         p->fts_info = fts_stat(sp, p, 0, -1);
-        return p;
+        return fts_return_dir(sp, p);
     }
 
     if (instr == FTS_FOLLOW && (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
@@ -330,7 +351,7 @@ FTSENT* fts_read(FTS* sp) {
                 p->fts_flags |= FTS_SYMFOLLOW;
             }
         }
-        return p;
+        return fts_return_dir(sp, p);
     }
 
     if (p->fts_info == FTS_D) {
@@ -343,14 +364,14 @@ FTSENT* fts_read(FTS* sp) {
             }
             fts_cycle_pop(sp, p);
             p->fts_info = FTS_DP;
-            return p;
+            return fts_return_dir(sp, p);
         }
 
         if (fts_cycle_push(sp, p)) {
             SET(FTS_STOP);
             p->fts_errno = errno ? errno : ENOMEM;
             p->fts_info = FTS_ERR;
-            return p;
+            return fts_return_dir(sp, p);
         }
 
         if (sp->fts_child && ISSET(FTS_NAMEONLY)) {
@@ -364,7 +385,7 @@ FTSENT* fts_read(FTS* sp) {
             if (!sp->fts_child) {
                 if (ISSET(FTS_STOP))
                     return NULL;
-                return p;
+                return fts_return_dir(sp, p);
             }
         }
         else if (fts_safe_changedir(sp, p, -1, p->fts_accpath)) {
@@ -394,7 +415,7 @@ next:
             }
             fts_load(sp, p);
             sp->fts_cur = p;
-            return p;
+            return fts_return_dir(sp, p);
         }
 
         if (p->fts_instr == FTS_SKIP)
@@ -421,7 +442,7 @@ next:
         *t++ = '/';
         memmove(t, p->fts_name, p->fts_namelen + 1);
         sp->fts_cur = p;
-        return p;
+        return fts_return_dir(sp, p);
     }
 
     {
@@ -471,7 +492,7 @@ next:
 
     p->fts_info = p->fts_errno ? FTS_ERR : FTS_DP;
     sp->fts_cur = p;
-    return p;
+    return fts_return_dir(sp, p);
 }
 
 int fts_set(FTS* sp, FTSENT* p, int instr) {
@@ -484,12 +505,37 @@ int fts_set(FTS* sp, FTSENT* p, int instr) {
     return 0;
 }
 
+static FTS* fts_resolve_children_sp(FTS* sp, FTSENT** cur) {
+    if (cur)
+        *cur = NULL;
+
+    if (sp) {
+        if (cur)
+            *cur = sp->fts_cur;
+        return sp;
+    }
+
+    if (fts_last_dir && fts_last_dir->fts_cur && fts_last_dir->fts_cur->fts_info == FTS_D) {
+        if (cur)
+            *cur = fts_last_dir->fts_cur;
+        return fts_last_dir;
+    }
+
+    errno = EINVAL;
+    return NULL;
+}
+
 FTSENT* fts_children(FTS* sp, int instr) {
     if (instr && instr != FTS_NAMEONLY) {
         errno = EINVAL;
         return NULL;
     }
-    FTSENT* cur = sp->fts_cur;
+
+    FTSENT* cur = NULL;
+    sp = fts_resolve_children_sp(sp, &cur);
+    if (!sp)
+        return NULL;
+
     if (!cur || ISSET(FTS_STOP))
         return NULL;
     if (cur->fts_info == FTS_INIT)
