@@ -1,0 +1,106 @@
+0 | struct _fts
+0 |   struct _ftsent * fts_cur
+8 |   struct _ftsent * fts_child
+16 |   struct _ftsent ** fts_array
+24 |   dev_t fts_dev
+32 |   char * fts_path
+40 |   int fts_rfd
+44 |   unsigned int fts_pathlen
+48 |   unsigned int fts_nitems
+56 |   int (*)(const struct _ftsent **, const struct _ftsent **) fts_compar
+64 |   int fts_options
+| [sizeof=72, align=8]
+
+0 | struct _ftsent
+0 |   struct _ftsent * fts_cycle
+8 |   struct _ftsent * fts_parent
+16 |   struct _ftsent * fts_link
+24 |   int64_t fts_number
+32 |   void * fts_pointer
+40 |   char * fts_accpath
+48 |   char * fts_path
+56 |   int fts_errno
+60 |   int fts_symfd
+64 |   unsigned int fts_pathlen
+68 |   unsigned int fts_namelen
+72 |   ino_t fts_ino
+80 |   dev_t fts_dev
+88 |   nlink_t fts_nlink
+96 |   int fts_level
+100 |   unsigned short fts_info
+102 |   unsigned short fts_flags
+104 |   unsigned short fts_instr
+112 |   struct stat * fts_statp
+120 |   char[1] fts_name
+| [sizeof=128, align=8]
+
+0 | struct _obstack_chunk
+0 |   char * limit
+8 |   struct _obstack_chunk * prev
+16 |   char[4] contents
+| [sizeof=24, align=8]
+
+0 | struct obstack
+0 |   size_t chunk_size
+8 |   struct _obstack_chunk * chunk
+16 |   char * object_base
+24 |   char * next_free
+32 |   char * chunk_limit
+40 |   union obstack::(unnamed at include/obstack.h:68:5) temp
+40 |     size_t i
+40 |     void * p
+48 |   size_t alignment_mask
+56 |   union obstack::(unnamed at include/obstack.h:74:5) chunkfun
+56 |     void *(*)(size_t) plain
+56 |     void *(*)(void *, size_t) extra
+64 |   union obstack::(unnamed at include/obstack.h:78:5) freefun
+64 |     void (*)(void *) plain
+64 |     void (*)(void *, void *) extra
+72 |   void * extra_arg
+80:0-0 |   unsigned int use_extra_arg
+80:1-1 |   unsigned int maybe_empty_object
+80:2-2 |   unsigned int alloc_failed
+| [sizeof=88, align=8]
+
+0 | struct argp_option
+0 |   const char * name
+8 |   int key
+16 |   const char * arg
+24 |   int flags
+32 |   const char * doc
+40 |   int group
+| [sizeof=48, align=8]
+
+0 | struct argp_child
+0 |   const struct argp * argp
+8 |   int flags
+16 |   const char * header
+24 |   int group
+| [sizeof=32, align=8]
+
+0 | struct argp
+0 |   const struct argp_option * options
+8 |   argp_parser_t parser
+16 |   const char * args_doc
+24 |   const char * doc
+32 |   const struct argp_child * children
+40 |   char *(*)(int, const char *, void *) help_filter
+48 |   const char * argp_domain
+| [sizeof=56, align=8]
+
+0 | struct argp_state
+0 |   const struct argp * root_argp
+8 |   int argc
+16 |   char ** argv
+24 |   int next
+28 |   unsigned int flags
+32 |   unsigned int arg_num
+36 |   int quoted
+40 |   void * input
+48 |   void ** child_inputs
+56 |   void * hook
+64 |   char * name
+72 |   FILE * err_stream
+80 |   FILE * out_stream
+88 |   void * pstate
+| [sizeof=96, align=8]

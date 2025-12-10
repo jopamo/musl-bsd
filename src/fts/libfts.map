@@ -1,0 +1,11 @@
+LIBFTS_2.0 {
+    global:
+        fts_children;
+        fts_close;
+        fts_open;
+        fts_read;
+        fts_set;
+        __fts_ops_override; /* test-only hook */
+    local:
+        *;
+};
