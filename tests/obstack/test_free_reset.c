@@ -13,8 +13,13 @@ int main(void) {
     (void)obstack_build_string(&ob, 32, 'a');
 
     obstack_free(&ob, NULL);
-    assert(ob.chunk == first);
-    assert(ob.object_base == ob.next_free);
+    assert(ob.chunk == NULL);
+    assert(ob.object_base == NULL);
+    assert(ob.next_free == NULL);
+
+    ok = _obstack_begin(&ob, 128, 0, obstack_plain_alloc, obstack_plain_free);
+    assert(ok == 1);
+    assert(ob.chunk != first);
 
     char* b = obstack_build_string(&ob, 8, 'b');
     assert(strcmp(b, "bbbbbbbb") == 0);
