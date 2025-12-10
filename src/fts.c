@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <fts.h>
 
+#include "musl-bsd/fts_ops.h"
+
 static inline int ISDOT(const char* a) {
     return (a[0] == '.' && (!a[1] || (a[1] == '.' && !a[2])));
 }
@@ -63,11 +65,34 @@ struct cycle_state {
 
 struct fts_private {
     FTS sp;
+    const struct fts_ops* ops;
     struct cycle_state cycles;
 };
 
 #define FTS_PRIV(sp) ((struct fts_private*)(sp))
 #define CYCLE_STATE(sp) (&FTS_PRIV(sp)->cycles)
+#define OPS(sp) (FTS_PRIV(sp)->ops)
+
+const struct fts_ops* __fts_ops_override = NULL;
+
+static int fts_default_open(const char* path, int flags) {
+    return open(path, flags);
+}
+
+static const struct fts_ops fts_default_ops = {
+    .open_fn = fts_default_open,
+    .close_fn = close,
+    .fstat_fn = fstat,
+    .fstatat_fn = fstatat,
+    .fchdir_fn = fchdir,
+    .fdopendir_fn = fdopendir,
+    .readdir_fn = readdir,
+    .closedir_fn = closedir
+};
+
+static inline const struct fts_ops* fts_resolve_ops(void) {
+    return __fts_ops_override ? __fts_ops_override : &fts_default_ops;
+}
 
 /* helpers */
 static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size);
@@ -126,6 +151,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
     if (!priv)
         return NULL;
     sp = &priv->sp;
+    FTS_PRIV(sp)->ops = fts_resolve_ops();
 
     if (cycle_init(CYCLE_STATE(sp))) {
         free(sp);
@@ -213,7 +239,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
     sp->fts_cur->fts_info = FTS_INIT;
 
     if (!ISSET(FTS_NOCHDIR)) {
-        sp->fts_rfd = open(".", O_RDONLY | O_CLOEXEC);
+        sp->fts_rfd = OPS(sp)->open_fn(".", O_RDONLY | O_CLOEXEC);
         if (sp->fts_rfd == -1)
             SET(FTS_NOCHDIR);
     }
@@ -240,7 +266,7 @@ int fts_close(FTS* sp) {
     if (sp->fts_cur) {
         FTSENT* p = sp->fts_cur;
         if (p->fts_flags & FTS_SYMFOLLOW)
-            close(p->fts_symfd);
+            OPS(sp)->close_fn(p->fts_symfd);
         while (p->fts_level >= FTS_ROOTLEVEL) {
             FTSENT* next = p->fts_link ? p->fts_link : p->fts_parent;
             free(p);
@@ -258,9 +284,9 @@ int fts_close(FTS* sp) {
 
     int rfd = ISSET(FTS_NOCHDIR) ? -1 : sp->fts_rfd;
     if (rfd != -1) {
-        if (fchdir(rfd) == -1)
+        if (OPS(sp)->fchdir_fn(rfd) == -1)
             saved_errno = errno;
-        close(rfd);
+        OPS(sp)->close_fn(rfd);
     }
 
     free(sp);
@@ -295,7 +321,7 @@ FTSENT* fts_read(FTS* sp) {
     if (instr == FTS_FOLLOW && (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
         p->fts_info = fts_stat(sp, p, 1, -1);
         if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
-            p->fts_symfd = open(".", O_RDONLY | O_CLOEXEC);
+            p->fts_symfd = OPS(sp)->open_fn(".", O_RDONLY | O_CLOEXEC);
             if (p->fts_symfd == -1) {
                 p->fts_errno = errno;
                 p->fts_info = FTS_ERR;
@@ -310,7 +336,7 @@ FTSENT* fts_read(FTS* sp) {
     if (p->fts_info == FTS_D) {
         if (instr == FTS_SKIP || (ISSET(FTS_XDEV) && p->fts_dev != sp->fts_dev)) {
             if (p->fts_flags & FTS_SYMFOLLOW)
-                close(p->fts_symfd);
+                OPS(sp)->close_fn(p->fts_symfd);
             if (sp->fts_child) {
                 fts_lfree(sp->fts_child);
                 sp->fts_child = NULL;
@@ -362,7 +388,7 @@ next:
         free(tmp);
 
         if (p->fts_level == FTS_ROOTLEVEL) {
-            if (!ISSET(FTS_NOCHDIR) && fchdir(sp->fts_rfd)) {
+            if (!ISSET(FTS_NOCHDIR) && OPS(sp)->fchdir_fn(sp->fts_rfd)) {
                 SET(FTS_STOP);
                 return NULL;
             }
@@ -376,7 +402,7 @@ next:
         if (p->fts_instr == FTS_FOLLOW) {
             p->fts_info = fts_stat(sp, p, 1, -1);
             if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
-                p->fts_symfd = open(".", O_RDONLY | O_CLOEXEC);
+                p->fts_symfd = OPS(sp)->open_fn(".", O_RDONLY | O_CLOEXEC);
                 if (p->fts_symfd == -1) {
                     p->fts_errno = errno;
                     p->fts_info = FTS_ERR;
@@ -420,22 +446,22 @@ next:
     }
 
     if (p->fts_level == FTS_ROOTLEVEL) {
-        if (!ISSET(FTS_NOCHDIR) && fchdir(sp->fts_rfd)) {
+        if (!ISSET(FTS_NOCHDIR) && OPS(sp)->fchdir_fn(sp->fts_rfd)) {
             SET(FTS_STOP);
             sp->fts_cur = p;
             return NULL;
         }
     }
     else if (p->fts_flags & FTS_SYMFOLLOW) {
-        if (!ISSET(FTS_NOCHDIR) && fchdir(p->fts_symfd)) {
+        if (!ISSET(FTS_NOCHDIR) && OPS(sp)->fchdir_fn(p->fts_symfd)) {
             saved_errno = errno;
-            close(p->fts_symfd);
+            OPS(sp)->close_fn(p->fts_symfd);
             errno = saved_errno;
             SET(FTS_STOP);
             sp->fts_cur = p;
             return NULL;
         }
-        close(p->fts_symfd);
+        OPS(sp)->close_fn(p->fts_symfd);
     }
     else if (!(p->fts_flags & FTS_DONTCHDIR) && fts_safe_changedir(sp, p->fts_parent, -1, "..")) {
         SET(FTS_STOP);
@@ -483,15 +509,15 @@ FTSENT* fts_children(FTS* sp, int instr) {
     }
 
     if (cur->fts_level == FTS_ROOTLEVEL && cur->fts_accpath[0] != '/' && !ISSET(FTS_NOCHDIR)) {
-        int cwd = open(".", O_RDONLY | O_CLOEXEC);
+        int cwd = OPS(sp)->open_fn(".", O_RDONLY | O_CLOEXEC);
         if (cwd == -1)
             return NULL;
         sp->fts_child = fts_build(sp, instr == FTS_NAMEONLY ? BNAMES : BCHILD);
-        if (fchdir(cwd) == -1) {
-            close(cwd);
+        if (OPS(sp)->fchdir_fn(cwd) == -1) {
+            OPS(sp)->close_fn(cwd);
             return NULL;
         }
-        close(cwd);
+        OPS(sp)->close_fn(cwd);
     }
     else {
         sp->fts_child = fts_build(sp, instr == FTS_NAMEONLY ? BNAMES : BCHILD);
@@ -527,17 +553,17 @@ static FTSENT* fts_build(FTS* sp, int type) {
     if (ISSET(FTS_PHYSICAL))
         open_flags |= O_NOFOLLOW;
 #endif
-    int fd = open(cur->fts_accpath, open_flags);
+    int fd = OPS(sp)->open_fn(cur->fts_accpath, open_flags);
     if (fd == -1) {
         cur->fts_info = (type == BREAD) ? FTS_DNR : FTS_ERR;
         cur->fts_errno = errno;
         return NULL;
     }
 
-    dirp = fdopendir(fd);
+    dirp = OPS(sp)->fdopendir_fn(fd);
     if (!dirp) {
         saved_errno = errno;
-        close(fd);
+        OPS(sp)->close_fn(fd);
         cur->fts_info = FTS_ERR;
         cur->fts_errno = saved_errno;
         errno = saved_errno;
@@ -587,7 +613,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     level = (cur->fts_level < SHRT_MAX) ? cur->fts_level + 1 : SHRT_MAX;
 
     errno = 0;
-    while ((dp = readdir(dirp)) != NULL) {
+    while ((dp = OPS(sp)->readdir_fn(dirp)) != NULL) {
         if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
             continue;
 
@@ -664,7 +690,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     mem_fail:
         saved_errno = errno;
         fts_lfree(head);
-        closedir(dirp);
+        OPS(sp)->closedir_fn(dirp);
         cur->fts_info = FTS_ERR;
         SET(FTS_STOP);
         errno = saved_errno;
@@ -674,14 +700,14 @@ static FTSENT* fts_build(FTS* sp, int type) {
     if (errno != 0) {
         saved_errno = errno;
         fts_lfree(head);
-        closedir(dirp);
+        OPS(sp)->closedir_fn(dirp);
         cur->fts_info = FTS_ERR;
         SET(FTS_STOP);
         errno = saved_errno;
         return NULL;
     }
 
-    closedir(dirp);
+    OPS(sp)->closedir_fn(dirp);
 
     if (nitems == 0) {
         if (type == BREAD)
@@ -694,7 +720,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
 
     if (descend && (type == BCHILD || nitems == 0)) {
         if (cur->fts_level == FTS_ROOTLEVEL) {
-            if (fchdir(sp->fts_rfd) == -1) {
+            if (OPS(sp)->fchdir_fn(sp->fts_rfd) == -1) {
                 cur->fts_info = FTS_ERR;
                 SET(FTS_STOP);
                 return NULL;
@@ -743,9 +769,9 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
 #endif
 
     if (ISSET(FTS_LOGICAL) || follow) {
-        if (fstatat(dfd, path, sbp, 0) == -1) {
+        if (OPS(sp)->fstatat_fn(dfd, path, sbp, 0) == -1) {
             saved_errno = errno;
-            if (fstatat(dfd, path, sbp, AT_SYMLINK_NOFOLLOW) == 0) {
+            if (OPS(sp)->fstatat_fn(dfd, path, sbp, AT_SYMLINK_NOFOLLOW) == 0) {
                 errno = 0;
                 return FTS_SLNONE;
             }
@@ -754,7 +780,7 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
         }
     }
     else {
-        if (fstatat(dfd, path, sbp, AT_SYMLINK_NOFOLLOW) == -1) {
+        if (OPS(sp)->fstatat_fn(dfd, path, sbp, AT_SYMLINK_NOFOLLOW) == -1) {
             p->fts_errno = errno;
             goto err;
         }
@@ -930,45 +956,45 @@ static int fts_safe_changedir(FTS* sp, FTSENT* p, int fd, const char* path) {
                      | O_NOFOLLOW
 #endif
             ;
-        newfd = open(path ? path : p->fts_accpath, oflags);
+        newfd = OPS(sp)->open_fn(path ? path : p->fts_accpath, oflags);
         if (newfd == -1)
             return -1;
     }
 
     struct stat before;
-    if (fstat(newfd, &before) == -1) {
+    if (OPS(sp)->fstat_fn(newfd, &before) == -1) {
         int e = errno;
         if (fd == -1)
-            close(newfd);
+            OPS(sp)->close_fn(newfd);
         errno = e;
         return -1;
     }
 
     if (p->fts_dev != before.st_dev || p->fts_ino != before.st_ino) {
         if (fd == -1)
-            close(newfd);
+            OPS(sp)->close_fn(newfd);
         errno = ENOENT;
         return -1;
     }
 
-    if (fchdir(newfd) == -1) {
+    if (OPS(sp)->fchdir_fn(newfd) == -1) {
         int e = errno;
         if (fd == -1)
-            close(newfd);
+            OPS(sp)->close_fn(newfd);
         errno = e;
         return -1;
     }
 
     struct stat after;
-    if (fstat(newfd, &after) == -1 || before.st_dev != after.st_dev || before.st_ino != after.st_ino) {
+    if (OPS(sp)->fstat_fn(newfd, &after) == -1 || before.st_dev != after.st_dev || before.st_ino != after.st_ino) {
         if (fd == -1)
-            close(newfd);
+            OPS(sp)->close_fn(newfd);
         errno = ENOENT;
         return -1;
     }
 
     if (fd == -1)
-        close(newfd);
+        OPS(sp)->close_fn(newfd);
     return 0;
 }
 
