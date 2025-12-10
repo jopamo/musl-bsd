@@ -40,6 +40,7 @@ add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
 
 inc = include_directories('include', 'src/argp')
 fts_test_inc = include_directories('tests/fts')
+obstack_test_inc = include_directories('tests/obstack')
 
 c_flags = [
   '-D_GNU_SOURCE'
@@ -148,6 +149,14 @@ fts_test_common = static_library(
   install: false
 )
 
+obstack_test_common = static_library(
+  'obstack_test_common',
+  ['tests/obstack/obstack_test_common.c'],
+  include_directories: [inc, obstack_test_inc],
+  c_args: c_flags,
+  install: false
+)
+
 fts_tests = [
   ['fts_cwd_restore', 'test_cwd_restore.c'],
   ['fts_file_root', 'test_file_root.c'],
@@ -183,14 +192,30 @@ foreach t : fts_tests
   test(t[0], exe)
 endforeach
 
-test_obstack_exe = executable(
-  'test_obstack',
-  ['tests/test_obstack.c'],
-  include_directories: inc,
-  link_with: libobstack,
-  c_args: c_flags,
-  install: false
-)
+obstack_tests = [
+  ['obstack_begin_plain', 'tests/obstack/test_begin_plain.c'],
+  ['obstack_begin_extra', 'tests/obstack/test_begin_extra.c'],
+  ['obstack_force_newchunk', 'tests/obstack/test_force_newchunk.c'],
+  ['obstack_free_to_object', 'tests/obstack/test_free_to_object.c'],
+  ['obstack_alignment', 'tests/obstack/test_alignment.c'],
+  ['obstack_memory_used', 'tests/obstack/test_memory_used.c'],
+  ['obstack_printf_small', 'tests/obstack/test_printf_small.c'],
+  ['obstack_printf_len_guard', 'tests/obstack/test_printf_len_guard.c'],
+  ['obstack_extra_allocator_oom', 'tests/obstack/test_extra_allocator_oom.c'],
+  ['obstack_calculate_object_size', 'tests/obstack/test_calculate_object_size.c']
+]
+
+foreach t : obstack_tests
+  exe = executable(
+    t[0],
+    [t[1]],
+    include_directories: [inc, obstack_test_inc],
+    link_with: [libobstack, obstack_test_common],
+    c_args: c_flags,
+    install: false
+  )
+  test(t[0], exe)
+endforeach
 
 ex1 = executable('ex1', 'src/argp/testsuite/ex1.c', link_with: [libargp])
 ex3 = executable('ex3', 'src/argp/testsuite/ex3.c', link_with: [libargp])
@@ -218,7 +243,6 @@ endforeach
 test('ex1', ex1)
 test('ex3', ex3, args: ['arg1', 'arg2'])
 test('ex4', ex4, args: ['-v', '--output=FILE', 'arg1_', 'STRING1', 'STRING2', 'STRING3'])
-test('test_obstack', test_obstack_exe)
 
 abi_inc = include_directories('.')
 
