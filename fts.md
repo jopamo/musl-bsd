@@ -32,13 +32,14 @@
   * `FTS_DNR`, `FTS_NS`, `FTS_ERR` on errors
 * Sibling ordering matches comparison function when one is provided (`compar` in `fts_open`)
 * Without a comparison function, order matches underlying `readdir` order and is stable within a single run
-* Postorder directory entries (`FTS_DP`) only appear when expected (e.g. when `FTS_DEPTH` or equivalent behavior is exercised)
+* Directories yield preorder `FTS_D` followed by postorder `FTS_DP` unless explicitly skipped
 
 ---
 
 ## Flag Behavior: Logical vs Physical Walks
 
-* `FTS_LOGICAL` (default) follows symlinks during traversal:
+* Default traversal is physical (`lstat` style)
+* `FTS_LOGICAL` opt-in follows symlinks during traversal and forces `FTS_NOCHDIR` internally:
 
   * symbolic link to directory is treated as directory when followed
   * `fts_info` reflects logical view
@@ -59,22 +60,22 @@
 
 * `FTS_NOCHDIR`:
 
-  * traversal does not rely on `chdir`
-  * `fts_path` always represents absolute or correctly rooted path without process-wide `cwd` changes
+  * default traversal uses `chdir`/`fchdir` for speed and shorter paths
+  * with `FTS_NOCHDIR`, traversal stays rooted via absolute paths without changing process `cwd`
 * `FTS_XDEV`:
 
   * traversal does not cross filesystem boundaries (same `st_dev` only)
-  * directories on different devices are skipped with appropriate `FTS_ERR` or `FTS_DNR` semantics
+  * offending directories still return a postorder `FTS_DP` but are not descended into
 * `FTS_SEEDOT`:
 
   * `.` and `..` entries appear in traversal where they exist
 * `FTS_NOSTAT`:
 
-  * `fts_statp` is `NULL` or minimal for entries where `stat` is elided
-  * behavior for type classification falls back to `d_type` or other heuristics if implemented
+  * `fts_statp` is omitted for non-directories (stack buffer only)
+  * when walking physically, d_type is used to classify non-directories without a `stat`; logical walks still `stat`
 * `FTS_WHITEOUT`:
 
-  * whiteout entries (on filesystems that support them) are reported as `FTS_W` with correct `fts_info`
+  * on platforms exposing `DT_WHT`, entries surface as `FTS_W` with zeroed `fts_statp` (and `st_mode` set to `S_IFWHT` when available)
 
 ---
 
@@ -164,7 +165,7 @@
 
   * `fts_children` omits `stat` data where expected
   * populates only name-related fields while leaving others as agreed
-* `fts_children` called on a non-directory entry returns `NULL` and sets or preserves `errno` in a documented way
+* `fts_children` called on a non-directory entry returns `NULL` and leaves `errno` unchanged
 * `fts_children(NULL, ...)` enumerates children of the “current” directory as defined by the last `FTS_D` entry
 
 ---
@@ -223,3 +224,18 @@ Tests must assert:
 * traversal sequence matches golden expectations
 * `fts_info` and `fts_level` values match the golden log
 * no memory errors under ASan/UBSan and no descriptor leaks detected by tools like `lsof` or custom wrappers
+
+---
+
+# Design Notes (engine + nodes + policy)
+
+* **Layering:** treat `FTSENT` as the only user-visible node model, a traversal engine that emits nodes, and a policy layer that interprets flags (`LOGICAL`, `PHYSICAL`, `NOCHDIR`, `XDEV`, `NOSTAT`, `NAMEONLY`, `COMFOLLOW`, `SEEDOT`, `WHITEOUT`). Tests should “fall out” of these three pieces.
+* **ABI-first `FTSENT`:** mirror the NetBSD layout byte-for-byte; user-visible fields are immutable snapshots. Keep extra engine state inside opaque `FTS`. Maintain offset/size tests (`pahole`/`clang -fdump-record-layouts`).
+* **Directory frames:** keep an explicit stack of frames (dirfd/`DIR*`, children list + index, flags for preorder/postorder owed, skip/XDEV state). `fts_read` is a state machine over this stack; no recursion. `FTS_AGAIN` reuses the current entry; `FTS_DP` is emitted unless skipped.
+* **Path handling:** a single resizable path buffer owned by `FTS`; `fts_padjust` rewrites pointers after realloc. Default mode uses `chdir`/`fchdir` with a stack of dirfds; `FTS_NOCHDIR` sticks to absolute (or rooted relative) paths and never changes cwd. `fts_accpath` is the syscall target in either mode.
+* **Policy hooks:** centralize decisions: (1) classification (`stat` vs `lstat`, `NOSTAT`/`NAMEONLY`, `d_type` hints), (2) descent (`XDEV`, `FTS_SKIP`, errors), (3) sibling order (`compar` → sort buffered children, else raw `readdir`). This keeps traversal, flag semantics, and ordering deterministic.
+* **Cycle detection:** on promoting an entry to `FTS_D`, compare `(st_dev, st_ino)` against ancestors (and a small hash set for speed). On hit, set `fts_info = FTS_DC` and `fts_cycle` to the ancestor entry.
+* **Errors as entries:** wrap syscalls so failures yield `FTS_DNR` / `FTS_NS` / `FTS_ERR` with `fts_errno` set; engine keeps running. Fault injection is just swapping the ops table.
+* **`fts_children`:** returns the already-buffered child list for the current directory; `NAMEONLY` builds that list without stats. `fts_children(NULL, …)` is “children of the last `FTS_D`”. Never re-scan the directory.
+* **FD discipline:** frame lifecycle defines when `DIR*`/dirfd are open; close on `FTS_DP` or errors, and fchdir back up in chdir mode. Guard against leaks when users exit early or on errors.
+* **Portability order:** prioritize musl correctness, match BSD semantics/ABI, and stay compatible on glibc. Whiteouts (`FTS_W`) only surface where `DT_WHT` exists; everything else relies only on POSIX.1-2008 calls (`openat`, `fstatat`, `readlinkat`, `fdopendir`, etc.).
