@@ -187,20 +187,20 @@ void _obstack_free(struct obstack* h, void* obj) {
     }
 
     if (obj == NULL) {
-        while (chunk->prev) {
+        while (chunk) {
             struct _obstack_chunk* prev = chunk->prev;
             call_freefun(h, chunk);
             chunk = prev;
         }
-        h->chunk = chunk;
-        h->chunk_limit = chunk->limit;
-        h->object_base = h->next_free = __PTR_ALIGN((char*)chunk, chunk->contents, h->alignment_mask);
-        h->maybe_empty_object = 0;
+        h->chunk = NULL;
+        h->chunk_limit = NULL;
+        h->object_base = h->next_free = NULL;
+        h->maybe_empty_object = 1;
         h->alloc_failed = 0;
         return;
     }
 
-    while (chunk && !((char*)obj >= (char*)chunk && (char*)obj < (char*)chunk->limit)) {
+    while (chunk && ((void*)chunk >= obj || (void*)chunk->limit < obj)) {
         struct _obstack_chunk* prev = chunk->prev;
         call_freefun(h, chunk);
         chunk = prev;
