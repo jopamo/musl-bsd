@@ -132,6 +132,7 @@ fts_tests = [
   ['fts_children_api', 'test_children_api.c'],
   ['fts_fault_injection', 'test_fault_injection.c'],
   ['fts_unreadable_dir', 'test_unreadable_dir.c'],
+  ['fts_whiteout', 'test_whiteout.c'],
   ['fts_xdev', 'test_xdev.c']
 ]
 
