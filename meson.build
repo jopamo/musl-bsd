@@ -152,6 +152,7 @@ fts_tests = [
   ['fts_cwd_restore', 'test_cwd_restore.c'],
   ['fts_file_root', 'test_file_root.c'],
   ['fts_seedot', 'test_seedot.c'],
+  ['fts_fd_discipline', 'test_fd_discipline.c'],
   ['fts_symlink_loop_follow', 'test_symlink_loop_follow.c'],
   ['fts_traversal_order', 'test_traversal_order.c'],
   ['fts_cycle_detection', 'test_cycle_detection.c'],
