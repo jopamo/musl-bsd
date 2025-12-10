@@ -619,6 +619,11 @@ static FTSENT* fts_build(FTS* sp, int type) {
         }
         p->fts_pathlen = fts_length_cap(pathlen);
 
+#ifdef DT_WHT
+        if (ISSET(FTS_WHITEOUT) && dp->d_type == DT_WHT)
+            p->fts_flags |= FTS_ISW;
+#endif
+
         if (cderrno) {
             p->fts_info = nlinks ? FTS_NS : FTS_NSOK;
             p->fts_errno = cderrno;
@@ -726,6 +731,16 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
     }
 
     sbp = ISSET(FTS_NOSTAT) ? &sb : p->fts_statp;
+
+#ifdef DT_WHT
+    if (ISSET(FTS_WHITEOUT) && (p->fts_flags & FTS_ISW)) {
+        memset(sbp, 0, sizeof(*sbp));
+#ifdef S_IFWHT
+        sbp->st_mode = S_IFWHT;
+#endif
+        return FTS_W;
+    }
+#endif
 
     if (ISSET(FTS_LOGICAL) || follow) {
         if (fstatat(dfd, path, sbp, 0) == -1) {
