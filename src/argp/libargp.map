@@ -1,0 +1,25 @@
+LIBARGP_2.0 {
+    global:
+        __argp_basename;
+        __argp_short_program_name;
+        _argp_fmtstream_ensure;
+        _argp_fmtstream_update;
+        _argp_input;
+        _option_is_end;
+        _option_is_short;
+        argp_err_exit_status;
+        argp_error;
+        argp_failure;
+        argp_fmtstream_free;
+        argp_fmtstream_printf;
+        argp_help;
+        argp_make_fmtstream;
+        argp_parse;
+        argp_program_bug_address;
+        argp_program_version;
+        argp_program_version_hook;
+        argp_state_help;
+        argp_usage;
+    local:
+        *;
+};

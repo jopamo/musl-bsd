@@ -45,13 +45,42 @@ c_flags = [
   '-D_GNU_SOURCE'
 ]
 
+fts_map = meson.current_source_dir() / 'src/fts/libfts.map'
+obstack_map = meson.current_source_dir() / 'src/obstack/libobstack.map'
+argp_map = meson.current_source_dir() / 'src/argp/libargp.map'
+
+vs_supported = cc.has_link_argument('-Wl,--version-script=' + fts_map)
+
+fts_link_args = []
+fts_link_deps = []
+if vs_supported
+  fts_link_args = ['-Wl,--version-script=' + fts_map]
+  fts_link_deps = [fts_map]
+endif
+
+obstack_link_args = []
+obstack_link_deps = []
+if vs_supported
+  obstack_link_args = ['-Wl,--version-script=' + obstack_map]
+  obstack_link_deps = [obstack_map]
+endif
+
+argp_link_args = []
+argp_link_deps = []
+if vs_supported
+  argp_link_args = ['-Wl,--version-script=' + argp_map]
+  argp_link_deps = [argp_map]
+endif
+
 libobstack = shared_library(
   'obstack',
   ['src/obstack.c'],
   include_directories: inc,
   install: true,
   version: '2.0.0',
-  c_args: c_flags
+  c_args: c_flags,
+  link_args: obstack_link_args,
+  link_depends: obstack_link_deps
 )
 
 install_headers('include/obstack.h', subdir: '')
@@ -62,7 +91,9 @@ libfts = shared_library(
   include_directories: inc,
   install: true,
   version: '2.0.0',
-  c_args: c_flags
+  c_args: c_flags,
+  link_args: fts_link_args,
+  link_depends: fts_link_deps
 )
 
 install_headers('include/fts.h', subdir: '')
@@ -83,7 +114,9 @@ libargp = shared_library(
   include_directories: inc,
   install: true,
   version: '2.0.0',
-  c_args: c_flags
+  c_args: c_flags,
+  link_args: argp_link_args,
+  link_depends: argp_link_deps
 )
 
 install_headers(
@@ -184,3 +217,33 @@ test('ex1', ex1)
 test('ex3', ex3, args: ['arg1', 'arg2'])
 test('ex4', ex4, args: ['-v', '--output=FILE', 'arg1_', 'STRING1', 'STRING2', 'STRING3'])
 test('test_obstack', test_obstack_exe)
+
+abi_inc = include_directories('.')
+
+if host_machine.cpu_family() == 'x86_64'
+  layout_cc = cc.cmd_array()[0]
+  clang_prog = find_program('clang', required: false)
+  if clang_prog.found()
+    layout_cc = clang_prog.full_path()
+  endif
+
+  abi_layout_static = executable(
+    'abi_layout_static',
+    'tests/abi/test_layout_static.c',
+    include_directories: [inc, abi_inc],
+    c_args: c_flags,
+    install: false
+  )
+  test('abi_layout_static', abi_layout_static)
+
+  layout_script = find_program('tests/abi/check_record_layouts.sh')
+  test(
+    'abi_record_layouts',
+    layout_script,
+    env: {
+      'MESON_SOURCE_ROOT': meson.project_source_root(),
+      'MESON_BUILD_ROOT': meson.current_build_dir(),
+      'CC': layout_cc
+    }
+  )
+endif
