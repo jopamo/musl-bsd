@@ -1,0 +1,15 @@
+LIBOBSTACK_2.0 {
+    global:
+        _obstack_begin;
+        _obstack_begin_1;
+        _obstack_free;
+        _obstack_memory_used;
+        _obstack_newchunk;
+        obstack_alloc_failed_handler;
+        obstack_calculate_object_size;
+        obstack_printf;
+        xmalloc;
+        xmalloc_failed;
+    local:
+        *;
+};
