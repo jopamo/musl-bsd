@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 #if _OBSTACK_INTERFACE_VERSION == 1
 #define _OBSTACK_SIZE_T unsigned int
@@ -46,11 +47,11 @@ extern "C" {
 #endif
 
 #ifndef DEFAULT_ALIGNMENT
-#define DEFAULT_ALIGNMENT 16
+#define DEFAULT_ALIGNMENT offsetof(struct { char c; union { uintmax_t i; long double d; void* p; } u; }, u)
 #endif
 
 #ifndef DEFAULT_ROUNDING
-#define DEFAULT_ROUNDING (DEFAULT_ALIGNMENT - 1)
+#define DEFAULT_ROUNDING sizeof(union { uintmax_t i; long double d; void* p; })
 #endif
 
 struct _obstack_chunk {
@@ -101,6 +102,7 @@ extern void (*obstack_alloc_failed_handler)(void);
 
 extern int obstack_exit_failure;
 
+extern int obstack_vprintf(struct obstack*, const char* __restrict, va_list);
 extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attribute__((format(printf, 2, 3)));
 extern size_t obstack_calculate_object_size(struct obstack* ob);
 
@@ -148,13 +150,6 @@ extern const char* name;
      (void)(*((int*)((H)->next_free += sizeof(int))) = (aint)))
 
 #define obstack_alloc(H, length) (obstack_blank((H), (length)), obstack_finish(H))
-
-#define _obstack_object_size(H)                           \
-    struct obstack const* __o = (H);                      \
-    (_OBSTACK_SIZE_T)(__o->next_free - __o->object_base); \
-    })
-
-#define __extension__
 
 #define obstack_room(H)                                         \
     __extension__({                                             \
@@ -206,6 +201,8 @@ extern const char* name;
         *(__o->next_free)++ = (ch);    \
     })
 
+#define obstack_1grow_fast(H, ch) ((void)(*(++(H)->next_free - 1) = (ch)))
+
 #define obstack_blank(H, length)           \
     __extension__({                        \
         struct obstack* __o = (H);         \
@@ -214,6 +211,8 @@ extern const char* name;
             _obstack_newchunk(__o, __len); \
         __o->next_free += __len;           \
     })
+
+#define obstack_blank_fast(H, length) ((H)->next_free += (length))
 
 #define obstack_finish(H)                                                       \
     __extension__({                                                             \
