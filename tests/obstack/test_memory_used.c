@@ -16,7 +16,10 @@ int main(void) {
 
     obstack_free(&ob, NULL);
     _OBSTACK_SIZE_T after = _obstack_memory_used(&ob);
-    assert(after == 0);
+    assert(after > 0);
+    assert(after <= mid);
+    assert(ob.chunk != NULL);
+    assert(ob.chunk->prev == NULL);
 
     puts("test_memory_used ok");
     return 0;

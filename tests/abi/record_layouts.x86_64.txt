@@ -46,14 +46,14 @@
 16 |   char * object_base
 24 |   char * next_free
 32 |   char * chunk_limit
-40 |   union obstack::(unnamed at include/obstack.h:68:5) temp
+40 |   union obstack::(unnamed at include/obstack.h:69:5) temp
 40 |     size_t i
 40 |     void * p
 48 |   size_t alignment_mask
-56 |   union obstack::(unnamed at include/obstack.h:74:5) chunkfun
+56 |   union obstack::(unnamed at include/obstack.h:75:5) chunkfun
 56 |     void *(*)(size_t) plain
 56 |     void *(*)(void *, size_t) extra
-64 |   union obstack::(unnamed at include/obstack.h:78:5) freefun
+64 |   union obstack::(unnamed at include/obstack.h:79:5) freefun
 64 |     void (*)(void *) plain
 64 |     void (*)(void *, void *) extra
 72 |   void * extra_arg
