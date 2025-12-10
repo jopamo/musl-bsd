@@ -201,8 +201,10 @@ obstack_tests = [
   ['obstack_memory_used', 'tests/obstack/test_memory_used.c'],
   ['obstack_printf_small', 'tests/obstack/test_printf_small.c'],
   ['obstack_printf_len_guard', 'tests/obstack/test_printf_len_guard.c'],
+  ['obstack_vprintf', 'tests/obstack/test_vprintf.c'],
   ['obstack_extra_allocator_oom', 'tests/obstack/test_extra_allocator_oom.c'],
-  ['obstack_calculate_object_size', 'tests/obstack/test_calculate_object_size.c']
+  ['obstack_calculate_object_size', 'tests/obstack/test_calculate_object_size.c'],
+  ['obstack_free_reset', 'tests/obstack/test_free_reset.c']
 ]
 
 foreach t : obstack_tests
