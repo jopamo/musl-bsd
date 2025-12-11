@@ -585,6 +585,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     int level;
     int nlinks, nostat;
     int saved_errno;
+    struct stat sb;
     char* cp;
 
     if (cur->fts_level >= SHRT_MAX) {
@@ -602,6 +603,23 @@ static FTSENT* fts_build(FTS* sp, int type) {
     int fd = OPS(sp)->open_fn(cur->fts_accpath, open_flags);
     if (fd == -1) {
         cur->fts_info = (type == BREAD) ? FTS_DNR : FTS_ERR;
+        cur->fts_errno = errno;
+        return NULL;
+    }
+
+    /* Verify the opened directory matches the expected dev/ino (stat-to-open race protection) */
+    if (OPS(sp)->fstat_fn(fd, &sb) == -1) {
+        saved_errno = errno;
+        OPS(sp)->close_fn(fd);
+        cur->fts_info = FTS_ERR;
+        cur->fts_errno = saved_errno;
+        errno = saved_errno;
+        return NULL;
+    }
+    if (sb.st_dev != cur->fts_dev || sb.st_ino != cur->fts_ino) {
+        OPS(sp)->close_fn(fd);
+        errno = ENOENT;
+        cur->fts_info = FTS_ERR;
         cur->fts_errno = errno;
         return NULL;
     }
