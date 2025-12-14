@@ -2,6 +2,10 @@
   <img src=".github/musl-bsd.png" alt="musl-bsd logo" width="300">
 </div>
 
+![CI](https://github.com/jopamo/musl-bsd/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/language-C-blue.svg)
+![Build System](https://img.shields.io/badge/build%20system-Meson-green)
+
 **musl-bsd** is a portability layer that restores familiar BSD/GNU userland APIs on top of [musl libc](https://musl.libc.org/). It provides drop-in libraries (`libfts`, `libobstack`) and headers (`queue.h`, `tree.h`, `cdefs.h`, `obstack.h`, `fts.h`) that closely track the original NetBSD/OpenBSD and GNU implementations while compiling cleanly in a modern C99 toolchain. The project is aimed at packagers, embedded integrators, and maintainers carrying legacy Unix codebases into musl-based environments without rewriting platform-specific glue.
 
 ---

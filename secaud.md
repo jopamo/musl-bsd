@@ -1,8 +1,6 @@
 # Security Audit Report: musl-bsd FTS Implementation
 
 **Date**: 2025-12-10
-**Auditor**: Claude Code
-**Version**: Current git head (664febc)
 
 ## Executive Summary
 
