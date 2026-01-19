@@ -8,7 +8,7 @@
 
   * directory at root
   * directory deep in the tree
-  * `NULL` argument meaning “current directory”
+  * `NULL` argument is rejected with `errno = EINVAL`
 * `fts_set` correctly applies:
 
   * `FTS_FOLLOW`
@@ -39,6 +39,7 @@
 ## Flag Behavior: Logical vs Physical Walks
 
 * Default traversal is physical (`lstat` style)
+* `fts_open` requires exactly one of `FTS_LOGICAL` or `FTS_PHYSICAL` (any other combination is `EINVAL`)
 * `FTS_LOGICAL` opt-in follows symlinks during traversal and forces `FTS_NOCHDIR` internally:
 
   * symbolic link to directory is treated as directory when followed
@@ -165,8 +166,9 @@
 
   * `fts_children` omits `stat` data where expected
   * populates only name-related fields while leaving others as agreed
-* `fts_children` called on a non-directory entry returns `NULL` and leaves `errno` unchanged
-* `fts_children(NULL, ...)` enumerates children of the “current” directory as defined by the last `FTS_D` entry
+* `fts_children` called on a non-directory entry returns `NULL` and sets `errno = 0`
+* `fts_children` called on an empty directory returns `NULL` and sets `errno = 0`
+* `fts_children(NULL, ...)` is invalid and sets `errno = EINVAL`
 
 ---
 
@@ -236,6 +238,6 @@ Tests must assert:
 * **Policy hooks:** centralize decisions: (1) classification (`stat` vs `lstat`, `NOSTAT`/`NAMEONLY`, `d_type` hints), (2) descent (`XDEV`, `FTS_SKIP`, errors), (3) sibling order (`compar` → sort buffered children, else raw `readdir`). This keeps traversal, flag semantics, and ordering deterministic.
 * **Cycle detection:** on promoting an entry to `FTS_D`, compare `(st_dev, st_ino)` against ancestors (and a small hash set for speed). On hit, set `fts_info = FTS_DC` and `fts_cycle` to the ancestor entry.
 * **Errors as entries:** wrap syscalls so failures yield `FTS_DNR` / `FTS_NS` / `FTS_ERR` with `fts_errno` set; engine keeps running. Fault injection is just swapping the ops table.
-* **`fts_children`:** returns the already-buffered child list for the current directory; `NAMEONLY` builds that list without stats. `fts_children(NULL, …)` is “children of the last `FTS_D`”. Never re-scan the directory.
+* **`fts_children`:** returns the already-buffered child list for the current directory; `NAMEONLY` builds that list without stats. `fts_children(NULL, …)` is invalid (`EINVAL`). Never re-scan the directory.
 * **FD discipline:** frame lifecycle defines when `DIR*`/dirfd are open; close on `FTS_DP` or errors, and fchdir back up in chdir mode. Guard against leaks when users exit early or on errors.
 * **Portability order:** prioritize musl correctness, match BSD semantics/ABI, and stay compatible on glibc. Whiteouts (`FTS_W`) only surface where `DT_WHT` exists; everything else relies only on POSIX.1-2008 calls (`openat`, `fstatat`, `readlinkat`, `fdopendir`, etc.).

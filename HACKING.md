@@ -66,6 +66,9 @@ From NetBSD `fts(3)` and reference `fts.c`:([NetBSD Manual Pages][1])
 
   * traversal: `FTS_LOGICAL`, `FTS_PHYSICAL`, `FTS_COMFOLLOW`
   * behavior: `FTS_NOCHDIR`, `FTS_XDEV`, `FTS_SEEDOT`, `FTS_NOSTAT`, `FTS_WHITEOUT`
+* Validate flags strictly:
+
+  * `fts_open` requires exactly one of `FTS_LOGICAL` or `FTS_PHYSICAL` (otherwise `errno = EINVAL`)
 * Match traversal order:
 
   * Preorder entries (`FTS_D`) followed by optional postorder (`FTS_DP`)
@@ -78,6 +81,10 @@ From NetBSD `fts(3)` and reference `fts.c`:([NetBSD Manual Pages][1])
 
   * `fts_path` must be a stable pointer to an internal buffer that's valid until next `fts_read`
   * Use dynamic path buffers with `PATH_MAX` fallback when defined, but never *assume* `PATH_MAX` exists (musl can omit it depending on feature macros)([musl libc][6])
+* `fts_children` error/empty semantics:
+
+  * Non-directory or empty directory returns `NULL` and sets `errno = 0`
+  * `fts_children(NULL, ...)` is invalid and sets `errno = EINVAL`
 
 **musl-specific guidance**
 
@@ -86,6 +93,7 @@ From NetBSD `fts(3)` and reference `fts.c`:([NetBSD Manual Pages][1])
   * `openat`, `fstatat`, `fdopendir`, `readdir`, `closedir`, `readlinkat`, `getcwd`
 * Do **not** rely on glibc-specific `d_type` behavior or `NAME_MAX` if you can avoid it
 * Ensure the code builds and works identically on glibc - but treat glibc as a *test platform*, not ABI target
+* Test-only hooks (like `__fts_ops_override`) are internal, may be globally scoped, and are not thread-safe
 
 ---
 
