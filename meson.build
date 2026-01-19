@@ -173,8 +173,12 @@ fts_tests = [
   ['fts_two_roots', 'test_two_roots.c'],
   ['fts_walk_nostat_seedot', 'test_walk_nostat_seedot.c'],
   ['fts_children_api', 'test_children_api.c'],
+  ['fts_children_errno', 'test_children_errno.c'],
   ['fts_children_null', 'test_children_null.c'],
+  ['fts_concurrent_streams', 'test_concurrent_streams.c'],
   ['fts_fault_injection', 'test_fault_injection.c'],
+  ['fts_open_invalid_flags', 'test_open_invalid_flags.c'],
+  ['fts_read_error_cur_reset', 'test_read_error_cur_reset.c'],
   ['fts_unreadable_dir', 'test_unreadable_dir.c'],
   ['fts_whiteout', 'test_whiteout.c'],
   ['fts_xdev', 'test_xdev.c']
