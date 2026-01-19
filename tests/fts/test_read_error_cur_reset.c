@@ -19,7 +19,11 @@ static int injected_fchdir(int fd) {
     return fchdir(fd);
 }
 
-static const struct fts_ops injected_ops = {.open_fn = open,
+static int injected_open(const char* path, int flags) {
+    return open(path, flags);
+}
+
+static const struct fts_ops injected_ops = {.open_fn = injected_open,
                                             .close_fn = close,
                                             .fstat_fn = fstat,
                                             .fstatat_fn = fstatat,
