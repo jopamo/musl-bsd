@@ -47,11 +47,26 @@ extern "C" {
 #endif
 
 #ifndef DEFAULT_ALIGNMENT
-#define DEFAULT_ALIGNMENT offsetof(struct { char c; union { uintmax_t i; long double d; void* p; } u; }, u)
+#define DEFAULT_ALIGNMENT      \
+    offsetof(                  \
+        struct {               \
+            char c;            \
+            union {            \
+                uintmax_t i;   \
+                long double d; \
+                void* p;       \
+            } u;               \
+        },                     \
+        u)
 #endif
 
 #ifndef DEFAULT_ROUNDING
-#define DEFAULT_ROUNDING sizeof(union { uintmax_t i; long double d; void* p; })
+#define DEFAULT_ROUNDING \
+    sizeof(union {       \
+        uintmax_t i;     \
+        long double d;   \
+        void* p;         \
+    })
 #endif
 
 struct _obstack_chunk {
@@ -147,7 +162,7 @@ extern const char* name;
 #undef obstack_int_grow
 #define obstack_int_grow(H, aint)                                                    \
     ((obstack_room(H) < sizeof(int) ? (_obstack_newchunk((H), sizeof(int)), 0) : 0), \
-     (void)(*((int*)((H)->next_free += sizeof(int))) = (aint)))
+     (void)(*((int*)((H)->next_free += sizeof(int)) - 1) = (aint)))
 
 #define obstack_alloc(H, length) (obstack_blank((H), (length)), obstack_finish(H))
 
@@ -245,7 +260,7 @@ extern const char* name;
 
 #define obstack_ptr_grow(H, aptr)                                                          \
     (((obstack_room(H) < sizeof(void*)) ? (_obstack_newchunk((H), sizeof(void*)), 0) : 0), \
-     ((*((void**)((H)->next_free += sizeof(void*))) = (aptr)), 0))
+     ((*((void**)((H)->next_free += sizeof(void*)) - 1) = (aptr)), 0))
 
 #define obstack_copy(H, where, length) (obstack_grow((H), (where), (length)), obstack_finish(H))
 

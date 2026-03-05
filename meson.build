@@ -208,7 +208,8 @@ obstack_tests = [
   ['obstack_vprintf', 'tests/obstack/test_vprintf.c'],
   ['obstack_extra_allocator_oom', 'tests/obstack/test_extra_allocator_oom.c'],
   ['obstack_calculate_object_size', 'tests/obstack/test_calculate_object_size.c'],
-  ['obstack_free_reset', 'tests/obstack/test_free_reset.c']
+  ['obstack_free_reset', 'tests/obstack/test_free_reset.c'],
+  ['obstack_int_ptr_grow', 'tests/obstack/test_int_ptr_grow.c']
 ]
 
 foreach t : obstack_tests
