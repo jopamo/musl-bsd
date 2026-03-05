@@ -41,6 +41,21 @@ static void test_truncate_mode(void) {
     free(out);
 }
 
+static void test_truncate_mode_with_newline(void) {
+    char* out = NULL;
+    size_t out_len = 0;
+    FILE* stream = open_capture(&out, &out_len);
+    argp_fmtstream_t fs = argp_make_fmtstream(stream, 0, 10, -1);
+    assert(fs != NULL);
+
+    assert(argp_fmtstream_puts(fs, "123456789012345\n") == 0);
+    argp_fmtstream_free(fs);
+    assert(fclose(stream) == 0);
+
+    assert(strcmp(out, "123456789\n") == 0);
+    free(out);
+}
+
 static void test_wrap_mode_with_margins(void) {
     char* out = NULL;
     size_t out_len = 0;
@@ -130,6 +145,7 @@ static void test_flush_failure_paths(void) {
 
 int main(void) {
     test_truncate_mode();
+    test_truncate_mode_with_newline();
     test_wrap_mode_with_margins();
     test_long_word_wrap_path();
     test_printf_growth_and_empty_puts();
