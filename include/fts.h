@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: BSD */
+/* SPDX-License-Identifier: BSD-3-Clause */
 
 #ifndef FTS_H
 #define FTS_H
@@ -36,14 +36,14 @@ struct _ftsent;
 #endif
 
 typedef struct _fts {
-    struct _ftsent* fts_cur;             /* current node */
-    struct _ftsent* fts_child;           /* linked list of children */
-    struct _ftsent** fts_array;          /* sort array */
-    __fts_dev_t fts_dev;                 /* starting device # */
-    char* fts_path;                      /* path for this descent */
-    int fts_rfd;                         /* fd for root */
-    __fts_length_t fts_pathlen;          /* sizeof(path) */
-    __fts_length_t fts_nitems;           /* elements in the sort array */
+    struct _ftsent* fts_cur;    /* current node */
+    struct _ftsent* fts_child;  /* linked list of children */
+    struct _ftsent** fts_array; /* sort array */
+    __fts_dev_t fts_dev;        /* starting device # */
+    char* fts_path;             /* path for this descent */
+    int fts_rfd;                /* fd for root */
+    __fts_length_t fts_pathlen; /* sizeof(path) */
+    __fts_length_t fts_nitems;  /* elements in the sort array */
     int (*fts_compar)(const struct _ftsent**, const struct _ftsent**);
 
 #define FTS_COMFOLLOW 0x0001
@@ -62,20 +62,20 @@ typedef struct _fts {
 } FTS;
 
 typedef struct _ftsent {
-    struct _ftsent* fts_cycle; /* cycle node */
+    struct _ftsent* fts_cycle;  /* cycle node */
     struct _ftsent* fts_parent; /* parent directory */
-    struct _ftsent* fts_link; /* next file in directory */
-    __fts_number_t fts_number; /* local numeric value */
-    void* fts_pointer; /* local address value */
-    char* fts_accpath; /* access path */
-    char* fts_path; /* root path */
-    int fts_errno; /* errno for this node */
-    int fts_symfd; /* fd for symlink */
+    struct _ftsent* fts_link;   /* next file in directory */
+    __fts_number_t fts_number;  /* local numeric value */
+    void* fts_pointer;          /* local address value */
+    char* fts_accpath;          /* access path */
+    char* fts_path;             /* root path */
+    int fts_errno;              /* errno for this node */
+    int fts_symfd;              /* fd for symlink */
     __fts_length_t fts_pathlen; /* strlen(fts_path) */
     __fts_length_t fts_namelen; /* strlen(fts_name) */
 
-    __fts_ino_t fts_ino; /* inode */
-    __fts_dev_t fts_dev; /* device */
+    __fts_ino_t fts_ino;     /* inode */
+    __fts_dev_t fts_dev;     /* device */
     __fts_nlink_t fts_nlink; /* link count */
 
 #define FTS_ROOTPARENTLEVEL -1
@@ -110,7 +110,7 @@ typedef struct _ftsent {
     unsigned short fts_instr;
 
     __fts_stat_t* fts_statp; /* stat(2) information */
-    char fts_name[1]; /* file name */
+    char fts_name[1];        /* file name */
 } FTSENT;
 
 FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, const FTSENT**));
