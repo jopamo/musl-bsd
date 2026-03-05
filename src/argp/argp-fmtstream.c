@@ -180,8 +180,9 @@ void __argp_fmtstream_update(argp_fmtstream_t fs) {
             /* Truncate the line by overwriting the excess with the
                newline and anything after it in the buffer.  */
             if (nl < fs->p) {
-                memmove(buf + (r - fs->point_col), nl, fs->p - nl);
-                fs->p -= buf + (r - fs->point_col) - nl;
+                char* trunc = buf + (r - fs->point_col);
+                memmove(trunc, nl, fs->p - nl);
+                fs->p -= nl - trunc;
                 /* Reset point for the next line and start scanning it.  */
                 fs->point_col = 0;
                 buf += r + 1; /* Skip full line plus \n. */
