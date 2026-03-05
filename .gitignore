@@ -1,0 +1,5 @@
+*.md
+!README.md
+docs/
+build*
+doc/
