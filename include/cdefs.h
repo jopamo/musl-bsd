@@ -35,20 +35,31 @@
 
 #if !defined(HAVE_QSORT_R)
 
-static void* qsort_r_global_arg;
-
 typedef int (*qsort_r_compar_fn_t)(const void*, const void*, void*);
-static qsort_r_compar_fn_t qsort_r_user_compar;
+
+struct qsort_r_shim_ctx {
+    qsort_r_compar_fn_t compar;
+    void* arg;
+    struct qsort_r_shim_ctx* prev;
+};
+
+static __thread struct qsort_r_shim_ctx* qsort_r_ctx_top;
 
 static int qsort_r_global_shim(const void* a, const void* b) {
-    return qsort_r_user_compar(a, b, qsort_r_global_arg);
+    struct qsort_r_shim_ctx* ctx = qsort_r_ctx_top;
+    return ctx->compar(a, b, ctx->arg);
 }
 
-#define qsort_r(base, nmemb, size, compar, arg)              \
+#define qsort_r(base, nmemb, size, cmpfn, user_arg)          \
     do {                                                     \
-        qsort_r_user_compar = (qsort_r_compar_fn_t)(compar); \
-        qsort_r_global_arg = (void*)(arg);                   \
+        struct qsort_r_shim_ctx __ctx = {                    \
+            .compar = (qsort_r_compar_fn_t)(cmpfn),          \
+            .arg = (void*)(user_arg),                        \
+            .prev = qsort_r_ctx_top,                         \
+        };                                                   \
+        qsort_r_ctx_top = &__ctx;                            \
         qsort((base), (nmemb), (size), qsort_r_global_shim); \
+        qsort_r_ctx_top = __ctx.prev;                        \
     } while (0)
 
 #endif
@@ -72,15 +83,27 @@ static int qsort_r_global_shim(const void* a, const void* b) {
 #endif
 
 #if defined(__cplusplus)
+#ifndef __BEGIN_EXTERN_C
 #define __BEGIN_EXTERN_C extern "C" {
+#endif
+#ifndef __END_EXTERN_C
 #define __END_EXTERN_C }
+#endif
 #else
+#ifndef __BEGIN_EXTERN_C
 #define __BEGIN_EXTERN_C
+#endif
+#ifndef __END_EXTERN_C
 #define __END_EXTERN_C
 #endif
+#endif
 
+#ifndef __BEGIN_DECLS
 #define __BEGIN_DECLS __BEGIN_EXTERN_C
+#endif
+#ifndef __END_DECLS
 #define __END_DECLS __END_EXTERN_C
+#endif
 
 #define __dso_public __attribute__((__visibility__("default")))
 #define __dso_hidden __attribute__((__visibility__("hidden")))

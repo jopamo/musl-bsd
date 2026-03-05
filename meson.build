@@ -255,6 +255,21 @@ foreach t : argp_tests
   test(t[0], exe)
 endforeach
 
+cdefs_tests = [
+  ['cdefs_qsort_r_reentrant', 'tests/cdefs/test_qsort_r_reentrant.c']
+]
+
+foreach t : cdefs_tests
+  exe = executable(
+    t[0],
+    [t[1]],
+    include_directories: inc,
+    c_args: c_flags,
+    install: false
+  )
+  test(t[0], exe)
+endforeach
+
 test('ex1', ex1)
 test('ex3', ex3, args: ['arg1', 'arg2'])
 test('ex4', ex4, args: ['-v', '--output=FILE', 'arg1_', 'STRING1', 'STRING2', 'STRING3'])
