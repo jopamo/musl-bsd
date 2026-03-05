@@ -97,6 +97,14 @@ libfts = shared_library(
   link_depends: fts_link_deps
 )
 
+libfts_test = static_library(
+  'fts_test',
+  ['src/fts.c'],
+  include_directories: inc,
+  c_args: c_flags,
+  install: false
+)
+
 install_headers('include/fts.h', subdir: '')
 
 argp_source = files([
@@ -189,7 +197,7 @@ foreach t : fts_tests
     t[0],
     ['tests/fts/' + t[1]],
     include_directories: [inc, fts_test_inc],
-    link_with: [libfts, fts_test_common],
+    link_with: [libfts_test, fts_test_common],
     c_args: c_flags,
     install: false
   )

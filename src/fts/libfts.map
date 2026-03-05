@@ -5,7 +5,6 @@ LIBFTS_2.0 {
         fts_open;
         fts_read;
         fts_set;
-        __fts_ops_override; /* test-only hook */
     local:
         *;
 };

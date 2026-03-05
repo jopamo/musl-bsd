@@ -73,7 +73,7 @@ struct fts_private {
 #define CYCLE_STATE(sp) (&FTS_PRIV(sp)->cycles)
 #define OPS(sp) (FTS_PRIV(sp)->ops)
 
-const struct fts_ops* __fts_ops_override = NULL;
+__attribute__((visibility("hidden"))) const struct fts_ops* __fts_ops_override = NULL;
 
 static int fts_default_open(const char* path, int flags) {
     return open(path, flags);

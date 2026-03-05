@@ -23,7 +23,7 @@ struct fts_ops {
 };
 
 /* Optional override used by tests for fault injection; leave NULL for defaults.
-   This hook is internal and not thread-safe. */
+   This hook is internal and not thread-safe, and is not exported by libfts. */
 extern const struct fts_ops* __fts_ops_override;
 
 #ifdef __cplusplus
