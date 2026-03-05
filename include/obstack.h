@@ -46,27 +46,25 @@
 extern "C" {
 #endif
 
+#if !defined(DEFAULT_ALIGNMENT) || !defined(DEFAULT_ROUNDING)
+union obstack_default_union {
+    uintmax_t i;
+    long double d;
+    void* p;
+};
+
+struct obstack_default_alignment {
+    char c;
+    union obstack_default_union u;
+};
+#endif
+
 #ifndef DEFAULT_ALIGNMENT
-#define DEFAULT_ALIGNMENT      \
-    offsetof(                  \
-        struct {               \
-            char c;            \
-            union {            \
-                uintmax_t i;   \
-                long double d; \
-                void* p;       \
-            } u;               \
-        },                     \
-        u)
+#define DEFAULT_ALIGNMENT offsetof(struct obstack_default_alignment, u)
 #endif
 
 #ifndef DEFAULT_ROUNDING
-#define DEFAULT_ROUNDING \
-    sizeof(union {       \
-        uintmax_t i;     \
-        long double d;   \
-        void* p;         \
-    })
+#define DEFAULT_ROUNDING sizeof(union obstack_default_union)
 #endif
 
 struct _obstack_chunk {
