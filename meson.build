@@ -240,7 +240,8 @@ argp_tests = [
   ['test_argp_ambiguous', 'tests/argp/test_ambiguous.c'],
   ['test_argp_basic_options', 'tests/argp/test_basic_options.c'],
   ['test_argp_child_parsers', 'tests/argp/test_child_parsers.c'],
-  ['test_argp_help_fmt_dup_args', 'tests/argp/test_help_fmt_dup_args.c']
+  ['test_argp_help_fmt_dup_args', 'tests/argp/test_help_fmt_dup_args.c'],
+  ['test_argp_fmtstream_behavior', 'tests/argp/test_fmtstream_behavior.c']
 ]
 
 foreach t : argp_tests
