@@ -664,8 +664,10 @@ static FTSENT* fts_build(FTS* sp, int type) {
 
         if (dnamlen >= maxlen) {
             char* oldaddr = sp->fts_path;
-            if (fts_palloc(sp, dnamlen + len + 1))
+            if (fts_palloc(sp, dnamlen + len + 1)) {
+                free(p);
                 goto mem_fail;
+            }
             if (oldaddr != sp->fts_path) {
                 fts_padjust(sp, head);
                 if (ISSET(FTS_NOCHDIR))
