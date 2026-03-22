@@ -148,10 +148,17 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
         errno = EINVAL;
         return NULL;
     }
-    if ((options & (FTS_LOGICAL | FTS_PHYSICAL)) == 0 ||
-        (options & (FTS_LOGICAL | FTS_PHYSICAL)) == (FTS_LOGICAL | FTS_PHYSICAL)) {
-        errno = EINVAL;
-        return NULL;
+    switch (options & (FTS_LOGICAL | FTS_PHYSICAL)) {
+        case 0:
+            /* glibc accepts neither flag and defaults to a physical walk. */
+            options |= FTS_PHYSICAL;
+            break;
+        case FTS_LOGICAL | FTS_PHYSICAL:
+            /* glibc accepts both and prefers logical traversal. */
+            options &= ~FTS_PHYSICAL;
+            break;
+        default:
+            break;
     }
 
     struct fts_private* priv = calloc(1, sizeof(*priv));
@@ -312,6 +319,11 @@ FTSENT* fts_read(FTS* sp) {
     int instr;
     char* t;
     int saved_errno;
+
+    if (!sp) {
+        errno = EINVAL;
+        return NULL;
+    }
 
     if (!sp->fts_cur || ISSET(FTS_STOP))
         return NULL;
@@ -629,10 +641,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
 #endif
 
     if ((nlinks != 0) || (type == BREAD)) {
-        if (cur->fts_level == FTS_ROOTLEVEL) {
-            cur->fts_flags |= FTS_DONTCHDIR;
-        }
-        else if (fts_safe_changedir(sp, cur, dirfd(dirp), NULL)) {
+        if (fts_safe_changedir(sp, cur, dirfd(dirp), NULL)) {
             cderrno = errno;
             cur->fts_flags |= FTS_DONTCHDIR;
         }
@@ -671,7 +680,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
             if (oldaddr != sp->fts_path) {
                 fts_padjust(sp, head);
                 if (ISSET(FTS_NOCHDIR))
-                    cp = sp->fts_path + (len - 1);
+                    cp = sp->fts_path + len;
             }
             maxlen = sp->fts_pathlen - len;
         }
