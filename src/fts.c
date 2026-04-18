@@ -684,6 +684,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
             }
             maxlen = sp->fts_pathlen - len;
         }
+        p->fts_path = sp->fts_path;
 
         p->fts_level = level;
         p->fts_parent = cur;
