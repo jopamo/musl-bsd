@@ -417,6 +417,8 @@ static struct hol* make_hol(const struct argp* argp, struct hol_cluster* cluster
 
     assert(hol);
 
+    hol->entries = 0;
+    hol->short_options = 0;
     hol->num_entries = 0;
     hol->clusters = 0;
 
@@ -501,10 +503,8 @@ static void hol_free(struct hol* hol) {
         cl = next;
     }
 
-    if (hol->num_entries > 0) {
-        free(hol->entries);
-        free(hol->short_options);
-    }
+    free(hol->entries);
+    free(hol->short_options);
 
     free(hol);
 }
@@ -769,6 +769,8 @@ static void hol_append(struct hol* hol, struct hol* more) {
             hol->entries = more->entries;
             hol->short_options = more->short_options;
             more->num_entries = 0; /* Mark MORE's fields as invalid.  */
+            more->entries = 0;
+            more->short_options = 0;
         }
         else
         /* Append the entries in MORE to those in HOL, taking care to only add
@@ -1524,7 +1526,7 @@ weak_alias(__argp_help, argp_help)
 #endif
 
 #ifndef _LIBC
-char* __argp_basename(char* name) {
+    char* __argp_basename(char* name) {
     char* short_name = strrchr(name, '/');
     return short_name ? short_name + 1 : name;
 }
@@ -1548,8 +1550,7 @@ void __argp_state_help(const struct argp_state* state, FILE* stream, unsigned fl
         if (state && (state->flags & ARGP_LONG_ONLY))
             flags |= ARGP_HELP_LONG_ONLY;
 
-        _help(state ? state->root_argp : 0, state, stream, flags,
-              state ? state->name : __argp_short_program_name());
+        _help(state ? state->root_argp : 0, state, stream, flags, state ? state->name : __argp_short_program_name());
 
         if (!state || !(state->flags & ARGP_NO_EXIT)) {
             if (flags & ARGP_HELP_EXIT_ERR)
