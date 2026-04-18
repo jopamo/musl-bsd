@@ -41,6 +41,12 @@ static void test_nameonly_behavior(const struct fts_test_tree* tree) {
         return;
     }
 
+    size_t pathlen = (size_t)root->fts_pathlen;
+    size_t cap = (size_t)f->fts_pathlen;
+    fts_check(cap > pathlen + 1, "matrix: path buffer has spare byte for name-only poison check");
+    if (cap > pathlen + 1)
+        f->fts_path[pathlen + 1] = 'X';
+
     FTSENT* kids = fts_children(f, FTS_NAMEONLY);
     fts_check(kids != NULL, "matrix: FTS_NAMEONLY children list is returned");
 
