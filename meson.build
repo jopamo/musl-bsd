@@ -205,7 +205,19 @@ foreach t : fts_tests
   test(t[0], exe)
 endforeach
 
+fts_padjust_realloc = executable(
+  'fts_padjust_realloc',
+  ['tests/fts/test_padjust_realloc.c'],
+  include_directories: [inc, fts_test_inc],
+  link_with: [libfts_test, fts_test_common],
+  c_args: c_flags,
+  link_args: ['-Wl,--wrap=realloc'],
+  install: false
+)
+test('fts_padjust_realloc', fts_padjust_realloc)
+
 obstack_tests = [
+  ['obstack_alloc_failed_handler', 'tests/obstack/test_alloc_failed_handler.c'],
   ['obstack_begin_plain', 'tests/obstack/test_begin_plain.c'],
   ['obstack_begin_extra', 'tests/obstack/test_begin_extra.c'],
   ['obstack_force_newchunk', 'tests/obstack/test_force_newchunk.c'],
@@ -242,7 +254,10 @@ argp_tests = [
   ['test_argp_basic_options', 'tests/argp/test_basic_options.c'],
   ['test_argp_child_parsers', 'tests/argp/test_child_parsers.c'],
   ['test_argp_help_fmt_dup_args', 'tests/argp/test_help_fmt_dup_args.c'],
-  ['test_argp_fmtstream_behavior', 'tests/argp/test_fmtstream_behavior.c']
+  ['test_argp_fmtstream_behavior', 'tests/argp/test_fmtstream_behavior.c'],
+  ['test_argp_help_matrix', 'tests/argp/test_help_matrix.c'],
+  ['test_argp_help_error_paths', 'tests/argp/test_help_error_paths.c'],
+  ['test_argp_parse_edges', 'tests/argp/test_parse_edges.c']
 ]
 
 foreach t : argp_tests
