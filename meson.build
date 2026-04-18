@@ -183,6 +183,7 @@ fts_tests = [
   ['fts_children_api', 'test_children_api.c'],
   ['fts_children_errno', 'test_children_errno.c'],
   ['fts_children_null', 'test_children_null.c'],
+  ['fts_children_matrix', 'test_children_matrix.c'],
   ['fts_concurrent_streams', 'test_concurrent_streams.c'],
   ['fts_fault_injection', 'test_fault_injection.c'],
   ['fts_dracut_modalias_compat', 'test_dracut_modalias_compat.c'],
@@ -215,6 +216,17 @@ fts_padjust_realloc = executable(
   install: false
 )
 test('fts_padjust_realloc', fts_padjust_realloc)
+
+fts_read_failures = executable(
+  'fts_read_failures',
+  ['tests/fts/test_read_failures.c'],
+  include_directories: [inc, fts_test_inc],
+  link_with: [libfts_test, fts_test_common],
+  c_args: c_flags,
+  link_args: ['-Wl,--wrap=malloc'],
+  install: false
+)
+test('fts_read_failures', fts_read_failures)
 
 obstack_tests = [
   ['obstack_alloc_failed_handler', 'tests/obstack/test_alloc_failed_handler.c'],
