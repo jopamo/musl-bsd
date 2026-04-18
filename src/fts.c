@@ -654,6 +654,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     if (ISSET(FTS_NOCHDIR)) {
         cp = sp->fts_path + len;
         *cp++ = '/';
+        *cp = '\0';
     }
     len++;
     maxlen = sp->fts_pathlen - len;
