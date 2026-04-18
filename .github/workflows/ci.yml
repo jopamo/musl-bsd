@@ -39,37 +39,3 @@ jobs:
           UBSAN_OPTIONS: halt_on_error=1:abort_on_error=1:print_summary=1:print_stacktrace=1
         run: |
           meson test -C builddir --print-errorlogs || (cat builddir/meson-logs/testlog.txt && false)
-
-  coverage:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repo
-        uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          # Install GCC toolchain, Meson, Ninja, and gcovr
-          sudo apt-get install -y gcc meson ninja-build gcovr
-
-      - name: Configure coverage build
-        run: |
-          meson setup build-coverage \
-            --buildtype=debug \
-            -Db_coverage=true \
-            -Db_lundef=false
-
-      - name: Generate coverage reports
-        run: ./scripts/coverage.sh build-coverage
-
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            build-coverage/meson-logs/coverage.txt
-            build-coverage/coverage/index.html
-            build-coverage/coverage/coverage.xml
-            build-coverage/coverage/summary.json
-            build-coverage/coverage/src-summary.json
