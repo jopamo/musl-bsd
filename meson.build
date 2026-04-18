@@ -181,6 +181,7 @@ fts_tests = [
   ['fts_symlink_loop_follow', 'test_symlink_loop_follow.c'],
   ['fts_traversal_order', 'test_traversal_order.c'],
   ['fts_cycle_detection', 'test_cycle_detection.c'],
+  ['fts_cycle_table_edges', 'test_cycle_table_edges.c'],
   ['fts_many_children_sorted', 'test_many_children_sorted.c'],
   ['fts_walk_physical_chdir', 'test_walk_physical_chdir.c'],
   ['fts_walk_physical_nochdir', 'test_walk_physical_nochdir.c'],
@@ -192,6 +193,7 @@ fts_tests = [
   ['fts_children_errno', 'test_children_errno.c'],
   ['fts_children_null', 'test_children_null.c'],
   ['fts_children_matrix', 'test_children_matrix.c'],
+  ['fts_changedir_failures', 'test_changedir_failures.c'],
   ['fts_concurrent_streams', 'test_concurrent_streams.c'],
   ['fts_fault_injection', 'test_fault_injection.c'],
   ['fts_dracut_modalias_compat', 'test_dracut_modalias_compat.c'],
@@ -248,7 +250,9 @@ obstack_tests = [
   ['obstack_vprintf', 'tests/obstack/test_vprintf.c'],
   ['obstack_extra_allocator_oom', 'tests/obstack/test_extra_allocator_oom.c'],
   ['obstack_calculate_object_size', 'tests/obstack/test_calculate_object_size.c'],
+  ['obstack_growth_boundaries', 'tests/obstack/test_growth_boundaries.c'],
   ['obstack_free_reset', 'tests/obstack/test_free_reset.c'],
+  ['obstack_free_edges', 'tests/obstack/test_free_edges.c'],
   ['obstack_int_ptr_grow', 'tests/obstack/test_int_ptr_grow.c']
 ]
 
@@ -262,6 +266,17 @@ obstack_alloc_failed_handler = executable(
   install: false
 )
 test('obstack_alloc_failed_handler', obstack_alloc_failed_handler)
+
+obstack_vprintf_failures = executable(
+  'obstack_vprintf_failures',
+  ['tests/obstack/test_vprintf_failures.c'],
+  include_directories: [inc, obstack_test_inc],
+  link_with: [libobstack_test, obstack_test_common],
+  c_args: c_flags,
+  link_args: ['-Wl,--wrap=vsnprintf'],
+  install: false
+)
+test('obstack_vprintf_failures', obstack_vprintf_failures)
 
 foreach t : obstack_tests
   exe = executable(
@@ -319,7 +334,14 @@ endforeach
 
 test('ex1', ex1)
 test('ex3', ex3, args: ['arg1', 'arg2'])
+test('ex3_options', ex3, args: ['-q', '-v', '--output=FILE', 'arg1', 'arg2'])
+test('ex3_silent_alias', ex3, args: ['-s', 'arg1', 'arg2'])
+test('ex3_missing_arg', ex3, args: ['arg1'], should_fail: true)
+test('ex3_too_many_args', ex3, args: ['arg1', 'arg2', 'arg3'], should_fail: true)
 test('ex4', ex4, args: ['-v', '--output=FILE', 'arg1_', 'STRING1', 'STRING2', 'STRING3'])
+test('ex4_quiet_repeat', ex4, args: ['-q', '--repeat=2', 'arg1_', 'STRING1'])
+test('ex4_abort', ex4, args: ['--abort', 'arg1_'], should_fail: true)
+test('ex4_no_args', ex4, should_fail: true)
 
 abi_inc = include_directories('.')
 
