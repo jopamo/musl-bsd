@@ -678,7 +678,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
                 goto mem_fail;
             }
             if (oldaddr != sp->fts_path) {
-                fts_padjust(sp, head);
+                fts_padjust(sp, head ? head : cur);
                 if (ISSET(FTS_NOCHDIR))
                     cp = sp->fts_path + len;
             }

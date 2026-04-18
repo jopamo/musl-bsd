@@ -28,6 +28,25 @@
 - `sys/tree.h` macro families: `RB_*`, `SPLAY_*`
 - `sys/cdefs.h` attributes/visibility macros: `__dead`, `__pure`, `__packed`, `__aligned`, `__BEGIN_DECLS`, `__END_DECLS`
 
+
+## Testing and Coverage
+
+Use the canonical coverage command:
+
+```sh
+./scripts/coverage.sh build-coverage
+```
+
+This runs the full Meson test suite and writes reports to:
+
+- `build-coverage/meson-logs/coverage.txt`
+- `build-coverage/coverage/index.html`
+- `build-coverage/coverage/coverage.xml`
+- `build-coverage/coverage/summary.json`
+- `build-coverage/coverage/src-summary.json`
+
+Coverage collection is configured via `gcovr.cfg`. It excludes `libfts.so.*.p` object directories so `gcovr` does not merge duplicate `src/fts.c` instrumentation from both shared and test-static targets.
+
 ## License
 
 This repository is mixed-license. Canonical license texts have been added under `LICENSES/`:
