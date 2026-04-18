@@ -84,6 +84,14 @@ libobstack = shared_library(
   link_depends: obstack_link_deps
 )
 
+libobstack_test = static_library(
+  'obstack_test',
+  ['src/obstack.c'],
+  include_directories: inc,
+  c_args: c_flags,
+  install: false
+)
+
 install_headers('include/obstack.h', subdir: '')
 
 libfts = shared_library(
@@ -229,7 +237,6 @@ fts_read_failures = executable(
 test('fts_read_failures', fts_read_failures)
 
 obstack_tests = [
-  ['obstack_alloc_failed_handler', 'tests/obstack/test_alloc_failed_handler.c'],
   ['obstack_begin_plain', 'tests/obstack/test_begin_plain.c'],
   ['obstack_begin_extra', 'tests/obstack/test_begin_extra.c'],
   ['obstack_force_newchunk', 'tests/obstack/test_force_newchunk.c'],
@@ -244,6 +251,17 @@ obstack_tests = [
   ['obstack_free_reset', 'tests/obstack/test_free_reset.c'],
   ['obstack_int_ptr_grow', 'tests/obstack/test_int_ptr_grow.c']
 ]
+
+obstack_alloc_failed_handler = executable(
+  'obstack_alloc_failed_handler',
+  ['tests/obstack/test_alloc_failed_handler.c'],
+  include_directories: [inc, obstack_test_inc],
+  link_with: [libobstack_test, obstack_test_common],
+  c_args: c_flags,
+  link_args: ['-Wl,--wrap=malloc'],
+  install: false
+)
+test('obstack_alloc_failed_handler', obstack_alloc_failed_handler)
 
 foreach t : obstack_tests
   exe = executable(

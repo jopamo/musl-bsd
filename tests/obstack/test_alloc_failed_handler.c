@@ -1,11 +1,24 @@
 #include <obstack.h>
 
 #include <assert.h>
+#include <errno.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+void* __real_malloc(size_t size);
+
+static int fail_malloc_once;
+
+void* __wrap_malloc(size_t size) {
+    if (fail_malloc_once) {
+        fail_malloc_once = 0;
+        errno = ENOMEM;
+        return NULL;
+    }
+    return __real_malloc(size);
+}
 
 static int wait_child_exit(pid_t pid) {
     int status = 0;
@@ -43,7 +56,8 @@ static void test_xmalloc_oom_path_calls_failure_handler(void) {
     assert(pid >= 0);
     if (pid == 0) {
         obstack_exit_failure = 79;
-        void* p = xmalloc((size_t)SIZE_MAX);
+        fail_malloc_once = 1;
+        void* p = xmalloc((size_t)4096);
         if (p)
             free(p);
         _exit(1);
