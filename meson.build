@@ -39,8 +39,10 @@ configure_file(input: 'meson_config.h.in', output: 'config.h', configuration: co
 add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
 
 inc = include_directories('include', 'src/argp')
+overlay_inc = include_directories('overlay/include')
 fts_test_inc = include_directories('tests/fts')
 obstack_test_inc = include_directories('tests/obstack')
+compat_test_inc = include_directories('tests/compat')
 
 c_flags = [
   '-D_GNU_SOURCE'
@@ -71,6 +73,14 @@ argp_link_deps = []
 if vs_supported
   argp_link_args = ['-Wl,--version-script=' + argp_map]
   argp_link_deps = [argp_map]
+endif
+
+compat_map = meson.current_source_dir() / 'src/compat/libmusl-bsd-compat.map'
+compat_link_args = []
+compat_link_deps = []
+if vs_supported
+  compat_link_args = ['-Wl,--version-script=' + compat_map]
+  compat_link_deps = [compat_map]
 endif
 
 libobstack = shared_library(
@@ -136,6 +146,31 @@ libargp = shared_library(
   link_depends: argp_link_deps
 )
 
+libcompat = shared_library(
+  'musl-bsd-compat',
+  [
+    'src/compat/error.c',
+    'src/compat/string.c',
+  ],
+  include_directories: [overlay_inc],
+  install: true,
+  version: '2.0.0',
+  c_args: c_flags,
+  link_args: compat_link_args,
+  link_depends: compat_link_deps
+)
+
+static_library(
+  'musl-bsd-compat',
+  [
+    'src/compat/error.c',
+    'src/compat/string.c',
+  ],
+  include_directories: [overlay_inc],
+  install: true,
+  c_args: c_flags
+)
+
 install_headers(
   'src/argp/argp.h'
 )
@@ -147,6 +182,11 @@ install_headers(
     'include/tree.h'
   ],
   subdir: 'sys'
+)
+
+install_subdir(
+  'overlay/include',
+  install_dir: get_option('libdir') / 'musl-bsd/overlay'
 )
 
 pkg = import('pkgconfig')
@@ -321,11 +361,42 @@ cdefs_tests = [
   ['cdefs_qsort_r_reentrant', 'tests/cdefs/test_qsort_r_reentrant.c']
 ]
 
+header_tests = [
+  ['headers_linux_mount_overlay', 'tests/headers/test_linux_mount_overlay.c']
+]
+
+compat_tests = [
+  ['compat_runtime', 'tests/compat/test_compat_runtime.c']
+]
+
 foreach t : cdefs_tests
   exe = executable(
     t[0],
     [t[1]],
     include_directories: inc,
+    c_args: c_flags,
+    install: false
+  )
+  test(t[0], exe)
+endforeach
+
+foreach t : header_tests
+  exe = executable(
+    t[0],
+    [t[1]],
+    include_directories: [overlay_inc],
+    c_args: c_flags,
+    install: false
+  )
+  test(t[0], exe)
+endforeach
+
+foreach t : compat_tests
+  exe = executable(
+    t[0],
+    [t[1]],
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
     c_args: c_flags,
     install: false
   )

@@ -1,0 +1,12 @@
+MUSL_BSD_COMPAT_1.0 {
+	global:
+		error;
+		error_at_line;
+		error_message_count;
+		error_one_per_line;
+		error_print_progname;
+		strlcat;
+		strlcpy;
+	local:
+		*;
+};
