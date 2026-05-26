@@ -48,6 +48,66 @@ c_flags = [
   '-D_GNU_SOURCE'
 ]
 
+compat_runtime_install_dir = '/lib'
+glibc_loader_install_dir = '/lib'
+glibc_loader_name = get_option('glibc_loader_name')
+musl_linker_path = get_option('musl_linker_path')
+glibc_loader_symlink_dir = ''
+default_glibc_loader_name = ''
+default_musl_linker_path = ''
+cpu_family = host_machine.cpu_family()
+
+if cpu_family == 'x86_64'
+  default_glibc_loader_name = 'ld-linux-x86-64.so.2'
+  default_musl_linker_path = '/lib/ld-musl-x86_64.so.1'
+  glibc_loader_symlink_dir = '/lib64'
+elif cpu_family == 'x86'
+  default_glibc_loader_name = 'ld-linux.so.2'
+  default_musl_linker_path = '/lib/ld-musl-i386.so.1'
+elif cpu_family == 'aarch64'
+  default_glibc_loader_name = 'ld-linux-aarch64.so.1'
+  default_musl_linker_path = '/lib/ld-musl-aarch64.so.1'
+  glibc_loader_symlink_dir = '/lib64'
+elif cpu_family == 'arm'
+  default_glibc_loader_name = 'ld-linux-armhf.so.3'
+  default_musl_linker_path = '/lib/ld-musl-armhf.so.1'
+elif cpu_family == 'riscv64'
+  default_glibc_loader_name = 'ld-linux-riscv64-lp64d.so.1'
+  default_musl_linker_path = '/lib/ld-musl-riscv64.so.1'
+  glibc_loader_symlink_dir = '/lib64'
+elif cpu_family == 'loongarch64'
+  default_glibc_loader_name = 'ld-linux-loongarch-lp64d.so.1'
+  default_musl_linker_path = '/lib/ld-musl-loongarch64.so.1'
+  glibc_loader_symlink_dir = '/lib64'
+elif cpu_family == 's390x'
+  default_glibc_loader_name = 'ld64.so.1'
+  default_musl_linker_path = '/lib/ld-musl-s390x.so.1'
+  glibc_loader_symlink_dir = '/lib64'
+elif cpu_family == 'ppc64'
+  default_glibc_loader_name = 'ld64.so.2'
+  default_musl_linker_path = '/lib/ld-musl-powerpc64le.so.1'
+  glibc_loader_symlink_dir = '/lib64'
+endif
+
+if glibc_loader_name == ''
+  glibc_loader_name = default_glibc_loader_name
+endif
+
+if musl_linker_path == ''
+  musl_linker_path = default_musl_linker_path
+endif
+
+if glibc_loader_name == '' or musl_linker_path == ''
+  error('Unsupported architecture for automatic glibc-loader setup; set -Dglibc_loader_name=... and -Dmusl_linker_path=...')
+endif
+
+compat_runtime_preload_path = compat_runtime_install_dir + '/libmusl-bsd-compat.so.2'
+compat_runtime_c_args = c_flags + [
+  '-DMUSL_BSD_GLIBC_LOADER_NAME="' + glibc_loader_name + '"',
+  '-DMUSL_BSD_MUSL_LINKER_PATH="' + musl_linker_path + '"',
+  '-DMUSL_BSD_PRELOAD_PATH="' + compat_runtime_preload_path + '"'
+]
+
 fts_map = meson.current_source_dir() / 'src/fts/libfts.map'
 obstack_map = meson.current_source_dir() / 'src/obstack/libobstack.map'
 argp_map = meson.current_source_dir() / 'src/argp/libargp.map'
@@ -149,14 +209,23 @@ libargp = shared_library(
 libcompat = shared_library(
   'musl-bsd-compat',
   [
+    'src/compat/dlfcn.c',
     'src/compat/error.c',
+    'src/compat/exec.c',
+    'src/compat/fs64.c',
+    'src/compat/glibc.c',
+    'src/compat/math.c',
     'src/compat/mount.c',
+    'src/compat/readlink.c',
     'src/compat/string.c',
+    'src/compat/time.c',
+    'src/compat/version.c',
   ],
   include_directories: [overlay_inc],
   install: true,
+  install_dir: compat_runtime_install_dir,
   version: '2.0.0',
-  c_args: c_flags,
+  c_args: compat_runtime_c_args,
   link_args: compat_link_args,
   link_depends: compat_link_deps
 )
@@ -164,14 +233,55 @@ libcompat = shared_library(
 libcompat_static = static_library(
   'musl-bsd-compat',
   [
+    'src/compat/dlfcn.c',
     'src/compat/error.c',
+    'src/compat/exec.c',
+    'src/compat/fs64.c',
+    'src/compat/glibc.c',
+    'src/compat/math.c',
     'src/compat/mount.c',
+    'src/compat/readlink.c',
     'src/compat/string.c',
+    'src/compat/time.c',
+    'src/compat/version.c',
   ],
   include_directories: [overlay_inc],
   install: true,
-  c_args: c_flags
+  c_args: compat_runtime_c_args
 )
+
+glibc_loader = executable(
+  glibc_loader_name,
+  ['src/compat/loader.c'],
+  install: true,
+  install_dir: glibc_loader_install_dir,
+  c_args: compat_runtime_c_args,
+  link_args: ['-static-pie']
+)
+
+foreach alias_name : [
+  'libc.so.6',
+  'libdl.so.2',
+  'libm.so.6',
+  'libpthread.so.0',
+  'libresolv.so.2',
+  'librt.so.1',
+  'libutil.so.1',
+]
+  install_symlink(
+    alias_name,
+    install_dir: compat_runtime_install_dir,
+    pointing_to: 'libmusl-bsd-compat.so.2'
+  )
+endforeach
+
+if glibc_loader_symlink_dir != '' and glibc_loader_symlink_dir != glibc_loader_install_dir
+  install_symlink(
+    glibc_loader_name,
+    install_dir: glibc_loader_symlink_dir,
+    pointing_to: '../lib/' + glibc_loader_name
+  )
+endif
 
 install_headers(
   'src/argp/argp.h'
@@ -364,10 +474,13 @@ cdefs_tests = [
 ]
 
 header_tests = [
+  ['headers_glibc_overlay', 'tests/headers/test_glibc_overlay.c'],
   ['headers_linux_mount_overlay', 'tests/headers/test_linux_mount_overlay.c']
 ]
 
 compat_tests = [
+  ['compat_loader_runtime', 'tests/compat/test_loader_target.c'],
+  ['compat_glibc_runtime', 'tests/compat/test_glibc_runtime.c'],
   ['compat_runtime', 'tests/compat/test_compat_runtime.c'],
   ['compat_mount_link_probe', 'tests/compat/test_mount_link_probe.c']
 ]
@@ -395,7 +508,26 @@ foreach t : header_tests
   test(t[0], exe)
 endforeach
 
+compat_loader_runtime = executable(
+  'compat_loader_runtime',
+  ['tests/compat/test_loader_target.c'],
+  include_directories: [overlay_inc, compat_test_inc],
+  c_args: c_flags,
+  link_args: ['-Wl,--dynamic-linker=' + glibc_loader.full_path()],
+  install: false
+)
+
+compat_loader_env = environment()
+compat_loader_env.set('MUSL_BSD_PRELOAD_PATH', libcompat.full_path())
+test('compat_loader_runtime', compat_loader_runtime,
+  env: compat_loader_env,
+  depends: [glibc_loader, libcompat]
+)
+
 foreach t : compat_tests
+  if t[0] == 'compat_loader_runtime'
+    continue
+  endif
   exe = executable(
     t[0],
     [t[1]],

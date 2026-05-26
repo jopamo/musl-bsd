@@ -1,0 +1,13 @@
+option(
+  'glibc_loader_name',
+  type: 'string',
+  value: '',
+  description: 'Override the installed glibc loader-stub filename (for example ld-linux-x86-64.so.2)'
+)
+
+option(
+  'musl_linker_path',
+  type: 'string',
+  value: '',
+  description: 'Override the musl ELF interpreter path used by the glibc loader stub'
+)
