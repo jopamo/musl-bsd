@@ -3,6 +3,22 @@
 
 #define MUSL_BSD_OVERLAY_SYS_STAT_H
 
+#ifndef stat64
+#define stat64 stat
+#endif
+
+#ifndef fstat64
+#define fstat64 fstat
+#endif
+
+#ifndef lstat64
+#define lstat64 lstat
+#endif
+
+#ifndef fstatat64
+#define fstatat64 fstatat
+#endif
+
 #ifndef ACCESSPERMS
 #define ACCESSPERMS (S_IRWXU | S_IRWXG | S_IRWXO)
 #endif
