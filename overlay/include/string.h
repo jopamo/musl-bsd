@@ -1,7 +1,7 @@
 #ifndef MUSL_BSD_OVERLAY_STRING_H
-#define MUSL_BSD_OVERLAY_STRING_H
-
 #include_next <string.h>
+
+#define MUSL_BSD_OVERLAY_STRING_H
 
 #include <stddef.h>
 

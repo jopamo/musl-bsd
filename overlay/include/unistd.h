@@ -1,7 +1,7 @@
 #ifndef MUSL_BSD_OVERLAY_UNISTD_H
-#define MUSL_BSD_OVERLAY_UNISTD_H
-
 #include_next <unistd.h>
+
+#define MUSL_BSD_OVERLAY_UNISTD_H
 
 #include <errno.h>
 

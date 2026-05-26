@@ -1,7 +1,7 @@
 #ifndef MUSL_BSD_OVERLAY_SYS_STAT_H
-#define MUSL_BSD_OVERLAY_SYS_STAT_H
-
 #include_next <sys/stat.h>
+
+#define MUSL_BSD_OVERLAY_SYS_STAT_H
 
 #ifndef ACCESSPERMS
 #define ACCESSPERMS (S_IRWXU | S_IRWXG | S_IRWXO)

@@ -161,7 +161,7 @@ libcompat = shared_library(
   link_depends: compat_link_deps
 )
 
-static_library(
+libcompat_static = static_library(
   'musl-bsd-compat',
   [
     'src/compat/error.c',
@@ -388,7 +388,7 @@ foreach t : header_tests
     t[0],
     [t[1]],
     include_directories: [overlay_inc],
-    link_with: libcompat,
+    link_with: libcompat_static,
     c_args: c_flags,
     install: false
   )
@@ -400,7 +400,7 @@ foreach t : compat_tests
     t[0],
     [t[1]],
     include_directories: [overlay_inc, compat_test_inc],
-    link_with: libcompat,
+    link_with: libcompat_static,
     c_args: c_flags,
     install: false
   )
