@@ -1,7 +1,7 @@
 #ifndef MUSL_BSD_OVERLAY_SYS_MOUNT_H
-#define MUSL_BSD_OVERLAY_SYS_MOUNT_H
-
 #include_next <sys/mount.h>
+
+#define MUSL_BSD_OVERLAY_SYS_MOUNT_H
 
 #ifdef __linux__
 
@@ -15,6 +15,34 @@
  * implementations from libmusl-bsd-compat so downstream feature probes see
  * real symbols instead of preprocessor-only shims.
  */
+#ifdef open_tree
+#undef open_tree
+#endif
+
+#ifdef move_mount
+#undef move_mount
+#endif
+
+#ifdef fsopen
+#undef fsopen
+#endif
+
+#ifdef fsconfig
+#undef fsconfig
+#endif
+
+#ifdef fsmount
+#undef fsmount
+#endif
+
+#ifdef fspick
+#undef fspick
+#endif
+
+#ifdef mount_setattr
+#undef mount_setattr
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
