@@ -48,8 +48,10 @@ c_flags = [
   '-D_GNU_SOURCE'
 ]
 
-compat_runtime_install_dir = '/lib'
-glibc_loader_install_dir = '/lib'
+# This distro is usrmerge-only: /lib* are path aliases owned by layout policy,
+# while the real installed runtime payload lives in /usr/lib.
+compat_runtime_install_dir = '/usr/lib'
+glibc_loader_install_dir = '/usr/lib'
 glibc_loader_name = get_option('glibc_loader_name')
 musl_linker_path = get_option('musl_linker_path')
 glibc_loader_symlink_dir = ''
@@ -60,33 +62,27 @@ cpu_family = host_machine.cpu_family()
 if cpu_family == 'x86_64'
   default_glibc_loader_name = 'ld-linux-x86-64.so.2'
   default_musl_linker_path = '/lib/ld-musl-x86_64.so.1'
-  glibc_loader_symlink_dir = '/lib64'
 elif cpu_family == 'x86'
   default_glibc_loader_name = 'ld-linux.so.2'
   default_musl_linker_path = '/lib/ld-musl-i386.so.1'
 elif cpu_family == 'aarch64'
   default_glibc_loader_name = 'ld-linux-aarch64.so.1'
   default_musl_linker_path = '/lib/ld-musl-aarch64.so.1'
-  glibc_loader_symlink_dir = '/lib64'
 elif cpu_family == 'arm'
   default_glibc_loader_name = 'ld-linux-armhf.so.3'
   default_musl_linker_path = '/lib/ld-musl-armhf.so.1'
 elif cpu_family == 'riscv64'
   default_glibc_loader_name = 'ld-linux-riscv64-lp64d.so.1'
   default_musl_linker_path = '/lib/ld-musl-riscv64.so.1'
-  glibc_loader_symlink_dir = '/lib64'
 elif cpu_family == 'loongarch64'
   default_glibc_loader_name = 'ld-linux-loongarch-lp64d.so.1'
   default_musl_linker_path = '/lib/ld-musl-loongarch64.so.1'
-  glibc_loader_symlink_dir = '/lib64'
 elif cpu_family == 's390x'
   default_glibc_loader_name = 'ld64.so.1'
   default_musl_linker_path = '/lib/ld-musl-s390x.so.1'
-  glibc_loader_symlink_dir = '/lib64'
 elif cpu_family == 'ppc64'
   default_glibc_loader_name = 'ld64.so.2'
   default_musl_linker_path = '/lib/ld-musl-powerpc64le.so.1'
-  glibc_loader_symlink_dir = '/lib64'
 endif
 
 if glibc_loader_name == ''
