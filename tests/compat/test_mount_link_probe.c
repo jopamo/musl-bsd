@@ -1,23 +1,6 @@
-#ifndef MUSL_BSD_OVERLAY_SYS_MOUNT_H
-#define MUSL_BSD_OVERLAY_SYS_MOUNT_H
-
-#include_next <sys/mount.h>
-
-#ifdef __linux__
-
-#include <fcntl.h>
-#include <linux/mount.h>
 #include <stddef.h>
 
-/*
- * musl exposes the new mount API kernel constants, but not the glibc-style
- * wrapper functions. Declare libc-like entry points here and provide the
- * implementations from libmusl-bsd-compat so downstream feature probes see
- * real symbols instead of preprocessor-only shims.
- */
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct mount_attr;
 
 int open_tree(int dfd, const char *path, unsigned int flags);
 int move_mount(int from_dfd, const char *from_path, int to_dfd,
@@ -30,10 +13,26 @@ int fspick(int dfd, const char *path, unsigned int flags);
 int mount_setattr(int dfd, const char *path, unsigned int flags,
 		  struct mount_attr *attr, size_t size);
 
-#ifdef __cplusplus
+int main(void)
+{
+#if defined(__linux__)
+	if (open_tree(-1, "", 0) != -1)
+		return 1;
+	if (move_mount(-1, "", -1, "", 0) != -1)
+		return 1;
+	if (fsopen("", 0) != -1)
+		return 1;
+	if (fsconfig(-1, 0, "", 0, 0) != -1)
+		return 1;
+	if (fsmount(-1, 0, 0) != -1)
+		return 1;
+	if (fspick(-1, "", 0) != -1)
+		return 1;
+	if (mount_setattr(-1, "", 0, 0, 0) != -1)
+		return 1;
+
+	return 0;
+#else
+	return 0;
+#endif
 }
-#endif
-
-#endif
-
-#endif
