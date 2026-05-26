@@ -150,6 +150,7 @@ libcompat = shared_library(
   'musl-bsd-compat',
   [
     'src/compat/error.c',
+    'src/compat/mount.c',
     'src/compat/string.c',
   ],
   include_directories: [overlay_inc],
@@ -164,6 +165,7 @@ static_library(
   'musl-bsd-compat',
   [
     'src/compat/error.c',
+    'src/compat/mount.c',
     'src/compat/string.c',
   ],
   include_directories: [overlay_inc],
@@ -366,7 +368,8 @@ header_tests = [
 ]
 
 compat_tests = [
-  ['compat_runtime', 'tests/compat/test_compat_runtime.c']
+  ['compat_runtime', 'tests/compat/test_compat_runtime.c'],
+  ['compat_mount_link_probe', 'tests/compat/test_mount_link_probe.c']
 ]
 
 foreach t : cdefs_tests
@@ -385,6 +388,7 @@ foreach t : header_tests
     t[0],
     [t[1]],
     include_directories: [overlay_inc],
+    link_with: libcompat,
     c_args: c_flags,
     install: false
   )

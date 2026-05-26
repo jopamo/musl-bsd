@@ -5,6 +5,13 @@ MUSL_BSD_COMPAT_1.0 {
 		error_message_count;
 		error_one_per_line;
 		error_print_progname;
+		fsconfig;
+		fsopen;
+		fsmount;
+		fspick;
+		mount_setattr;
+		move_mount;
+		open_tree;
 		strlcat;
 		strlcpy;
 	local:
