@@ -202,21 +202,26 @@ libargp = shared_library(
   link_depends: argp_link_deps
 )
 
+compat_common_sources = [
+  'src/compat/dlfcn.c',
+  'src/compat/error.c',
+  'src/compat/fs64.c',
+  'src/compat/glibc.c',
+  'src/compat/math.c',
+  'src/compat/mount.c',
+  'src/compat/string.c',
+  'src/compat/time.c',
+  'src/compat/version.c',
+]
+
+compat_interpose_sources = [
+  'src/compat/exec.c',
+  'src/compat/readlink.c',
+]
+
 libcompat = shared_library(
   'musl-bsd-compat',
-  [
-    'src/compat/dlfcn.c',
-    'src/compat/error.c',
-    'src/compat/exec.c',
-    'src/compat/fs64.c',
-    'src/compat/glibc.c',
-    'src/compat/math.c',
-    'src/compat/mount.c',
-    'src/compat/readlink.c',
-    'src/compat/string.c',
-    'src/compat/time.c',
-    'src/compat/version.c',
-  ],
+  compat_common_sources + compat_interpose_sources,
   include_directories: [overlay_inc],
   install: true,
   install_dir: compat_runtime_install_dir,
@@ -228,19 +233,9 @@ libcompat = shared_library(
 
 libcompat_static = static_library(
   'musl-bsd-compat',
-  [
-    'src/compat/dlfcn.c',
-    'src/compat/error.c',
-    'src/compat/exec.c',
-    'src/compat/fs64.c',
-    'src/compat/glibc.c',
-    'src/compat/math.c',
-    'src/compat/mount.c',
-    'src/compat/readlink.c',
-    'src/compat/string.c',
-    'src/compat/time.c',
-    'src/compat/version.c',
-  ],
+  # Keep libc interposition shims out of the static archive: they depend on
+  # RTLD_NEXT and collide with libc.a during static links.
+  compat_common_sources,
   include_directories: [overlay_inc],
   install: true,
   c_args: compat_runtime_c_args
