@@ -1,7 +1,7 @@
 #ifndef MUSL_BSD_OVERLAY_MALLOC_H
-#include_next <malloc.h>
-
 #define MUSL_BSD_OVERLAY_MALLOC_H
+
+#include_next <malloc.h>
 
 #include <stddef.h>
 
@@ -32,5 +32,9 @@ void muntrace(void);
 #ifdef __cplusplus
 }
 #endif
+
+#else
+
+#include_next <malloc.h>
 
 #endif
