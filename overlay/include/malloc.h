@@ -23,7 +23,9 @@ extern "C" {
 #endif
 
 struct mallinfo mallinfo(void);
+#if __INCLUDE_LEVEL__ == 1
 int malloc_trim(size_t pad);
+#endif
 void mtrace(void);
 void muntrace(void);
 
