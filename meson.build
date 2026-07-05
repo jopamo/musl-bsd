@@ -266,6 +266,7 @@ libcompat_static = static_library(
   compat_common_sources,
   include_directories: [overlay_inc],
   install: true,
+  install_dir: compat_runtime_install_dir,
   c_args: compat_runtime_c_args
 )
 
