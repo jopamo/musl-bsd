@@ -139,9 +139,11 @@ if vs_supported
   compat_link_deps = [compat_map]
 endif
 
+obstack_sources = ['src/obstack.c']
+
 libobstack = shared_library(
   'obstack',
-  ['src/obstack.c'],
+  obstack_sources,
   include_directories: inc,
   install: true,
   version: '2.0.0',
@@ -150,9 +152,17 @@ libobstack = shared_library(
   link_depends: obstack_link_deps
 )
 
+libobstack_static = static_library(
+  'obstack',
+  obstack_sources,
+  include_directories: inc,
+  install: true,
+  c_args: c_flags
+)
+
 libobstack_test = static_library(
   'obstack_test',
-  ['src/obstack.c'],
+  obstack_sources,
   include_directories: inc,
   c_args: c_flags,
   install: false
@@ -160,9 +170,11 @@ libobstack_test = static_library(
 
 install_headers('include/obstack.h', subdir: '')
 
+fts_sources = ['src/fts.c']
+
 libfts = shared_library(
   'fts',
-  ['src/fts.c'],
+  fts_sources,
   include_directories: inc,
   install: true,
   version: '2.0.0',
@@ -171,9 +183,17 @@ libfts = shared_library(
   link_depends: fts_link_deps
 )
 
+libfts_static = static_library(
+  'fts',
+  fts_sources,
+  include_directories: inc,
+  install: true,
+  c_args: c_flags
+)
+
 libfts_test = static_library(
   'fts_test',
-  ['src/fts.c'],
+  fts_sources,
   include_directories: inc,
   c_args: c_flags,
   install: false
@@ -200,6 +220,14 @@ libargp = shared_library(
   c_args: c_flags,
   link_args: argp_link_args,
   link_depends: argp_link_deps
+)
+
+libargp_static = static_library(
+  'argp',
+  argp_source,
+  include_directories: inc,
+  install: true,
+  c_args: c_flags
 )
 
 compat_common_sources = [
