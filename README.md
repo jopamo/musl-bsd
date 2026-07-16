@@ -31,6 +31,17 @@
 
 ## Testing and Coverage
 
+Tests are grouped by component under `tests/`. Meson test IDs follow the
+`component/behavior` convention, and each component is also a Meson suite:
+
+```sh
+meson setup build
+meson test -C build --print-errorlogs
+meson test -C build --suite fts --print-errorlogs
+```
+
+See [`tests/README.md`](tests/README.md) for the test layout and naming rules.
+
 Use the canonical coverage command:
 
 ```sh

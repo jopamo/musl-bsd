@@ -1,4 +1,4 @@
-#include "fts_test_common.h"
+#include "test_support.h"
 #include "musl-bsd/fts_ops.h"
 
 #include <dirent.h>

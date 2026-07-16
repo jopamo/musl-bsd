@@ -4,7 +4,7 @@
 #include "obstack.h"
 #include "argp.h"
 
-#include "tests/abi/layout_baseline_x86_64.h"
+#include "static_layout_x86_64.h"
 
 #define ASSERT_SIZE(type, expect) _Static_assert(sizeof(type) == (expect), "size mismatch: " #type)
 #define ASSERT_OFFSET(type, field, expect) \

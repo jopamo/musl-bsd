@@ -1,4 +1,4 @@
-#include "obstack_test_common.h"
+#include "test_support.h"
 
 #include <assert.h>
 #include <stdarg.h>

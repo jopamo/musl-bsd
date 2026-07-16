@@ -1,4 +1,4 @@
-#include "fts_test_common.h"
+#include "test_support.h"
 
 int main(void) {
     fts_set_strict_from_env();

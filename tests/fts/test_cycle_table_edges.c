@@ -1,4 +1,4 @@
-#include "fts_test_common.h"
+#include "test_support.h"
 
 #include <stdbool.h>
 #include <stdio.h>
