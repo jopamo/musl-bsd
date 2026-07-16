@@ -34,17 +34,13 @@ int fts_exit_code(void);
 
 char* fts_join2(const char* a, const char* b);
 int fts_write_file(const char* p, const char* text);
-int fts_build_tree(const char* root);
 int fts_build_symlink_loop(const char* abs_root);
 int fts_build_order_tree(const char* abs_root);
 int fts_build_many(const char* root, const char* sub, int n);
-int fts_rm_rf(const char* path);
 
 int fts_test_tree_init(struct fts_test_tree* tree);
 void fts_test_tree_cleanup(struct fts_test_tree* tree);
 
-void fts_reset_stats(struct fts_walk_stats* s);
-void fts_account(struct fts_walk_stats* s, const FTSENT* e);
 const char* fts_info_label(int info);
 int fts_cmp_rev(const FTSENT** a, const FTSENT** b);
 int fts_cmp_asc(const FTSENT** a, const FTSENT** b);

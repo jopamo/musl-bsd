@@ -125,7 +125,7 @@ static error_t parse_opt(int key, char* arg, struct argp_state* state) {
 static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
 
 int main(int argc, char** argv) {
-    argp_program_version = "argp-ex4 1.0";
+    argp_program_version = "argp-advanced-options 1.0";
     argp_program_bug_address = "<bug-gnu-utils@prep.ai.mit.edu>";
 
     int i, j;
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
     if (arguments.abort) {
         /* The glibc example used error (10, 0, "ABORTED"), but that's
        not portable. */
-        fprintf(stderr, "ex4: ABORTED\n");
+        fprintf(stderr, "advanced-options: ABORTED\n");
         exit(10);
     }
 

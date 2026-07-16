@@ -21,16 +21,15 @@
 #define _GNU_SOURCE 1
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include <ctype.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
+
 #include <argp.h>
 
-const char* argp_program_version = "argp-test 1.0";
+const char* argp_program_version = "argp-nested-parser 1.0";
 
 struct argp_option sub_options[] = {{"subopt1", 's', 0, 0, "Nested option 1", 0},
                                     {"subopt2", 'S', 0, 0, "Nested option 2", 0},

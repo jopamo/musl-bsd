@@ -124,7 +124,7 @@ static struct argp argp = {options, parse_opt, args_doc, doc, 0, 0, 0};
 int main(int argc, char** argv) {
     struct arguments arguments;
 
-    argp_program_version = "argp-ex3 1.0";
+    argp_program_version = "argp-options-and-arguments 1.0";
     argp_program_bug_address = "<bug-gnu-utils@gnu.org>";
 
     /* Default values. */

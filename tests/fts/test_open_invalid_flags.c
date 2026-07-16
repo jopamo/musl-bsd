@@ -1,4 +1,4 @@
-#include "fts_test_common.h"
+#include "test_support.h"
 
 #include <errno.h>
 #include <stdlib.h>

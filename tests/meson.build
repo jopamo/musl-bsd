@@ -1,0 +1,7 @@
+subdir('abi')
+subdir('argp')
+subdir('cdefs')
+subdir('compat')
+subdir('fts')
+subdir('headers')
+subdir('obstack')
