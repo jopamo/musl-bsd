@@ -93,6 +93,10 @@ int fstatat64(int dfd, const char* path, struct stat* buf, int flags) {
     return fstatat(dfd, path, buf, flags);
 }
 
+int fallocate64(int fd, int mode, off64_t offset, off64_t length) {
+    return fallocate(fd, mode, offset, length);
+}
+
 int __xstat64(int ver, const char* path, struct stat* buf) {
     (void)ver;
     return stat(path, buf);

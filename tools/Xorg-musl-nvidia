@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+
+musl_root=${MUSL_NVIDIA_MUSL_ROOT:-"$HOME/.local/sysroot/musl-irelative"}
+compat=${MUSL_NVIDIA_COMPAT:-"$HOME/.local/src/musl-bsd/build/libmusl-bsd-compat.so.2.0.0"}
+tls=${MUSL_NVIDIA_TLS:-/lib/libnvidia-tls.so}
+xorg=${MUSL_NVIDIA_XORG:-/usr/bin/Xorg}
+libpath="$musl_root/lib:/lib:/usr/lib"
+
+preload=$compat:$tls
+if [ -n "${LD_PRELOAD:-}" ]; then
+    preload=$preload:$LD_PRELOAD
+fi
+
+export LD_PRELOAD=$preload
+exec "$musl_root/lib/ld-musl-x86_64.so.1" \
+    --library-path "$libpath" \
+    "$xorg" "$@"

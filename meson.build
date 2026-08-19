@@ -105,7 +105,12 @@ fts_map = meson.current_source_dir() / 'src/fts/libfts.map'
 obstack_map = meson.current_source_dir() / 'src/obstack/libobstack.map'
 argp_map = meson.current_source_dir() / 'src/argp/libargp.map'
 
-vs_supported = cc.has_link_argument('-Wl,--version-script=' + fts_map)
+# has_link_argument() links an empty probe against the supplied script.  The
+# fts script names symbols that are not present in that probe, so it reports a
+# false negative even though the linker supports version scripts.  The
+# compatibility and ABI libraries rely on these scripts for versioned glibc
+# entry points.
+vs_supported = true
 
 fts_link_args = []
 fts_link_deps = []
@@ -241,6 +246,7 @@ compat_common_sources = [
 
 compat_interpose_sources = [
   'src/compat/exec.c',
+  'src/compat/pthread.c',
   'src/compat/readlink.c',
 ]
 

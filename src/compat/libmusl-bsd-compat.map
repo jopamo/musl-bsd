@@ -11,8 +11,13 @@ MUSL_BSD_COMPAT_1.0 {
 		__isnanf;
 		__isnanl;
 		__lxstat64;
+		__free_hook;
+		__malloc_hook;
+		__memalign_hook;
+		__realloc_hook;
 		__realpath_chk;
 		__register_atfork;
+		__rawmemchr;
 		__sched_cpualloc;
 		__sched_cpufree;
 		__secure_getenv;
@@ -21,6 +26,8 @@ MUSL_BSD_COMPAT_1.0 {
 		__strtok_r;
 		__xstat64;
 		alphasort64;
+		backtrace;
+		dladdr1;
 		dlmopen;
 		dlvsym;
 		error;
@@ -32,6 +39,7 @@ MUSL_BSD_COMPAT_1.0 {
 		fseeko64;
 		fstat64;
 		fstatat64;
+		fallocate64;
 		ftello64;
 		fsconfig;
 		fsopen;
@@ -65,3 +73,70 @@ MUSL_BSD_COMPAT_1.0 {
 	local:
 		*;
 };
+
+GLIBC_2.2.5 {
+	global:
+		__pthread_key_create;
+		pthread_attr_destroy;
+		pthread_attr_init;
+		pthread_attr_setdetachstate;
+		pthread_attr_setguardsize;
+		pthread_attr_setinheritsched;
+		pthread_attr_setscope;
+		pthread_attr_setschedparam;
+		pthread_attr_setschedpolicy;
+		pthread_attr_setstack;
+		pthread_attr_setstacksize;
+		pthread_create;
+		pthread_detach;
+		pthread_join;
+		pthread_mutex_destroy;
+		pthread_mutex_init;
+		pthread_mutex_lock;
+		pthread_mutex_trylock;
+		pthread_mutex_unlock;
+		pthread_mutexattr_destroy;
+		pthread_mutexattr_init;
+		pthread_mutexattr_setpshared;
+		pthread_mutexattr_settype;
+		pthread_once;
+		pthread_condattr_destroy;
+		pthread_condattr_init;
+		pthread_rwlock_destroy;
+		pthread_rwlock_init;
+		pthread_rwlock_rdlock;
+		pthread_rwlock_tryrdlock;
+		pthread_rwlock_trywrlock;
+		pthread_rwlock_unlock;
+		pthread_rwlock_wrlock;
+		pthread_rwlockattr_destroy;
+		pthread_rwlockattr_init;
+		pthread_rwlockattr_setpshared;
+		pthread_condattr_setpshared;
+		sem_destroy;
+		sem_init;
+		sem_post;
+		sem_timedwait;
+		sem_trywait;
+		sem_wait;
+};
+
+GLIBC_2.3.2 {
+	global:
+		pthread_cond_broadcast;
+		pthread_cond_destroy;
+		pthread_cond_init;
+		pthread_cond_signal;
+		pthread_cond_timedwait;
+		pthread_cond_wait;
+} GLIBC_2.2.5;
+
+GLIBC_2.3.3 {
+	global:
+		pthread_condattr_setclock;
+} GLIBC_2.3.2;
+
+GLIBC_2.4 {
+	global:
+		pthread_mutexattr_setprotocol;
+} GLIBC_2.3.3;

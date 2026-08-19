@@ -27,3 +27,12 @@ size_t strlcat(char *dst, const char *src, size_t size)
 
 	return dst_len + strlcpy(dst + dst_len, src, size - dst_len);
 }
+
+void* __rawmemchr(const void* ptr, int byte) {
+	const unsigned char* p = ptr;
+
+	while (*p != (unsigned char)byte)
+		++p;
+
+	return (void*)p;
+}

@@ -14,14 +14,18 @@
 #include <unistd.h>
 
 #include <limits.h>
+#include <pthread.h>
 
 extern int __register_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void), void* dso_handle);
+extern int __pthread_key_create(pthread_key_t* key, void (*destructor)(void*));
 extern cpu_set_t* __sched_cpualloc(size_t count);
 extern void __sched_cpufree(cpu_set_t* set);
 extern char* __realpath_chk(const char* path, char* resolved_path, size_t resolved_len);
 extern char* __secure_getenv(const char* name);
 extern char* __strdup(const char* string);
 extern char* __strtok_r(char* s, const char* delim, char** save_ptr);
+extern int dladdr1(const void* address, Dl_info* info, void** extra_info, int flags);
+extern int backtrace(void** buffer, int size);
 extern int __xstat64(int ver, const char* path, struct stat64* buf);
 extern int __lxstat64(int ver, const char* path, struct stat64* buf);
 extern int __fxstat64(int ver, int fd, struct stat64* buf);
@@ -30,6 +34,10 @@ extern size_t __strftime_l(char* restrict s,
                            const char* restrict format,
                            const struct tm* restrict tm,
                            locale_t locale);
+
+#ifndef RTLD_DL_LINKMAP
+#define RTLD_DL_LINKMAP 2
+#endif
 
 #define CHECK(cond)   \
     do {              \
@@ -58,9 +66,16 @@ int main(void) {
     void* map;
     void* sym;
     locale_t c_locale;
+    Dl_info dl_info;
+    void* link_map = NULL;
+    void* frames[4];
+    pthread_key_t key;
 
     CHECK(gnu_get_libc_release()[0] != '\0');
     CHECK(gnu_get_libc_version()[0] != '\0');
+    CHECK(dladdr1((const void*)&main, &dl_info, &link_map, RTLD_DL_LINKMAP) != 0);
+    CHECK(link_map != NULL);
+    CHECK(backtrace(frames, 4) == 0);
 
     sym = dlmopen(LM_ID_BASE, NULL, RTLD_NOW);
     CHECK(sym != NULL);
@@ -68,6 +83,8 @@ int main(void) {
     CHECK(sym != NULL);
 
     CHECK(__register_atfork(noop, noop, noop, NULL) == 0);
+    CHECK(__pthread_key_create(&key, NULL) == 0);
+    CHECK(pthread_key_delete(key) == 0);
 
     info = mallinfo();
     CHECK(info.arena == 0);

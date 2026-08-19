@@ -1,7 +1,7 @@
 compat_test_inc = include_directories('.')
 
 compat_loader_test = executable(
-  'test_compat_loader',
+  'compat_loader_runtime',
   'loader_target.c',
   include_directories: [overlay_inc, compat_test_inc],
   c_args: c_flags,
@@ -16,6 +16,24 @@ test(
   compat_loader_test,
   env: compat_loader_env,
   depends: [glibc_loader, libcompat],
+  suite: 'compat',
+)
+
+pthread_abi_test = executable(
+  'test_compat_pthread_abi',
+  'test_pthread_abi.c',
+  include_directories: [overlay_inc, compat_test_inc],
+  c_args: c_flags,
+  install: false,
+)
+
+pthread_abi_env = environment()
+pthread_abi_env.set('LD_PRELOAD', libcompat.full_path())
+test(
+  'compat/pthread_abi',
+  pthread_abi_test,
+  env: pthread_abi_env,
+  depends: libcompat,
   suite: 'compat',
 )
 
