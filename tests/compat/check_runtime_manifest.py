@@ -36,6 +36,15 @@ CORE_POLICIES = [
         "quality": "EXACT",
     },
     {
+        "name": "alphasort64",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-bsd-core:alphasort64",
+        "test": "compat/alphasort_abi",
+        "quality": "DEGRADED",
+    },
+    {
         "name": "__fxstat64",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",

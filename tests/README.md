@@ -88,8 +88,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   provider identity through `compat/acos_abi`;
 - exact musl `alarm` timer ABI, cancellation return values, `SIGALRM`
   delivery, `errno`, and provider identity through `compat/alarm_abi`;
-- degraded musl `alphasort` directory-comparator ABI, ASCII and UTF-8 ordering,
-  C/C.UTF-8 locale handles, `errno`, and provider identity through
+- degraded musl `alphasort` and compatibility-core `alphasort64`
+  directory-comparator ABIs, ASCII and UTF-8 ordering, C/C.UTF-8 locale
+  handles, `errno`, and distinct provider identities through
   `compat/alphasort_abi`;
 - degraded musl `__ctype_b_loc` pointer ABI, glibc mask encoding, signed-byte
   indexing range, C/C.UTF-8 classification, `errno`, and provider identity;

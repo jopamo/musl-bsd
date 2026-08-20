@@ -417,6 +417,7 @@ if glibc_runtime_enabled
     'test_compat_alphasort_abi',
     'test_alphasort_abi.c',
     include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
     c_args: c_flags,
     install: false,
   )

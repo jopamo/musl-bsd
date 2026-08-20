@@ -5,6 +5,10 @@
 #include <string.h>
 #include <dirent.h>
 
+#ifdef alphasort64
+#undef alphasort64
+#endif
+
 typedef int (*alphasort_function)(const struct dirent** left, const struct dirent** right);
 
 #define CHECK(condition)                                                         \
@@ -48,6 +52,7 @@ static int verify_order(alphasort_function function, locale_t locale) {
 
 int main(void) {
     alphasort_function function = alphasort;
+    alphasort_function compatibility_function = alphasort64;
     locale_t c_locale;
     locale_t previous;
     locale_t utf8_locale;
@@ -58,6 +63,11 @@ int main(void) {
     CHECK(info.dli_fname != NULL);
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "alphasort") == (void*)function);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)compatibility_function, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") != NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "alphasort64") == (void*)compatibility_function);
 
     previous = uselocale((locale_t)0);
     CHECK(previous != (locale_t)0);
@@ -68,6 +78,8 @@ int main(void) {
 
     CHECK(verify_order(function, c_locale) == 0);
     CHECK(verify_order(function, utf8_locale) == 0);
+    CHECK(verify_order(compatibility_function, c_locale) == 0);
+    CHECK(verify_order(compatibility_function, utf8_locale) == 0);
     CHECK(uselocale(previous) == utf8_locale);
     freelocale(utf8_locale);
     freelocale(c_locale);
