@@ -263,9 +263,10 @@ and scalar ABIs.
 The NVIDIA compiler stack imports `atof@GLIBC_2.2.5` for floating-point
 conversion. Musl's canonical provider preserves decimal and hexadecimal input,
 special values, and signed zero, but preserves incoming `errno` on invalid and
-range input where glibc publishes `EINVAL` or `ERANGE`. It is `DEGRADED`;
-`compat/atof_abi` verifies the conversion, distinct error behavior, and
-provider ownership.
+range input where glibc publishes `EINVAL` or `ERANGE`. It is `DEGRADED`.
+`atoi@GLIBC_2.2.5` is also provided by musl's canonical libc implementation;
+its observed decimal conversion and `errno` behavior are `EXACT`.
+`compat/number_abi` verifies both conversion ABIs and provider ownership.
 
 The NVIDIA compiler stack imports `alarm@GLIBC_2.2.5` for process timer
 management. Musl's canonical provider preserves cancellation return values,

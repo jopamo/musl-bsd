@@ -432,14 +432,14 @@ if glibc_runtime_enabled
   )
   test('compat/asprintf_abi', asprintf_abi_test, suite: 'compat')
 
-  atof_abi_test = executable(
-    'test_compat_atof_abi',
-    'test_atof_abi.c',
+  number_abi_test = executable(
+    'test_compat_number_abi',
+    'test_number_abi.c',
     include_directories: [overlay_inc, compat_test_inc],
     c_args: c_flags,
     install: false,
   )
-  test('compat/atof_abi', atof_abi_test, suite: 'compat')
+  test('compat/number_abi', number_abi_test, suite: 'compat')
 
   exit_abi_test = executable(
     'test_compat_exit_abi',

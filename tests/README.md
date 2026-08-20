@@ -99,9 +99,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - exact musl `asprintf` variadic allocation and formatting ABI, return lengths,
   embedded NUL data, empty output, `errno`, and provider identity through
   `compat/asprintf_abi`;
-- degraded musl `atof` conversion ABI, decimal and hexadecimal input, special
-  values, signed zero, range errors, invalid input, distinct `errno`, and
-  provider identity through `compat/atof_abi`;
+- degraded musl `atof` plus exact musl `atoi` conversion ABIs, decimal and
+  hexadecimal input, special values, signed zero, range errors, invalid input,
+  distinct `errno`, and provider identity through `compat/number_abi`;
 - degraded musl `__ctype_b_loc` pointer ABI, glibc mask encoding, signed-byte
   indexing range, C/C.UTF-8 classification, `errno`, and provider identity;
 - degraded musl `__ctype_get_mb_cur_max` return ABI, C and C.UTF-8 widths,

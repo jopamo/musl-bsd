@@ -242,8 +242,17 @@ LIBC_POLICIES = [
         "soname": "libc.so.6",
         "binding": "global",
         "implementation": "musl-libc:atof",
-        "test": "compat/atof_abi",
+        "test": "compat/number_abi",
         "quality": "DEGRADED",
+    },
+    {
+        "name": "atoi",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:atoi",
+        "test": "compat/number_abi",
+        "quality": "EXACT",
     },
     {
         "name": "alphasort",
