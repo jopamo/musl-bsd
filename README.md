@@ -330,6 +330,15 @@ explicit locale and its locale-aware conversion model is narrower; the
 consolidated `compat/strto_l` regression verifies both provider and public-alias
 identities.
 
+Gpucomp and the NVIDIA compiler stack import `__strxfrm_l@GLIBC_2.2.5` for
+locale-facet collation keys. Musl's internal symbol is the canonical public
+`strxfrm_l` provider and returns identity/code-point transformation lengths,
+full copies, zero-size sizing results, and the observed `errno` behavior for C
+and C.UTF-8 handles. It is `DEGRADED` because locale-specific collation and
+glibc's transformed-output policy are not reproduced; `compat/locale_ownership`
+now verifies the transformation ABI, truncation boundary, provider ownership,
+and public-alias identity.
+
 NVIDIA's present and NVML DSOs import `__progname_full@GLIBC_2.2.5` as a global
 object requirement. Musl's object is the authoritative storage aliased by
 `program_invocation_name`; startup preserves the exact `argv[0]` pointer and
