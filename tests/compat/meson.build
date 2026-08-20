@@ -185,6 +185,26 @@ if glibc_runtime_enabled
     timeout: 60,
   )
 
+  nvidia_tls_threads = executable(
+    'nvidia_tls_threads',
+    'nvidia_tls_threads.c',
+    install: false,
+  )
+  nvidia_tls_runner = files('run_nvidia_tls_test.py')
+  test(
+    'nvidia/tls_threads',
+    python,
+    args: [
+      nvidia_tls_runner,
+      musl_linker_path,
+      readelf.full_path(),
+      nvidia_tls_threads.full_path(),
+    ],
+    depends: nvidia_tls_threads,
+    suite: ['compat', 'nvidia'],
+    timeout: 60,
+  )
+
   facade_checker = files('check_facades.py')
   test(
     'compat/facades',

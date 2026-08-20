@@ -6,38 +6,8 @@ from pathlib import Path
 import sys
 import tempfile
 
+from nvidia_test_support import fail, installed_dso, library_directory
 from run_loader_tests import prepare_fixture, run
-
-
-def fail(message, result=None):
-    print(f"NVIDIA loader regression failure: {message}", file=sys.stderr)
-    if result is not None:
-        print(f"return code: {result.returncode}", file=sys.stderr)
-        print(f"stdout: {result.stdout!r}", file=sys.stderr)
-        print(f"stderr: {result.stderr!r}", file=sys.stderr)
-    raise SystemExit(1)
-
-
-def installed_dso(directory, pattern):
-    matches = sorted(
-        {
-            path.resolve()
-            for path in directory.glob(pattern)
-            if path.is_file()
-        }
-    )
-    if not matches:
-        print(
-            f"SKIP: {pattern} is not installed under {directory}",
-            file=sys.stderr,
-        )
-        raise SystemExit(77)
-    if len(matches) != 1:
-        fail(
-            f"{pattern} is ambiguous under {directory}: "
-            + ", ".join(str(path) for path in matches)
-        )
-    return matches[0]
 
 
 def main():
@@ -47,13 +17,9 @@ def main():
         Path(value).resolve() for value in sys.argv[1:5]
     )
     patchelf = sys.argv[5]
-    library_directory = os.environ.get("NVIDIA_LIBDIR")
-    if not library_directory:
-        print("SKIP: NVIDIA_LIBDIR is not set", file=sys.stderr)
-        raise SystemExit(77)
-    library_directory = Path(library_directory).resolve()
-    glcore = installed_dso(library_directory, "libnvidia-glcore.so.*")
-    nvidia_tls = installed_dso(library_directory, "libnvidia-tls.so.*")
+    library_dir = library_directory()
+    glcore = installed_dso(library_dir, "libnvidia-glcore.so.*")
+    nvidia_tls = installed_dso(library_dir, "libnvidia-tls.so.*")
 
     with tempfile.TemporaryDirectory(
         prefix="musl-bsd NVIDIA loader "
@@ -64,7 +30,7 @@ def main():
         env = os.environ.copy()
         env["MUSL_BSD_PRELOAD_PATH"] = str(core)
         env["MUSL_BSD_LIBRARY_PATH"] = (
-            f"{facade_dir}:{library_directory}:/usr/lib"
+            f"{facade_dir}:{library_dir}:/usr/lib"
         )
         env.pop("LD_PRELOAD", None)
         env.pop("MUSL_BSD_NVIDIA_TLS_PATH", None)

@@ -132,7 +132,9 @@ NVIDIA_LIBDIR=/usr/lib \
 
 It verifies that loading `libnvidia-glcore` fails without early NVIDIA TLS and
 succeeds through the complete compatibility-interpreter path when the explicit
-TLS policy is enabled.
+TLS policy is enabled. It also verifies that a discovered pointer-sized
+`_nv*TLS` object has distinct, stable storage in eight concurrent threads and
+remains isolated from the main thread.
 
 ## API At A Glance
 

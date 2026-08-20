@@ -57,4 +57,5 @@ When `NVIDIA_LIBDIR` is set, the `nvidia` suite also exercises the real local
 `libnvidia-glcore` dependency graph through the compatibility interpreter. It
 proves fail-closed behavior without early NVIDIA TLS and successful loading
 with `MUSL_BSD_NVIDIA_TLS_PATH`; proprietary binaries are never copied into the
-repository.
+repository. A second local test discovers an exported `_nv*TLS` object and
+checks per-thread address and value isolation across eight concurrent threads.
