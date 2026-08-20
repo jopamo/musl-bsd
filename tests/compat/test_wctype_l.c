@@ -7,10 +7,12 @@
 #include <wctype.h>
 
 extern int __iswctype_l(wint_t character, wctype_t descriptor, locale_t locale);
+extern wctype_t __wctype_l(const char* name, locale_t locale);
 extern wint_t __towlower_l(wint_t character, locale_t locale);
 extern wint_t __towupper_l(wint_t character, locale_t locale);
 
 typedef int (*iswctype_l_function)(wint_t character, wctype_t descriptor, locale_t locale);
+typedef wctype_t (*wctype_l_function)(const char* name, locale_t locale);
 typedef wint_t (*tow_conversion_function)(wint_t character, locale_t locale);
 
 struct classification_case {
@@ -27,7 +29,10 @@ struct classification_case {
         }                                                                   \
     } while (0)
 
-static int verify_ascii_classes(iswctype_l_function function, locale_t c_locale, locale_t utf8_locale) {
+static int verify_ascii_classes(iswctype_l_function function,
+                                wctype_l_function descriptor_function,
+                                locale_t c_locale,
+                                locale_t utf8_locale) {
     static const struct classification_case cases[] = {
         {"alnum", L'A', L'!'}, {"alpha", L'z', L'8'},  {"blank", L' ', L'\n'}, {"cntrl", L'\n', L'A'},
         {"digit", L'7', L'A'}, {"graph", L'!', L' '},  {"lower", L'z', L'Z'},  {"print", L' ', L'\n'},
@@ -36,45 +41,54 @@ static int verify_ascii_classes(iswctype_l_function function, locale_t c_locale,
     size_t index;
 
     for (index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index) {
-        wctype_t descriptor = wctype(cases[index].name);
+        wctype_t c_descriptor = descriptor_function(cases[index].name, c_locale);
+        wctype_t utf8_descriptor = descriptor_function(cases[index].name, utf8_locale);
 
-        CHECK(descriptor != (wctype_t)0);
+        CHECK(c_descriptor != (wctype_t)0);
+        CHECK(utf8_descriptor != (wctype_t)0);
         errno = EDOM;
-        CHECK(function(cases[index].matching, descriptor, c_locale) != 0);
+        CHECK(function(cases[index].matching, c_descriptor, c_locale) != 0);
         CHECK(errno == EDOM);
         errno = ERANGE;
-        CHECK(function(cases[index].nonmatching, descriptor, c_locale) == 0);
+        CHECK(function(cases[index].nonmatching, c_descriptor, c_locale) == 0);
         CHECK(errno == ERANGE);
         errno = E2BIG;
-        CHECK(function(cases[index].matching, descriptor, utf8_locale) != 0);
+        CHECK(function(cases[index].matching, utf8_descriptor, utf8_locale) != 0);
         CHECK(errno == E2BIG);
         errno = ENOTTY;
-        CHECK(function(cases[index].nonmatching, descriptor, utf8_locale) == 0);
+        CHECK(function(cases[index].nonmatching, utf8_descriptor, utf8_locale) == 0);
         CHECK(errno == ENOTTY);
     }
     return 0;
 }
 
-static int verify_locale_divergence(iswctype_l_function function, locale_t c_locale, locale_t utf8_locale) {
-    wctype_t alpha = wctype("alpha");
-    wctype_t lower = wctype("lower");
-    wctype_t space = wctype("space");
+static int verify_locale_divergence(iswctype_l_function function,
+                                    wctype_l_function descriptor_function,
+                                    locale_t c_locale,
+                                    locale_t utf8_locale) {
+    wctype_t alpha_c = descriptor_function("alpha", c_locale);
+    wctype_t alpha_utf8 = descriptor_function("alpha", utf8_locale);
+    wctype_t lower_c = descriptor_function("lower", c_locale);
+    wctype_t space_c = descriptor_function("space", c_locale);
 
-    CHECK(alpha != (wctype_t)0);
-    CHECK(lower != (wctype_t)0);
-    CHECK(space != (wctype_t)0);
+    CHECK(alpha_c != (wctype_t)0);
+    CHECK(alpha_utf8 != (wctype_t)0);
+    CHECK(lower_c != (wctype_t)0);
+    CHECK(space_c != (wctype_t)0);
 
     errno = EDOM;
-    CHECK(function((wint_t)0x00e9, alpha, c_locale) != 0);
-    CHECK(function((wint_t)0x00e9, alpha, utf8_locale) != 0);
-    CHECK(function((wint_t)0x00e9, lower, c_locale) != 0);
-    CHECK(function((wint_t)0x00e9, lower, utf8_locale) != 0);
-    CHECK(function((wint_t)0x2003, space, c_locale) != 0);
-    CHECK(function((wint_t)0x2003, space, utf8_locale) != 0);
+    CHECK(function((wint_t)0x00e9, alpha_c, c_locale) != 0);
+    CHECK(function((wint_t)0x00e9, alpha_c, utf8_locale) != 0);
+    CHECK(function((wint_t)0x00e9, alpha_utf8, c_locale) != 0);
+    CHECK(function((wint_t)0x00e9, alpha_utf8, utf8_locale) != 0);
+    CHECK(function((wint_t)0x00e9, lower_c, c_locale) != 0);
+    CHECK(function((wint_t)0x00e9, lower_c, utf8_locale) != 0);
+    CHECK(function((wint_t)0x2003, space_c, c_locale) != 0);
+    CHECK(function((wint_t)0x2003, space_c, utf8_locale) != 0);
     CHECK(errno == EDOM);
 
     errno = ERANGE;
-    CHECK(function(WEOF, alpha, c_locale) == 0);
+    CHECK(function(WEOF, alpha_c, c_locale) == 0);
     CHECK(function(L'A', (wctype_t)0, c_locale) == 0);
     CHECK(errno == ERANGE);
     return 0;
@@ -116,6 +130,7 @@ static int verify_case_conversion(tow_conversion_function lower,
 
 int main(void) {
     iswctype_l_function function = __iswctype_l;
+    wctype_l_function descriptor_function = __wctype_l;
     tow_conversion_function lower = __towlower_l;
     tow_conversion_function upper = __towupper_l;
     locale_t c_locale;
@@ -133,19 +148,27 @@ int main(void) {
     previous = uselocale(c_locale);
     CHECK(previous != (locale_t)0);
 
-    CHECK(verify_ascii_classes(function, c_locale, utf8_locale) == 0);
-    CHECK(verify_locale_divergence(function, c_locale, utf8_locale) == 0);
+    CHECK(verify_ascii_classes(function, descriptor_function, c_locale, utf8_locale) == 0);
+    CHECK(verify_locale_divergence(function, descriptor_function, c_locale, utf8_locale) == 0);
     CHECK(uselocale(utf8_locale) == c_locale);
-    CHECK(verify_locale_divergence(function, c_locale, utf8_locale) == 0);
+    CHECK(verify_locale_divergence(function, descriptor_function, c_locale, utf8_locale) == 0);
     CHECK(uselocale(previous) == utf8_locale);
 
-    CHECK(wctype("not-a-class") == (wctype_t)0);
+    errno = ENOENT;
+    CHECK(descriptor_function("not-a-class", c_locale) == (wctype_t)0);
+    CHECK(errno == ENOENT);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)function, &info) != 0);
     CHECK(info.dli_fname != NULL);
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__iswctype_l") == (void*)function);
     CHECK(dlsym(RTLD_DEFAULT, "iswctype_l") == (void*)function);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)descriptor_function, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__wctype_l") == (void*)descriptor_function);
+    CHECK(dlsym(RTLD_DEFAULT, "wctype_l") == (void*)descriptor_function);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)lower, &info) != 0);
     CHECK(info.dli_fname != NULL);

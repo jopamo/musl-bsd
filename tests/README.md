@@ -154,10 +154,12 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   conversions, C99 hexadecimal floating input, widths, length modifiers,
   suppression, assignment counts, stream position, matching/input failures,
   write-only stream errors, `errno`, and provider identities;
-- degraded musl `__iswctype_l` wide-character/descriptor ABI, all 12 standard
-  classes, ASCII and non-ASCII behavior with C/C.UTF-8 handles,
+- degraded musl `__wctype_l`/`wctype_l` descriptor construction and
+  `__iswctype_l`/`iswctype_l` wide-character classification ABIs, all 12
+  standard classes, ASCII and non-ASCII behavior with C/C.UTF-8 handles,
   current-versus-explicit locale selection, `WEOF`, unknown descriptors,
-  `errno`, provider identity, and public-alias identity;
+  `errno`, provider identity, and public-alias identity through
+  `compat/wctype_l`;
 - degraded musl `__towlower_l`/`__towupper_l` Unicode case-conversion ABIs,
   ASCII and non-ASCII mappings, C/C.UTF-8 handles, `WEOF`, `errno`, provider
   ownership, and public-alias identity through `compat/wctype_l`;

@@ -416,6 +416,15 @@ LIBC_POLICIES = [
         "test": "compat/locale_ownership",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__wctype_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__wctype_l",
+        "test": "compat/wctype_l",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

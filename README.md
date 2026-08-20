@@ -494,6 +494,15 @@ alphabetic even with a C locale handle, unlike glibc’s C tables. Focused tests
 cover C/C.UTF-8 handles, every class, `WEOF`, unknown descriptors, `errno`, and
 provider and public-alias identity.
 
+The NVIDIA compiler stack also imports `__wctype_l@GLIBC_2.2.5` to construct
+those wide-character class descriptors. Musl's internal symbol is the
+canonical public `wctype_l` provider and returns all 12 standard descriptors,
+preserves the descriptor ABI and observed `errno` behavior, and ignores the
+explicit locale consistently with `__iswctype_l`. It is `DEGRADED` because
+locale-specific descriptor construction is not reproduced;
+`compat/wctype_l` verifies descriptor construction, classification, provider
+ownership, and public-alias identity together.
+
 Glcore imports `__libc_current_sigrtmin@GLIBC_2.2.5` from libpthread at 23
 sites and uses the result consistently for handler installation, signal masks,
 and direct `tgkill` delivery. Glibc returns 34 after reserving two internal
