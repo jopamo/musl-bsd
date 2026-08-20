@@ -120,6 +120,15 @@ LIBC_POLICIES = [
         "quality": "EXACT",
     },
     {
+        "name": "_setjmp",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:_setjmp",
+        "test": "compat/setjmp_abi",
+        "quality": "EXACT",
+    },
+    {
         "name": "_IO_getc",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",

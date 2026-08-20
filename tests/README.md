@@ -149,6 +149,8 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - exact musl `_exit` non-returning process-status ABI, low-byte status
   propagation, atexit suppression, and provider identity through
   `compat/exit_abi`;
+- exact musl `_setjmp`/`_longjmp` register and return-value ABI, signal-mask
+  non-restoration, `errno`, and provider identity through `compat/setjmp_abi`;
 - degraded musl `__xmknod` FIFO-creation ABI, mode and device metadata, accepted
   version selectors, missing-parent failures, `errno`, and provider identity
   through `compat/stat_abi`;

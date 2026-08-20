@@ -551,6 +551,13 @@ observed ABI and lifecycle behavior. It is `EXACT`; `compat/exit_abi` verifies
 provider ownership, status propagation, and handler suppression in forked
 children.
 
+The NVIDIA compiler stack imports `_setjmp@GLIBC_2.2.5` for non-local control
+flow. Musl's canonical provider preserves the x86_64 jump-buffer register and
+return-value ABI while leaving the signal mask unchanged, as required by
+`_setjmp`; it also preserves the observed `errno`. It is `EXACT`;
+`compat/setjmp_abi` verifies provider ownership, the return path, and
+non-restoration of a changed signal mask through `_longjmp`.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh

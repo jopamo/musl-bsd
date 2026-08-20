@@ -395,6 +395,15 @@ if glibc_runtime_enabled
   )
   test('compat/exit_abi', exit_abi_test, suite: 'compat')
 
+  setjmp_abi_test = executable(
+    'test_compat_setjmp_abi',
+    'test_setjmp_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/setjmp_abi', setjmp_abi_test, suite: 'compat')
+
   strdup_abi_test = executable(
     'test_compat_strdup',
     'test_strdup.c',
