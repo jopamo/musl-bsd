@@ -254,6 +254,15 @@ LIBC_POLICIES = [
         "test": "compat/locale_ownership",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__progname_full",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__progname_full",
+        "test": "compat/program_name",
+        "quality": "EXACT",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

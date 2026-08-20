@@ -457,6 +457,15 @@ if glibc_runtime_enabled
     suite: 'compat',
   )
 
+  program_name_test = executable(
+    'test_compat_program_name',
+    'test_program_name.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/program_name', program_name_test, suite: 'compat')
+
   errno_location_test = executable(
     'test_compat_errno_location',
     'test_errno_location.c',

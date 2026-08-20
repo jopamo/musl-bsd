@@ -297,6 +297,13 @@ are narrower than glibc's outside this observed matrix. The shared locale
 regression owns the item matrix, return and pointer ABI, alias identity, and
 provider check.
 
+NVIDIA's present and NVML DSOs import `__progname_full@GLIBC_2.2.5` as a global
+object requirement. Musl's object is the authoritative storage aliased by
+`program_invocation_name`; startup preserves the exact `argv[0]` pointer and
+exposes its basename through `program_invocation_short_name`. This is
+`EXACT`, verified by `compat/program_name` through object address identity,
+startup value, aliases, `errno`, and direct-musl provider ownership.
+
 The seven qualified NVIDIA/CUDA objects that perform ordinary system work
 import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
 legacy libpthread SONAME requirements. Musl’s unified libc returns the address

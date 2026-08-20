@@ -97,6 +97,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   observed monetary items, C and C.UTF-8 handles, inactive construction,
   in-place category replacement, `errno`, and internal/public provider
   identity;
+- exact musl `__progname_full` object ABI, `program_invocation_name`
+  storage identity, startup `argv[0]` value, basename alias, `errno`, and
+  provider ownership;
 - exact musl `__errno_location` pointer ABI, stable address, macro and direct
   mutation visibility, syscall updates, simultaneous thread isolation,
   provider identity, and libc/libpthread manifest requirements;
