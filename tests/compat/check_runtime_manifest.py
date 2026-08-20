@@ -53,6 +53,15 @@ CORE_POLICIES = [
         "test": "compat/stat_abi",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__register_atfork",
+        "version": "GLIBC_2.3.2",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-bsd-core:__register_atfork",
+        "test": "compat/atfork",
+        "quality": "DEGRADED",
+    },
 ]
 
 LIBC_POLICIES = [

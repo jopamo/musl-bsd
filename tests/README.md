@@ -100,6 +100,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - exact musl `__progname_full` object ABI, `program_invocation_name`
   storage identity, startup `argv[0]` value, basename alias, `errno`, and
   provider ownership;
+- degraded compatibility-core `__register_atfork` callback ABI, prepare
+  reverse ordering, parent/child forward ordering, process isolation,
+  `errno`, provider ownership, and DSO-handle adapter behavior;
 - exact musl `__errno_location` pointer ABI, stable address, macro and direct
   mutation visibility, syscall updates, simultaneous thread isolation,
   provider identity, and libc/libpthread manifest requirements;

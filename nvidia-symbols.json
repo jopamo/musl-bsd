@@ -286,9 +286,9 @@
       "binding": "global",
       "implementation": "musl-bsd-core:__register_atfork",
       "name": "__register_atfork",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/atfork",
       "version": "GLIBC_2.3.2"
     },
     {

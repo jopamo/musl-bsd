@@ -20,7 +20,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-extern int __register_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void), void* dso_handle);
 extern int __pthread_key_create(pthread_key_t* key, void (*destructor)(void*));
 extern cpu_set_t* __sched_cpualloc(size_t count);
 extern void __sched_cpufree(cpu_set_t* set);
@@ -64,8 +63,6 @@ typedef char glibc_lmid_align[(_Alignof(Lmid_t) == 8) ? 1 : -1];
         if (!(cond))  \
             return 1; \
     } while (0)
-
-static void noop(void) {}
 
 static int check_link_map(const void* address) {
     struct link_map* map;
@@ -210,7 +207,6 @@ int main(void) {
     CHECK(test_dlmopen() == 0);
     CHECK(test_dlvsym() == 0);
 
-    CHECK(__register_atfork(noop, noop, noop, NULL) == 0);
     CHECK(__pthread_key_create(&key, NULL) == 0);
     CHECK(pthread_key_delete(key) == 0);
 

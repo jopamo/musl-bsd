@@ -444,6 +444,16 @@ if glibc_runtime_enabled
   )
   test('compat/cxa_finalize', cxa_finalize_test, suite: 'compat')
 
+  atfork_test = executable(
+    'test_compat_atfork',
+    'test_atfork.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/atfork', atfork_test, suite: 'compat')
+
   locale_ownership_test = executable(
     'test_compat_locale_ownership',
     'test_locale_ownership.c',

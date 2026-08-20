@@ -304,6 +304,15 @@ exposes its basename through `program_invocation_short_name`. This is
 `EXACT`, verified by `compat/program_name` through object address identity,
 startup value, aliases, `errno`, and direct-musl provider ownership.
 
+Libcuda, libnvidia-cfg, and libnvidia-opencl import
+`__register_atfork@GLIBC_2.3.2`; their static adapters pass callback triplets
+and DSO handles before registering process-fork handlers. The compatibility
+core delegates to `pthread_atfork` and preserves prepare reverse order and
+parent/child forward order. It is `DEGRADED` because musl does not retain the
+glibc DSO handle for unload-time removal; the qualified NVIDIA loader keeps
+these DSOs resident. `compat/atfork` verifies ordering in both processes,
+return values, `errno`, provider ownership, and the adapter boundary.
+
 The seven qualified NVIDIA/CUDA objects that perform ordinary system work
 import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
 legacy libpthread SONAME requirements. Musl’s unified libc returns the address
