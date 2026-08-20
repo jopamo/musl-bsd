@@ -45,61 +45,75 @@ c_flags = [
   '-D_GNU_SOURCE'
 ]
 
-# This distro is usrmerge-only: /lib* are path aliases owned by layout policy,
-# while the real installed runtime payload lives in /usr/lib.
-compat_runtime_install_dir = '/usr/lib'
+# Binary-runtime support is deliberately narrower than source-overlay support.
+# x86_64 LP64 is the only ABI qualified by the current layout and loader tests.
+cpu_family = host_machine.cpu_family()
+is_lp64 = cc.sizeof('void *') == 8 and cc.sizeof('long') == 8
+glibc_runtime_qualified = cpu_family == 'x86_64' and is_lp64
+glibc_runtime_option = get_option('glibc_runtime')
+
+if glibc_runtime_option == 'enabled' and not glibc_runtime_qualified
+  error('glibc binary runtime was explicitly enabled for unverified ABI ' + cpu_family)
+endif
+
+glibc_runtime_enabled = glibc_runtime_option == 'enabled' or (
+  glibc_runtime_option == 'auto' and glibc_runtime_qualified
+)
+
+# This distro is usrmerge-only.  The interpreter alias is in /usr/lib, while
+# all project payload and glibc facade DSOs live under a private project tree.
+compat_runtime_install_dir = '/usr/lib/musl-bsd'
+compat_glibc_install_dir = compat_runtime_install_dir + '/glibc'
+compat_loader_payload_install_dir = compat_runtime_install_dir + '/loader'
 glibc_loader_install_dir = '/usr/lib'
 glibc_loader_name = get_option('glibc_loader_name')
 musl_linker_path = get_option('musl_linker_path')
-glibc_loader_symlink_dir = ''
 default_glibc_loader_name = ''
 default_musl_linker_path = ''
-cpu_family = host_machine.cpu_family()
 
 if cpu_family == 'x86_64'
   default_glibc_loader_name = 'ld-linux-x86-64.so.2'
   default_musl_linker_path = '/lib/ld-musl-x86_64.so.1'
-elif cpu_family == 'x86'
-  default_glibc_loader_name = 'ld-linux.so.2'
-  default_musl_linker_path = '/lib/ld-musl-i386.so.1'
-elif cpu_family == 'aarch64'
-  default_glibc_loader_name = 'ld-linux-aarch64.so.1'
-  default_musl_linker_path = '/lib/ld-musl-aarch64.so.1'
-elif cpu_family == 'arm'
-  default_glibc_loader_name = 'ld-linux-armhf.so.3'
-  default_musl_linker_path = '/lib/ld-musl-armhf.so.1'
-elif cpu_family == 'riscv64'
-  default_glibc_loader_name = 'ld-linux-riscv64-lp64d.so.1'
-  default_musl_linker_path = '/lib/ld-musl-riscv64.so.1'
-elif cpu_family == 'loongarch64'
-  default_glibc_loader_name = 'ld-linux-loongarch-lp64d.so.1'
-  default_musl_linker_path = '/lib/ld-musl-loongarch64.so.1'
-elif cpu_family == 's390x'
-  default_glibc_loader_name = 'ld64.so.1'
-  default_musl_linker_path = '/lib/ld-musl-s390x.so.1'
-elif cpu_family == 'ppc64'
-  default_glibc_loader_name = 'ld64.so.2'
-  default_musl_linker_path = '/lib/ld-musl-powerpc64le.so.1'
 endif
 
-if glibc_loader_name == ''
+if glibc_runtime_enabled and glibc_loader_name == ''
   glibc_loader_name = default_glibc_loader_name
 endif
 
-if musl_linker_path == ''
+if glibc_runtime_enabled and musl_linker_path == ''
   musl_linker_path = default_musl_linker_path
 endif
 
-if glibc_loader_name == '' or musl_linker_path == ''
-  error('Unsupported architecture for automatic glibc-loader setup; set -Dglibc_loader_name=... and -Dmusl_linker_path=...')
+if glibc_runtime_enabled and (
+  glibc_loader_name == '' or musl_linker_path == ''
+)
+  error('Qualified glibc runtime requires a loader name and musl linker path')
 endif
 
-compat_runtime_preload_path = compat_runtime_install_dir + '/libmusl-bsd-compat.so.2'
-compat_runtime_c_args = c_flags + [
-  '-DMUSL_BSD_GLIBC_LOADER_NAME="' + glibc_loader_name + '"',
-  '-DMUSL_BSD_MUSL_LINKER_PATH="' + musl_linker_path + '"',
-  '-DMUSL_BSD_PRELOAD_PATH="' + compat_runtime_preload_path + '"'
-]
+compat_runtime_preload_path = compat_runtime_install_dir + '/libmusl-bsd-core.so.2'
+compat_runtime_library_path = compat_glibc_install_dir + ':/usr/lib'
+compat_runtime_c_args = c_flags
+if glibc_runtime_enabled
+  compat_runtime_c_args += [
+    '-DMUSL_BSD_GLIBC_LOADER_NAME="' + glibc_loader_name + '"',
+    '-DMUSL_BSD_MUSL_LINKER_PATH="' + musl_linker_path + '"',
+    '-DMUSL_BSD_PRELOAD_PATH="' + compat_runtime_preload_path + '"',
+    '-DMUSL_BSD_LIBRARY_PATH="' + compat_runtime_library_path + '"',
+  ]
+endif
+
+runtime_metadata = configuration_data()
+runtime_metadata.set('ARCHITECTURE', cpu_family)
+runtime_metadata.set('ABI', glibc_runtime_qualified ? 'x86_64-lp64' : 'unqualified')
+runtime_metadata.set('GLIBC_RUNTIME', glibc_runtime_enabled ? 'true' : 'false')
+runtime_metadata.set('GLIBC_LOADER', glibc_loader_name)
+runtime_metadata.set('MUSL_LINKER', musl_linker_path)
+runtime_metadata_file = configure_file(
+  input: 'compat-runtime.json.in',
+  output: 'compat-runtime.json',
+  configuration: runtime_metadata,
+)
+install_data(runtime_metadata_file, install_dir: compat_runtime_install_dir)
 
 fts_map = meson.current_source_dir() / 'src/fts/libfts.map'
 obstack_map = meson.current_source_dir() / 'src/obstack/libobstack.map'
@@ -136,7 +150,7 @@ endif
 compat_map = meson.current_source_dir() / 'src/compat/libmusl-bsd-compat.map'
 compat_link_args = []
 compat_link_deps = []
-if vs_supported
+if vs_supported and glibc_runtime_enabled
   compat_link_args = ['-Wl,--version-script=' + compat_map]
   compat_link_deps = [compat_map]
 endif
@@ -233,6 +247,7 @@ libargp_static = static_library(
 )
 
 compat_common_sources = [
+  'src/compat/core.c',
   'src/compat/dlfcn.c',
   'src/compat/error.c',
   'src/compat/fs64.c',
@@ -244,20 +259,23 @@ compat_common_sources = [
   'src/compat/version.c',
 ]
 
-compat_interpose_sources = [
-  'src/compat/exec.c',
-  'src/compat/readlink.c',
-]
+compat_interpose_sources = []
+if glibc_runtime_enabled
+  compat_interpose_sources += [
+    'src/compat/exec.c',
+    'src/compat/readlink.c',
+  ]
+endif
 
-pthread_abi_supported = cpu_family == 'x86_64' and cc.sizeof('void *') == 8
+pthread_abi_supported = glibc_runtime_enabled
 if pthread_abi_supported
   compat_interpose_sources += 'src/compat/pthread.c'
-else
+elif glibc_runtime_enabled
   warning('glibc pthread ABI bridge is disabled: no verified fixture for ' + cpu_family)
 endif
 
 libcompat = shared_library(
-  'musl-bsd-compat',
+  'musl-bsd-core',
   compat_common_sources + compat_interpose_sources,
   include_directories: [overlay_inc],
   install: true,
@@ -269,46 +287,67 @@ libcompat = shared_library(
 )
 
 libcompat_static = static_library(
-  'musl-bsd-compat',
+  'musl-bsd-core',
   # Keep libc interposition shims out of the static archive: they depend on
   # RTLD_NEXT and collide with libc.a during static links.
   compat_common_sources,
   include_directories: [overlay_inc],
   install: true,
   install_dir: compat_runtime_install_dir,
-  c_args: compat_runtime_c_args
+  c_args: c_flags
 )
 
-glibc_loader = executable(
-  glibc_loader_name,
-  ['src/compat/loader.c'],
-  install: true,
-  install_dir: glibc_loader_install_dir,
-  c_args: compat_runtime_c_args,
-  link_args: ['-static-pie']
-)
+glibc_facades = []
+if glibc_runtime_enabled
+  facade_map = meson.current_source_dir() / 'src/compat/libmusl-bsd-facade.map'
+  probe_facade_map = meson.current_source_dir() / 'src/compat/libmusl-bsd-probe-facade.map'
+  foreach facade : [
+    ['c', '6'],
+    ['dl', '2'],
+    ['m', '6'],
+    ['pthread', '0'],
+    ['resolv', '2'],
+    ['rt', '1'],
+    ['util', '1'],
+  ]
+    facade_c_args = c_flags
+    facade_version_map = facade_map
+    if facade[0] == 'util'
+      facade_c_args += '-DMUSL_BSD_PROBE_FACADE=1'
+      facade_version_map = probe_facade_map
+    endif
+    facade_dso = shared_library(
+      facade[0],
+      'src/compat/facade.c',
+      soversion: facade[1],
+      install: true,
+      install_dir: compat_glibc_install_dir,
+      link_with: libcompat,
+      c_args: facade_c_args,
+      link_args: ['-Wl,--version-script=' + facade_version_map],
+      link_depends: facade_version_map,
+    )
+    glibc_facades += facade_dso
+  endforeach
 
-foreach alias_name : [
-  'libc.so.6',
-  'libdl.so.2',
-  'libm.so.6',
-  'libpthread.so.0',
-  'libresolv.so.2',
-  'librt.so.1',
-  'libutil.so.1',
-]
-  install_symlink(
-    alias_name,
-    install_dir: compat_runtime_install_dir,
-    pointing_to: 'libmusl-bsd-compat.so.2'
+  if not cc.has_link_argument('-static-pie')
+    error('glibc runtime requires a working -static-pie linker mode')
+  endif
+
+  glibc_loader = executable(
+    glibc_loader_name,
+    ['src/compat/loader.c', 'src/compat/loader_policy.c'],
+    include_directories: include_directories('src/compat'),
+    install: true,
+    install_dir: compat_loader_payload_install_dir,
+    c_args: compat_runtime_c_args,
+    link_args: ['-static-pie']
   )
-endforeach
 
-if glibc_loader_symlink_dir != '' and glibc_loader_symlink_dir != glibc_loader_install_dir
   install_symlink(
     glibc_loader_name,
-    install_dir: glibc_loader_symlink_dir,
-    pointing_to: '../lib/' + glibc_loader_name
+    install_dir: glibc_loader_install_dir,
+    pointing_to: 'musl-bsd/loader/' + glibc_loader_name
   )
 endif
 

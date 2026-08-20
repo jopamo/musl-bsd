@@ -1,6 +1,7 @@
 #include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -17,13 +18,37 @@
 #error MUSL_BSD_PRELOAD_PATH must be defined
 #endif
 
-static const char* musl_bsd_preload_path(void) {
-    const char* path = getenv("MUSL_BSD_PRELOAD_PATH");
+#ifndef MUSL_BSD_LIBRARY_PATH
+#error MUSL_BSD_LIBRARY_PATH must be defined
+#endif
 
-    if (path != NULL && path[0] != '\0')
-        return path;
+static const char* compatibility_path(const char* variable, const char* configured) {
+    const char* path = getenv(variable);
 
-    return MUSL_BSD_PRELOAD_PATH;
+    return path != NULL && path[0] != '\0' ? path : configured;
+}
+
+static char* preload_list(void) {
+    const char* core = compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
+    const char* user = getenv("LD_PRELOAD");
+    size_t core_len = strlen(core);
+    size_t user_len = user == NULL ? 0 : strlen(user);
+    char* list;
+
+    if (user_len == 0)
+        return strdup(core);
+    if (core_len > SIZE_MAX - user_len - 2) {
+        errno = EOVERFLOW;
+        return NULL;
+    }
+
+    list = malloc(core_len + user_len + 2);
+    if (list == NULL)
+        return NULL;
+    memcpy(list, core, core_len);
+    list[core_len] = ':';
+    memcpy(list + core_len + 1, user, user_len + 1);
+    return list;
 }
 
 static int (*real_execve)(const char* pathname, char* const argv[], char* const envp[]);
@@ -39,33 +64,45 @@ int execve(const char* pathname, char* const argv[], char* const envp[]) {
     }
 
     if (strcmp(pathname, "/proc/self/exe") == 0) {
-        char target[PATH_MAX] = "";
+        char target[PATH_MAX];
         char** new_argv;
+        char* preloads;
         ssize_t len;
         int argc = 0;
 
         while (argv[argc] != NULL)
             argc++;
-
-        len = readlink("/proc/self/exe", target, sizeof(target));
-        if (len < 0 || len == (ssize_t)sizeof(target)) {
-            errno = ENOMEM;
+        if ((size_t)argc > (SIZE_MAX / sizeof(char*)) - 9) {
+            errno = EOVERFLOW;
             return -1;
         }
 
-        new_argv = calloc((size_t)argc + 7U, sizeof(char*));
-        if (new_argv == NULL)
+        len = readlink("/proc/self/exe", target, sizeof(target) - 1);
+        if (len < 0)
+            return -1;
+        target[len] = '\0';
+
+        preloads = preload_list();
+        if (preloads == NULL)
             return -1;
 
-        new_argv[0] = (char*)MUSL_BSD_GLIBC_LOADER_NAME;
-        new_argv[1] = (char*)"--argv0";
-        new_argv[2] = argv[0];
-        new_argv[3] = (char*)"--preload";
-        new_argv[4] = (char*)musl_bsd_preload_path();
-        new_argv[5] = (char*)"--";
-        new_argv[6] = target;
+        new_argv = calloc((size_t)argc + 9, sizeof(char*));
+        if (new_argv == NULL) {
+            free(preloads);
+            return -1;
+        }
+
+        new_argv[0] = (char*)MUSL_BSD_MUSL_LINKER_PATH;
+        new_argv[1] = (char*)"--preload";
+        new_argv[2] = preloads;
+        new_argv[3] = (char*)"--library-path";
+        new_argv[4] = (char*)compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
+        new_argv[5] = (char*)"--argv0";
+        new_argv[6] = argv[0];
+        new_argv[7] = (char*)"--";
+        new_argv[8] = target;
         for (int i = 1; i < argc; ++i)
-            new_argv[i + 6] = argv[i];
+            new_argv[i + 8] = argv[i];
 
         return real_execve(MUSL_BSD_MUSL_LINKER_PATH, new_argv, envp);
     }

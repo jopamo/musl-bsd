@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <sys/auxv.h>
 
 /*
  * NVIDIA's GLX module probes the old glibc malloc-hook ABI at runtime.  The
@@ -82,7 +83,8 @@ char* __realpath_chk(const char* path, char* resolved_path, size_t resolved_len)
 }
 
 char* __secure_getenv(const char* name) {
-    if (geteuid() != getuid() || getegid() != getgid())
+    if (getauxval(AT_SECURE) != 0 || geteuid() != getuid() ||
+        getegid() != getgid())
         return NULL;
 
     return getenv(name);

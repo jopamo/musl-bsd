@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "architecture": "@ARCHITECTURE@",
+  "abi": "@ABI@",
+  "glibc_runtime": @GLIBC_RUNTIME@,
+  "glibc_loader": "@GLIBC_LOADER@",
+  "musl_linker": "@MUSL_LINKER@"
+}

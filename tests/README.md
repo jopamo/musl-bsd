@@ -39,3 +39,13 @@ meson test -C build 'argp/*' --print-errorlogs
 The compatibility overlay targets are intended for a musl build environment.
 On a glibc host, run component suites whose targets do not include that
 overlay, or build in the distro's normal musl environment.
+
+The `compat` suite has no loader exclusion on a qualified ABI. It includes:
+
+- a standalone static-PIE baseline;
+- fail-closed secure-policy checks;
+- a glibc-named ELF fixture traversing the compatibility interpreter and musl
+  loader;
+- argument, constructor, destructor, `dlopen`, preload-order, recursion,
+  missing-target, missing-library, exit-status, and signal tests;
+- facade SONAME, dependency, export, and symbol-version inspection.

@@ -7,6 +7,77 @@
 - `libargp`: GNU `argp` command-line parsing APIs used by tools that depend on `argp_parse` behavior
 - Compatibility headers in `include/` (installed as headers like `sys/queue.h`, `sys/tree.h`, and `sys/cdefs.h`)
 
+## glibc Binary Runtime
+
+The source overlay remains portable, but the glibc binary-runtime bridge has a
+separate qualification gate:
+
+```sh
+meson setup build -Dglibc_runtime=auto
+```
+
+`auto` enables the runtime only for x86_64 LP64. `enabled` fails configuration
+on every unqualified ABI, and `disabled` omits the glibc-named interpreter and
+facade artifacts. The generated
+`/usr/lib/musl-bsd/compat-runtime.json` records the architecture, ABI,
+qualification result, interpreter name, and musl linker path.
+
+Runtime payload is private:
+
+```text
+/usr/lib/musl-bsd/
+├── compat-runtime.json
+├── glibc/
+│   ├── libc.so.6
+│   ├── libdl.so.2
+│   ├── libm.so.6
+│   ├── libpthread.so.0
+│   ├── libresolv.so.2
+│   ├── librt.so.1
+│   └── libutil.so.1
+├── libmusl-bsd-core.so.2
+└── loader/
+    └── ld-linux-x86-64.so.2
+```
+
+The glibc-named interpreter alias points into `loader/`. It executes musl's
+loader with an explicit trusted core preload and private library path while
+preserving the target's `argv[0]`, remaining arguments, exit status, and signal
+termination. User `LD_PRELOAD` is not rewritten; its entries follow the core
+in the explicit musl preload list.
+
+### Security boundary
+
+Secure execution is intentionally unsupported. The interpreter reads
+`AT_SECURE` before any environment-controlled compatibility state. If
+`AT_SECURE` is nonzero, or real and effective credentials differ, it exits
+immediately with:
+
+```text
+musl-bsd loader: secure execution is unsupported (AT_SECURE); refusing to continue
+```
+
+No environment option enables or weakens secure execution.
+
+### Current musl SONAME behavior
+
+musl 1.2.x resolves integrated legacy names such as `libc.so.6`,
+`libdl.so.2`, `libpthread.so.0`, `librt.so.1`, and `libutil.so.1` to its own
+loader/libc object instead of opening a same-named file from
+`--library-path`. The project installs real, correctly named private facade
+DSOs and verifies their metadata and explicit `dlopen()` ownership, but a
+normal `DT_NEEDED` edge does not map those facades without a separately
+qualified musl loader change. musl-bsd does not inject all facades as a
+workaround.
+
+### Static-PIE baseline
+
+`compat/static_pie_baseline` is a standalone, libc-minimal static PIE. It must
+run before the loader path can be accepted. A compiler wrapper that combines a
+Clang executable with GCC-only `-specs` files, or injects an installed
+compatibility DSO into test programs, is a test-toolchain construction defect;
+the runtime does not compensate for it.
+
 ## API At A Glance
 
 - `libfts` types: `FTS`, `FTSENT`

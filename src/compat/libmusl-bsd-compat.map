@@ -1,5 +1,6 @@
 MUSL_BSD_COMPAT_1.0 {
 	global:
+		musl_bsd_core_abi;
 		__finite;
 		__finitef;
 		__finitel;

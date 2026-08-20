@@ -11,3 +11,11 @@ option(
   value: '',
   description: 'Override the musl ELF interpreter path used by the glibc loader stub'
 )
+
+option(
+  'glibc_runtime',
+  type: 'combo',
+  choices: ['auto', 'enabled', 'disabled'],
+  value: 'auto',
+  description: 'Build the glibc binary-runtime bridge (auto enables only verified x86_64 LP64)'
+)
