@@ -29,6 +29,73 @@ if glibc_runtime_enabled
     suite: 'compat',
   )
 
+  ifunc_dependency = shared_library(
+    'ifunc-dependency',
+    'ifunc_dependency.c',
+    install: false,
+    soversion: '1',
+  )
+  ifunc_a = shared_library(
+    'ifunc-a',
+    'ifunc_a.S',
+    link_with: ifunc_dependency,
+    install: false,
+    soversion: '1',
+    link_args: ['-Wl,-z,now'],
+  )
+  ifunc_b = shared_library(
+    'ifunc-b',
+    'ifunc_b.S',
+    link_with: ifunc_dependency,
+    install: false,
+    soversion: '1',
+    link_args: ['-Wl,-z,now'],
+  )
+  ifunc_startup = executable(
+    'ifunc_startup',
+    'ifunc_startup.c',
+    link_with: ifunc_a,
+    install: false,
+    link_args: ['-Wl,-z,now'],
+  )
+  ifunc_multiple = executable(
+    'ifunc_multiple',
+    'ifunc_multiple.c',
+    link_with: [ifunc_a, ifunc_b],
+    install: false,
+    link_args: ['-Wl,-z,now'],
+  )
+  ifunc_dlopen = executable(
+    'ifunc_dlopen',
+    'ifunc_dlopen.c',
+    install: false,
+  )
+  ifunc_runner = files('run_ifunc_tests.py')
+  test(
+    'compat/ifunc_irelative',
+    python,
+    args: [
+      ifunc_runner,
+      musl_linker_path,
+      readelf.full_path(),
+      ifunc_startup.full_path(),
+      ifunc_dlopen.full_path(),
+      ifunc_multiple.full_path(),
+      ifunc_a.full_path(),
+      ifunc_b.full_path(),
+    ],
+    depends: [
+      ifunc_dependency,
+      ifunc_a,
+      ifunc_b,
+      ifunc_startup,
+      ifunc_multiple,
+      ifunc_dlopen,
+    ],
+    suite: 'compat',
+    timeout: 30,
+  )
+
   loader_policy_test = executable(
     'test_loader_policy',
     ['test_loader_policy.c', '../../src/compat/loader_policy.c'],

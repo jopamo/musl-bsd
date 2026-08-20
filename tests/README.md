@@ -45,6 +45,7 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 
 - a standalone static-PIE baseline;
 - static-PIE ELF metadata and relocation checks;
+- IFUNC/IRELATIVE startup, dependency-ordering, and `dlopen()` checks;
 - fail-closed secure-policy checks;
 - a glibc-named ELF fixture traversing the compatibility interpreter and musl
   loader;
