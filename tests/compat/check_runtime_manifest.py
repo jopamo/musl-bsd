@@ -209,6 +209,15 @@ LIBC_POLICIES = [
         "test": "compat/wctype_l",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__libc_current_sigrtmin",
+        "version": "GLIBC_2.2.5",
+        "soname": "libpthread.so.0",
+        "binding": "global",
+        "implementation": "musl-libc:__libc_current_sigrtmin",
+        "test": "compat/sigrtmin",
+        "quality": "TRANSLATED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

@@ -417,6 +417,15 @@ if glibc_runtime_enabled
   )
   test('compat/wctype_l', wctype_l_test, suite: 'compat')
 
+  sigrtmin_test = executable(
+    'test_compat_sigrtmin',
+    'test_sigrtmin.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/sigrtmin', sigrtmin_test, suite: 'compat')
+
   cxa_atexit_test = executable(
     'test_compat_cxa_atexit',
     'test_cxa_atexit.c',

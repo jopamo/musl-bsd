@@ -346,6 +346,15 @@ alphabetic even with a C locale handle, unlike glibc’s C tables. Focused tests
 cover C/C.UTF-8 handles, every class, `WEOF`, unknown descriptors, `errno`, and
 provider and public-alias identity.
 
+Glcore imports `__libc_current_sigrtmin@GLIBC_2.2.5` from libpthread at 23
+sites and uses the result consistently for handler installation, signal masks,
+and direct `tgkill` delivery. Glibc returns 34 after reserving two internal
+realtime signals. Musl returns 35 because it reserves a third signal for
+synchronous thread coordination. This is `TRANSLATED`, not numerically exact:
+35 is musl’s authoritative first application-usable realtime signal. The
+focused test proves stable range reporting, queued payloads, mask operations,
+and direct handler delivery.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh
