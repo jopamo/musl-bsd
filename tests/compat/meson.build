@@ -408,6 +408,15 @@ if glibc_runtime_enabled
     suite: 'compat',
   )
 
+  wctype_l_test = executable(
+    'test_compat_wctype_l',
+    'test_wctype_l.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/wctype_l', wctype_l_test, suite: 'compat')
+
   cxa_atexit_test = executable(
     'test_compat_cxa_atexit',
     'test_cxa_atexit.c',

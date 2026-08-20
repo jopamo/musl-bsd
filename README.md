@@ -337,6 +337,15 @@ matching failures set `EINVAL` where glibc preserves `errno`. Both ISO C99
 entry points share `compat/scanf_abi` rather than maintaining parallel
 conversion tests.
 
+Gpucomp imports `__iswctype_l@GLIBC_2.2.5` through three wide-character
+locale-facet paths that consume all 12 standard class descriptors. Musl
+matches the complete ASCII classification set and uses the same descriptor and
+return ABI. It is `DEGRADED`, however, because it ignores the explicit locale
+and applies one Unicode classification model: non-ASCII letters remain
+alphabetic even with a C locale handle, unlike glibc’s C tables. Focused tests
+cover C/C.UTF-8 handles, every class, `WEOF`, unknown descriptors, `errno`, and
+provider and public-alias identity.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh

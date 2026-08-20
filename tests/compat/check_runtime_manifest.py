@@ -200,6 +200,15 @@ LIBC_POLICIES = [
         "test": "compat/scanf_abi",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__iswctype_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__iswctype_l",
+        "test": "compat/wctype_l",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

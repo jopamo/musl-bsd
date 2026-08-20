@@ -205,9 +205,9 @@
       "binding": "global",
       "implementation": "musl-libc:__iswctype_l",
       "name": "__iswctype_l",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/wctype_l",
       "version": "GLIBC_2.2.5"
     },
     {
