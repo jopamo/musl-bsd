@@ -530,6 +530,13 @@ accepts unknown version selectors that glibc rejects; `compat/stat_abi`
 verifies the selector, creation, metadata, failure, and provider-ownership
 contracts.
 
+The NVIDIA compiler stack imports `__xstat@GLIBC_2.2.5` for followed pathname
+metadata. Musl's direct provider drops the version argument and delegates to
+`stat`, preserving the observed regular-file metadata, symlink-following
+behavior, failures, and `errno`. It is `DEGRADED` because musl accepts unknown
+version selectors that glibc rejects; the shared `compat/stat_abi` regression
+now verifies the distinct follow-versus-no-follow provider behavior.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh

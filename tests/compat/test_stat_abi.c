@@ -15,6 +15,7 @@ extern int __fxstat64(int version, int fd, struct stat* status);
 extern int __fxstatat(int version, int dirfd, const char* path, struct stat* status, int flags);
 extern int __lxstat(int version, const char* path, struct stat* status);
 extern int __lxstat64(int version, const char* path, struct stat* status);
+extern int __xstat(int version, const char* path, struct stat* status);
 extern int __xmknod(int version, const char* path, mode_t mode, dev_t* device);
 
 typedef int (*fxstat_function)(int version, int fd, struct stat* status);
@@ -31,11 +32,13 @@ struct path_stat_adapter {
     const char* name;
     path_stat_function function;
     int from_compatibility_core;
+    int follows_symlinks;
 };
 
 static const struct path_stat_adapter path_stat_adapters[] = {
-    {"__lxstat", __lxstat, 0},
-    {"__lxstat64", __lxstat64, 1},
+    {"__lxstat", __lxstat, 0, 0},
+    {"__lxstat64", __lxstat64, 1, 0},
+    {"__xstat", __xstat, 0, 1},
 };
 
 #if defined(__x86_64__) && __SIZEOF_POINTER__ == 8
@@ -308,18 +311,28 @@ static int verify_path_stat_functions(void) {
 
     for (size_t function_index = 0; function_index < sizeof(path_stat_adapters) / sizeof(path_stat_adapters[0]);
          ++function_index) {
+        const struct stat* link_expected =
+            path_stat_adapters[function_index].follows_symlinks ? &expected_target : &expected_link;
         for (index = 0; index < sizeof(versions) / sizeof(versions[0]); ++index) {
             CHECK_PATH(verify_path_stat_success(path_stat_adapters[function_index].function, versions[index], link_path,
-                                                &expected_link, ENFILE + (int)index) == 0);
+                                                link_expected, ENFILE + (int)index) == 0);
         }
         CHECK_PATH(verify_path_stat_success(path_stat_adapters[function_index].function, 1, target_path,
                                             &expected_target, EBUSY) == 0);
-        CHECK_PATH(verify_path_stat_success(path_stat_adapters[function_index].function, 1, dangling_path,
-                                            &expected_dangling, ECHILD) == 0);
+        if (path_stat_adapters[function_index].follows_symlinks) {
+            CHECK_PATH(
+                verify_path_stat_failure(path_stat_adapters[function_index].function, 1, dangling_path, ENOENT) == 0);
+        }
+        else {
+            CHECK_PATH(verify_path_stat_success(path_stat_adapters[function_index].function, 1, dangling_path,
+                                                &expected_dangling, ECHILD) == 0);
+        }
         CHECK_PATH(verify_path_stat_failure(path_stat_adapters[function_index].function, 1, nested_path, ENOTDIR) == 0);
         CHECK_PATH(verify_path_stat_failure(path_stat_adapters[function_index].function, 1, missing_path, ENOENT) == 0);
     }
 
+    CHECK_PATH(fstat(file_fd, &expected_target) == 0);
+    CHECK_PATH(fstatat(directory_fd, "link", &expected_link, AT_SYMLINK_NOFOLLOW) == 0);
     CHECK_PATH(
         verify_fxstatat_success(__fxstatat, 1, directory_fd, "link", AT_SYMLINK_NOFOLLOW, &expected_link, ENOSPC) == 0);
     CHECK_PATH(verify_fxstatat_success(__fxstatat, 1, directory_fd, "link", 0, &expected_target, ENOTTY) == 0);
