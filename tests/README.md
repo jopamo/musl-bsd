@@ -52,3 +52,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - argument, constructor, destructor, `dlopen`, preload-order, recursion,
   missing-target, missing-library, exit-status, and signal tests;
 - facade SONAME, dependency, export, and symbol-version inspection.
+
+When `NVIDIA_LIBDIR` is set, the `nvidia` suite also exercises the real local
+`libnvidia-glcore` dependency graph through the compatibility interpreter. It
+proves fail-closed behavior without early NVIDIA TLS and successful loading
+with `MUSL_BSD_NVIDIA_TLS_PATH`; proprietary binaries are never copied into the
+repository.

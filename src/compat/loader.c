@@ -1,4 +1,5 @@
 #include "loader_policy.h"
+#include "preload_policy.h"
 
 #include <errno.h>
 #include <stdint.h>
@@ -33,38 +34,11 @@ static const char* basename_of(const char* path) {
     return slash == NULL ? path : slash + 1;
 }
 
-static const char* compatibility_path(const char* variable, const char* configured) {
-    const char* value = getenv(variable);
-
-    return value != NULL && value[0] != '\0' ? value : configured;
-}
-
-static char* preload_list(const char* core, const char* user) {
-    size_t core_len = strlen(core);
-    size_t user_len = user == NULL ? 0 : strlen(user);
-    char* list;
-
-    if (user_len == 0)
-        return strdup(core);
-    if (core_len > SIZE_MAX - user_len - 2) {
-        errno = EOVERFLOW;
-        return NULL;
-    }
-
-    list = malloc(core_len + user_len + 2);
-    if (list == NULL)
-        return NULL;
-
-    memcpy(list, core, core_len);
-    list[core_len] = ':';
-    memcpy(list + core_len + 1, user, user_len + 1);
-    return list;
-}
-
 int main(int argc, char* argv[], char* envp[]) {
     unsigned long at_secure;
     const char* target;
     const char* core_preload;
+    const char* nvidia_tls_preload;
     const char* library_path;
     const char* user_preload;
     char* preloads;
@@ -106,16 +80,18 @@ int main(int argc, char* argv[], char* envp[]) {
         return LOADER_FAILURE;
     }
 
-    core_preload = compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
-    library_path = compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
+    core_preload = musl_bsd_compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
+    nvidia_tls_preload = getenv("MUSL_BSD_NVIDIA_TLS_PATH");
+    library_path = musl_bsd_compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
     user_preload = getenv("LD_PRELOAD");
 
     /*
      * musl's --preload replaces, rather than augments, LD_PRELOAD.  Build the
      * option value without changing the environment: the trusted core is
-     * first, followed by user-requested preloads in their original order.
+     * first, optional NVIDIA initial-exec TLS is second, and user-requested
+     * preloads retain their original order after both required entries.
      */
-    preloads = preload_list(core_preload, user_preload);
+    preloads = musl_bsd_preload_list(core_preload, nvidia_tls_preload, user_preload);
     if (preloads == NULL) {
         fprintf(stderr, "musl-bsd loader: cannot construct preload list: %s\n", strerror(errno));
         return LOADER_FAILURE;

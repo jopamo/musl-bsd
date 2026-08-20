@@ -263,6 +263,7 @@ compat_interpose_sources = []
 if glibc_runtime_enabled
   compat_interpose_sources += [
     'src/compat/exec.c',
+    'src/compat/preload_policy.c',
     'src/compat/readlink.c',
   ]
 endif
@@ -336,7 +337,11 @@ if glibc_runtime_enabled
 
   glibc_loader = executable(
     glibc_loader_name,
-    ['src/compat/loader.c', 'src/compat/loader_policy.c'],
+    [
+      'src/compat/loader.c',
+      'src/compat/loader_policy.c',
+      'src/compat/preload_policy.c',
+    ],
     include_directories: include_directories('src/compat'),
     install: true,
     install_dir: compat_loader_payload_install_dir,

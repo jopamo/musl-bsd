@@ -97,6 +97,20 @@ static int check_lifecycle(const char* plugin_path) {
     return 0;
 }
 
+static int check_load(const char* dso_path) {
+    void* handle = dlopen(dso_path, RTLD_NOW | RTLD_LOCAL);
+
+    if (handle == NULL) {
+        fprintf(stderr, "dlopen: %s\n", dlerror());
+        return 70;
+    }
+    if (dlclose(handle) != 0) {
+        fprintf(stderr, "dlclose: %s\n", dlerror());
+        return 71;
+    }
+    return 0;
+}
+
 static int check_preload_order(void) {
     struct preload_order order = {
         .core = "libmusl-bsd-core.so",
@@ -109,9 +123,21 @@ static int check_preload_order(void) {
     return order.core_index >= 0 && order.user_index > order.core_index ? 0 : 40;
 }
 
-int main(int argc, char** argv) {
-    const char* stage;
+static int check_recurse(char** argv, const char* dso_path) {
+    const char* stage = getenv("MUSL_BSD_LOADER_STAGE");
 
+    if (stage != NULL) {
+        if (strcmp(stage, "reexec") != 0)
+            return 60;
+        return dso_path == NULL ? 0 : check_load(dso_path);
+    }
+    if (setenv("MUSL_BSD_LOADER_STAGE", "reexec", 1) != 0)
+        return 61;
+    execv("/proc/self/exe", argv);
+    return 62;
+}
+
+int main(int argc, char** argv) {
     if (argc < 2)
         return 2;
     if (strcmp(argv[1], "startup") == 0)
@@ -120,6 +146,8 @@ int main(int argc, char** argv) {
         return check_facade_owner(argv[2]);
     if (strcmp(argv[1], "lifecycle") == 0 && argc == 3)
         return check_lifecycle(argv[2]);
+    if (strcmp(argv[1], "load") == 0 && argc == 3)
+        return check_load(argv[2]);
     if (strcmp(argv[1], "exit") == 0 && argc == 3)
         return atoi(argv[2]);
     if (strcmp(argv[1], "signal") == 0) {
@@ -128,14 +156,9 @@ int main(int argc, char** argv) {
     }
     if (strcmp(argv[1], "preload-order") == 0)
         return check_preload_order();
-    if (strcmp(argv[1], "recurse") == 0) {
-        stage = getenv("MUSL_BSD_LOADER_STAGE");
-        if (stage != NULL)
-            return strcmp(stage, "reexec") == 0 ? 0 : 60;
-        if (setenv("MUSL_BSD_LOADER_STAGE", "reexec", 1) != 0)
-            return 61;
-        execv("/proc/self/exe", argv);
-        return 62;
-    }
+    if (strcmp(argv[1], "recurse") == 0)
+        return check_recurse(argv, NULL);
+    if (strcmp(argv[1], "recurse-load") == 0 && argc == 3)
+        return check_recurse(argv, argv[2]);
     return 3;
 }

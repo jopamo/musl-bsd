@@ -105,6 +105,15 @@ if glibc_runtime_enabled
   )
   test('compat/loader_policy', loader_policy_test, suite: 'compat')
 
+  preload_policy_test = executable(
+    'test_preload_policy',
+    ['test_preload_policy.c', '../../src/compat/preload_policy.c'],
+    include_directories: include_directories('../../src/compat'),
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/preload_policy', preload_policy_test, suite: 'compat')
+
   compat_loader_test = executable(
     'compat_loader_runtime',
     'loader_target.c',
@@ -152,6 +161,27 @@ if glibc_runtime_enabled
       loader_user_preload,
     ] + glibc_facades,
     suite: 'compat',
+    timeout: 60,
+  )
+
+  nvidia_loader_runner = files('run_nvidia_loader_test.py')
+  test(
+    'nvidia/loader_glcore',
+    python,
+    args: [
+      nvidia_loader_runner,
+      glibc_loader.full_path(),
+      compat_loader_test.full_path(),
+      libcompat.full_path(),
+      meson.project_build_root(),
+      patchelf.full_path(),
+    ],
+    depends: [
+      glibc_loader,
+      libcompat,
+      compat_loader_test,
+    ] + glibc_facades,
+    suite: ['compat', 'nvidia'],
     timeout: 60,
   )
 

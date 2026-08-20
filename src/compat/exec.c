@@ -1,3 +1,5 @@
+#include "preload_policy.h"
+
 #include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
@@ -22,33 +24,12 @@
 #error MUSL_BSD_LIBRARY_PATH must be defined
 #endif
 
-static const char* compatibility_path(const char* variable, const char* configured) {
-    const char* path = getenv(variable);
-
-    return path != NULL && path[0] != '\0' ? path : configured;
-}
-
 static char* preload_list(void) {
-    const char* core = compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
+    const char* core = musl_bsd_compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
+    const char* nvidia_tls = getenv("MUSL_BSD_NVIDIA_TLS_PATH");
     const char* user = getenv("LD_PRELOAD");
-    size_t core_len = strlen(core);
-    size_t user_len = user == NULL ? 0 : strlen(user);
-    char* list;
 
-    if (user_len == 0)
-        return strdup(core);
-    if (core_len > SIZE_MAX - user_len - 2) {
-        errno = EOVERFLOW;
-        return NULL;
-    }
-
-    list = malloc(core_len + user_len + 2);
-    if (list == NULL)
-        return NULL;
-    memcpy(list, core, core_len);
-    list[core_len] = ':';
-    memcpy(list + core_len + 1, user, user_len + 1);
-    return list;
+    return musl_bsd_preload_list(core, nvidia_tls, user);
 }
 
 static int (*real_execve)(const char* pathname, char* const argv[], char* const envp[]);
@@ -96,7 +77,7 @@ int execve(const char* pathname, char* const argv[], char* const envp[]) {
         new_argv[1] = (char*)"--preload";
         new_argv[2] = preloads;
         new_argv[3] = (char*)"--library-path";
-        new_argv[4] = (char*)compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
+        new_argv[4] = (char*)musl_bsd_compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
         new_argv[5] = (char*)"--argv0";
         new_argv[6] = argv[0];
         new_argv[7] = (char*)"--";
@@ -104,7 +85,12 @@ int execve(const char* pathname, char* const argv[], char* const envp[]) {
         for (int i = 1; i < argc; ++i)
             new_argv[i + 8] = argv[i];
 
-        return real_execve(MUSL_BSD_MUSL_LINKER_PATH, new_argv, envp);
+        int result = real_execve(MUSL_BSD_MUSL_LINKER_PATH, new_argv, envp);
+        int saved_errno = errno;
+        free(new_argv);
+        free(preloads);
+        errno = saved_errno;
+        return result;
     }
 
     return real_execve(pathname, argv, envp);

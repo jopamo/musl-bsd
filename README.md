@@ -46,6 +46,17 @@ preserving the target's `argv[0]`, remaining arguments, exit status, and signal
 termination. User `LD_PRELOAD` is not rewritten; its entries follow the core
 in the explicit musl preload list.
 
+NVIDIA's initial-exec TLS library must exist in the process's initial static
+TLS set. Set `MUSL_BSD_NVIDIA_TLS_PATH` to its absolute installed path when
+launching an NVIDIA compatibility target. Preload order is fixed:
+
+```text
+musl-bsd core → NVIDIA TLS → user LD_PRELOAD
+```
+
+The loader does not guess driver versions or search for NVIDIA TLS. Secure
+execution is rejected before this environment-controlled path is read.
+
 ### Security boundary
 
 Secure execution is intentionally unsupported. The interpreter reads
@@ -111,6 +122,17 @@ symbol. The report labels this as musl's name-based runtime resolution; it does
 not claim glibc version-quality equivalence. `--strict` makes unresolved
 `DT_NEEDED` entries or provider-backed symbol requirements a command failure.
 Malformed, unsupported, or ambiguous input always fails.
+
+The local proprietary-driver loader check is opt-in:
+
+```sh
+NVIDIA_LIBDIR=/usr/lib \
+  meson test -C build --suite nvidia --print-errorlogs
+```
+
+It verifies that loading `libnvidia-glcore` fails without early NVIDIA TLS and
+succeeds through the complete compatibility-interpreter path when the explicit
+TLS policy is enabled.
 
 ## API At A Glance
 
