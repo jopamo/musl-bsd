@@ -2,7 +2,6 @@
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <gnu/libc-version.h>
-#include <locale.h>
 #include <link.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -25,11 +24,6 @@ extern char* __strtok_r(char* s, const char* delim, char** save_ptr);
 extern int dladdr1(const void* address, Dl_info* info, void** extra_info, int flags);
 extern int backtrace(void** buffer, int size);
 extern int __xstat64(int ver, const char* path, struct stat64* buf);
-extern size_t __strftime_l(char* restrict s,
-                           size_t n,
-                           const char* restrict format,
-                           const struct tm* restrict tm,
-                           locale_t locale);
 
 #ifndef RTLD_DL_LINKMAP
 #define RTLD_DL_LINKMAP 2
@@ -181,7 +175,6 @@ int main(void) {
     char* tmpdir;
     char* tok_state = NULL;
     char toks[] = "a:b";
-    char datebuf[64];
     struct stat64 st;
     struct dirent** entries = NULL;
     struct mallinfo info;
@@ -189,7 +182,6 @@ int main(void) {
     int fd;
     int n;
     void* map;
-    locale_t c_locale;
     void* frames[4];
     pthread_key_t key;
 
@@ -218,13 +210,6 @@ int main(void) {
 
     CHECK(strcmp(__strtok_r(toks, ":", &tok_state), "a") == 0);
     CHECK(strcmp(__strtok_r(NULL, ":", &tok_state), "b") == 0);
-
-    c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
-    CHECK(c_locale != (locale_t)0);
-    memset(datebuf, 0, sizeof(datebuf));
-    CHECK(__strftime_l(datebuf, sizeof(datebuf), "%Y", &(struct tm){.tm_year = 124}, c_locale) == 4);
-    CHECK(strcmp(datebuf, "2024") == 0);
-    freelocale(c_locale);
 
     tmpdir = mkdtemp(tmpdir_template);
     CHECK(tmpdir != NULL);

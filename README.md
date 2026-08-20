@@ -312,6 +312,14 @@ strings, successful-call `errno`, and the return ABI. It is `EXACT` on the
 qualified x86_64 ABI; `compat/strdup_abi` verifies independent allocations and
 direct provider ownership.
 
+The NVIDIA stack imports `__strftime_l@GLIBC_2.3` for locale-aware time
+formatting. The compatibility-core wrapper delegates to musl's canonical
+`strftime_l` implementation and preserves the observed numeric formats,
+percent conversion, buffer truncation, zero-size behavior, return ABI, and
+successful-call `errno`. It is `DEGRADED` because musl's locale database and
+formatting extensions are narrower than glibc's; `compat/strftime_abi` covers
+the qualified C and C.UTF-8 paths and provider ownership.
+
 NVIDIA's present and NVML DSOs import `__progname_full@GLIBC_2.2.5` as a global
 object requirement. Musl's object is the authoritative storage aliased by
 `program_invocation_name`; startup preserves the exact `argv[0]` pointer and

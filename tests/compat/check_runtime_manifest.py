@@ -89,6 +89,15 @@ CORE_POLICIES = [
         "test": "compat/strdup_abi",
         "quality": "EXACT",
     },
+    {
+        "name": "__strftime_l",
+        "version": "GLIBC_2.3",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-bsd-core:__strftime_l",
+        "test": "compat/strftime_abi",
+        "quality": "DEGRADED",
+    },
 ]
 
 LIBC_POLICIES = [

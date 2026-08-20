@@ -396,6 +396,16 @@ if glibc_runtime_enabled
   )
   test('compat/strdup_abi', strdup_abi_test, suite: 'compat')
 
+  strftime_abi_test = executable(
+    'test_compat_strftime',
+    'test_strftime.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/strftime_abi', strftime_abi_test, suite: 'compat')
+
   ctype_b_loc_test = executable(
     'test_compat_ctype_b_loc',
     'test_ctype_b_loc.c',
