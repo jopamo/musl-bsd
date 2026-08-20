@@ -349,9 +349,9 @@
       "binding": "global",
       "implementation": "musl-libc:__strtod_l",
       "name": "__strtod_l",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/strtod_l",
       "version": "GLIBC_2.2.5"
     },
     {

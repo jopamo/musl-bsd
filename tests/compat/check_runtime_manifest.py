@@ -326,6 +326,15 @@ LIBC_POLICIES = [
         "test": "compat/locale_ownership",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__strtod_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__strtod_l",
+        "test": "compat/strtod_l",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {
