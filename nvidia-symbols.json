@@ -502,9 +502,9 @@
       "binding": "global",
       "implementation": "musl-libc:access",
       "name": "access",
-      "quality": "UNSUPPORTED",
+      "quality": "EXACT",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/access_abi",
       "version": "GLIBC_2.2.5"
     },
     {

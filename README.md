@@ -234,6 +234,12 @@ failure termination. Musl's canonical provider preserves the non-returning
 ignored. It is `EXACT`; the shared `compat/assert_fail` regression verifies
 provider ownership and this fail-closed termination path.
 
+The NVIDIA compiler stack imports `access@GLIBC_2.2.5` for real-UID filesystem
+permission checks. Musl's canonical provider preserves the observed `F_OK`,
+read/write/execute, symlink-following, invalid-mode, missing-path, and
+successful-call `errno` behavior. It is `EXACT`; `compat/access_abi` verifies
+the path/mode ABI and provider ownership.
+
 NVML imports `__ctype_b_loc@GLIBC_2.3` at three whitespace checks. Each call
 indexes the returned table with a sign-extended byte and tests glibc’s
 `_ISspace` mask (`0x2000`). Musl supplies the required pointer-to-pointer ABI,

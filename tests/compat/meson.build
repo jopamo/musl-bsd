@@ -386,6 +386,15 @@ if glibc_runtime_enabled
   )
   test('compat/assert_fail', assert_fail_test, suite: 'compat')
 
+  access_abi_test = executable(
+    'test_compat_access_abi',
+    'test_access_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/access_abi', access_abi_test, suite: 'compat')
+
   exit_abi_test = executable(
     'test_compat_exit_abi',
     'test_exit_abi.c',
