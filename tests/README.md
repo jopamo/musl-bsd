@@ -83,9 +83,10 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - exact musl `access` path/mode ABI, successful permission checks, symlink
   following, denied and invalid modes, missing paths, `errno`, and provider
   identity through `compat/access_abi`;
-- degraded musl `acos`/`acosf` libm ABIs, finite-domain values, signed zero,
-  boundary behavior, NaN and domain errors, distinct `errno` behavior, and
-  provider identity through `compat/acos_abi`;
+- degraded musl `acos`/`acosf`/`asin` inverse-trigonometric libm ABIs,
+  finite-domain values, signed zero, boundary behavior, NaN and domain errors,
+  distinct `errno` behavior, and provider identity through
+  `compat/invtrig_abi`;
 - exact musl `alarm` timer ABI, cancellation return values, `SIGALRM`
   delivery, `errno`, and provider identity through `compat/alarm_abi`;
 - degraded musl `alphasort` and compatibility-core `alphasort64`

@@ -240,13 +240,14 @@ read/write/execute, symlink-following, invalid-mode, missing-path, and
 successful-call `errno` behavior. It is `EXACT`; `compat/access_abi` verifies
 the path/mode ABI and provider ownership.
 
-The NVIDIA compiler stack imports `acos@GLIBC_2.2.5` and
-`acosf@GLIBC_2.2.5` from `libm.so.6` for inverse-cosine calculations. Musl's
-providers preserve the observed finite-domain values, signed-zero and endpoint
-behavior, NaN handling, domain errors, and successful-call `errno`, but return
-domain NaNs without publishing `EDOM` where glibc does. They are `DEGRADED`;
-the shared `compat/acos_abi` verifies both scalar floating-point ABIs, distinct
-error behavior, and provider ownership.
+The NVIDIA compiler stack imports `acos@GLIBC_2.2.5`, `acosf@GLIBC_2.2.5`,
+and `asin@GLIBC_2.2.5` from `libm.so.6` for inverse-trigonometric
+calculations. Musl's providers preserve the observed finite-domain values,
+signed-zero and endpoint behavior, NaN handling, domain errors, and
+successful-call `errno`, but return domain NaNs without publishing `EDOM`
+where glibc does. They are `DEGRADED`; the shared `compat/invtrig_abi`
+verifies all three scalar floating-point ABIs, distinct error behavior, and
+provider ownership.
 
 The NVIDIA compiler stack imports `alarm@GLIBC_2.2.5` for process timer
 management. Musl's canonical provider preserves cancellation return values,

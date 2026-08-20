@@ -161,7 +161,7 @@ LIBC_POLICIES = [
         "soname": "libm.so.6",
         "binding": "global",
         "implementation": "musl-libc:acos",
-        "test": "compat/acos_abi",
+        "test": "compat/invtrig_abi",
         "quality": "DEGRADED",
     },
     {
@@ -170,7 +170,7 @@ LIBC_POLICIES = [
         "soname": "libm.so.6",
         "binding": "global",
         "implementation": "musl-libc:acosf",
-        "test": "compat/acos_abi",
+        "test": "compat/invtrig_abi",
         "quality": "DEGRADED",
     },
     {
@@ -181,6 +181,15 @@ LIBC_POLICIES = [
         "implementation": "musl-libc:alarm",
         "test": "compat/alarm_abi",
         "quality": "EXACT",
+    },
+    {
+        "name": "asin",
+        "version": "GLIBC_2.2.5",
+        "soname": "libm.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:asin",
+        "test": "compat/invtrig_abi",
+        "quality": "DEGRADED",
     },
     {
         "name": "alphasort",

@@ -513,7 +513,7 @@
       "name": "acos",
       "quality": "DEGRADED",
       "soname": "libm.so.6",
-      "test": "compat/acos_abi",
+      "test": "compat/invtrig_abi",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -522,7 +522,7 @@
       "name": "acosf",
       "quality": "DEGRADED",
       "soname": "libm.so.6",
-      "test": "compat/acos_abi",
+      "test": "compat/invtrig_abi",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -556,9 +556,9 @@
       "binding": "global",
       "implementation": "musl-libc:asin",
       "name": "asin",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/invtrig_abi",
       "version": "GLIBC_2.2.5"
     },
     {
