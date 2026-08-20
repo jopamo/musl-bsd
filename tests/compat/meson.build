@@ -423,6 +423,15 @@ if glibc_runtime_enabled
   )
   test('compat/alphasort_abi', alphasort_abi_test, suite: 'compat')
 
+  asprintf_abi_test = executable(
+    'test_compat_asprintf_abi',
+    'test_asprintf_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/asprintf_abi', asprintf_abi_test, suite: 'compat')
+
   exit_abi_test = executable(
     'test_compat_exit_abi',
     'test_exit_abi.c',

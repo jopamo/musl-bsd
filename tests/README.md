@@ -93,6 +93,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   directory-comparator ABIs, ASCII and UTF-8 ordering, C/C.UTF-8 locale
   handles, `errno`, and distinct provider identities through
   `compat/alphasort_abi`;
+- exact musl `asprintf` variadic allocation and formatting ABI, return lengths,
+  embedded NUL data, empty output, `errno`, and provider identity through
+  `compat/asprintf_abi`;
 - degraded musl `__ctype_b_loc` pointer ABI, glibc mask encoding, signed-byte
   indexing range, C/C.UTF-8 classification, `errno`, and provider identity;
 - degraded musl `__ctype_get_mb_cur_max` return ABI, C and C.UTF-8 widths,

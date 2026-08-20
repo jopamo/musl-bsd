@@ -262,6 +262,12 @@ observed ASCII and UTF-8 ordering, and successful-call `errno` under C and
 C.UTF-8 handles. They are `DEGRADED` because musl's locale collation policy is
 narrower; `compat/alphasort_abi` verifies both ordering and ownership paths.
 
+The NVIDIA compiler stack imports `asprintf@GLIBC_2.2.5` for dynamically
+formatted diagnostic strings. Musl's canonical provider preserves the
+variadic allocation ABI, return lengths, embedded-NUL data, empty output, and
+successful-call `errno`; it is `EXACT`. `compat/asprintf_abi` verifies the
+formatting and provider-ownership contracts.
+
 NVML imports `__ctype_b_loc@GLIBC_2.3` at three whitespace checks. Each call
 indexes the returned table with a sign-extended byte and tests glibc’s
 `_ISspace` mask (`0x2000`). Musl supplies the required pointer-to-pointer ABI,

@@ -192,6 +192,15 @@ LIBC_POLICIES = [
         "quality": "DEGRADED",
     },
     {
+        "name": "asprintf",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:asprintf",
+        "test": "compat/asprintf_abi",
+        "quality": "EXACT",
+    },
+    {
         "name": "alphasort",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",
