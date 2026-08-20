@@ -12,6 +12,7 @@ extern locale_t __newlocale(int mask, const char* name, locale_t locale);
 extern char* __nl_langinfo_l(nl_item item, locale_t locale);
 extern locale_t __duplocale(locale_t locale);
 extern void __freelocale(locale_t locale);
+extern locale_t __uselocale(locale_t locale);
 
 typedef int (*strcoll_l_function)(const char* left, const char* right, locale_t locale);
 typedef size_t (*strxfrm_l_function)(char* destination, const char* source, size_t size, locale_t locale);
@@ -88,6 +89,7 @@ int main(void) {
     locale_t (*create_locale)(int, const char*, locale_t) = __newlocale;
     locale_t (*duplicate_locale)(locale_t) = __duplocale;
     void (*free_locale)(locale_t) = __freelocale;
+    locale_t (*select_locale)(locale_t) = __uselocale;
     locale_t active_before;
     locale_t c_locale;
     locale_t global_c_snapshot;
@@ -136,6 +138,12 @@ int main(void) {
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__freelocale") == (void*)free_locale);
     CHECK(dlsym(RTLD_DEFAULT, "freelocale") == (void*)free_locale);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)select_locale, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__uselocale") == (void*)select_locale);
+    CHECK(dlsym(RTLD_DEFAULT, "uselocale") == (void*)select_locale);
 
     active_before = uselocale((locale_t)0);
     CHECK(active_before != (locale_t)0);
@@ -148,6 +156,16 @@ int main(void) {
     CHECK(utf8_locale != (locale_t)0);
     CHECK(errno == ERANGE);
     CHECK(uselocale((locale_t)0) == active_before);
+
+    errno = E2BIG;
+    CHECK(select_locale(c_locale) == active_before);
+    CHECK(errno == E2BIG);
+    errno = ECHILD;
+    CHECK(select_locale((locale_t)0) == c_locale);
+    CHECK(errno == ECHILD);
+    errno = ENOTTY;
+    CHECK(select_locale(active_before) == c_locale);
+    CHECK(errno == ENOTTY);
 
     CHECK(verify_collation(compare_locale, c_locale) == 0);
     CHECK(verify_collation(compare_locale, utf8_locale) == 0);

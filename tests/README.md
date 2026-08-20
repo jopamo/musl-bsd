@@ -93,6 +93,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   source-snapshot independence, inactive construction, thread-local
   publication and withdrawal, global/static and allocated ownership, cleanup,
   `errno`, and public-alias identity;
+- exact musl `__uselocale` thread-locale publication, query, restoration, and
+  `LC_GLOBAL_LOCALE` ABI, `errno`, provider ownership, and public-alias
+  identity through `compat/locale_ownership`;
 - degraded musl `__strcoll_l`/`__strxfrm_l` and public `strcoll_l`/`strxfrm_l`
   locale-comparison and transformation ABIs, C and C.UTF-8 bytewise ordering,
   transformed lengths, truncation, embedded-NUL handling, `errno`, provider

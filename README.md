@@ -297,6 +297,13 @@ are narrower than glibc's outside this observed matrix. The shared locale
 regression owns the item matrix, return and pointer ABI, alias identity, and
 provider check.
 
+The NVIDIA locale-facet paths import `__uselocale@GLIBC_2.3` to select and
+restore per-thread locale snapshots. Musl's internal symbol is the canonical
+public `uselocale` implementation and preserves query, publication,
+restoration, `LC_GLOBAL_LOCALE`, return, and successful-call `errno` behavior.
+It is `EXACT`; `compat/locale_ownership` verifies direct provider ownership and
+public-alias identity alongside the existing locale lifecycle tests.
+
 Gpucomp imports `__strcoll_l@GLIBC_2.2.5` for locale-facet string comparisons.
 Musl's internal symbol is the canonical public `strcoll_l` implementation and
 preserves the bytewise ordering, embedded-NUL behavior, return ABI, and
