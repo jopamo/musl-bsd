@@ -103,9 +103,10 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - degraded compatibility-core `__register_atfork` callback ABI, prepare
   reverse ordering, parent/child forward ordering, process isolation,
   `errno`, provider ownership, and DSO-handle adapter behavior;
-- exact compatibility-core `__sched_cpualloc` allocation ABI, dynamic
-  word-boundary sizing, zero initialization, boundary-bit operations,
-  `errno`, provider ownership, and public `CPU_FREE` cleanup;
+- exact compatibility-core `__sched_cpualloc`/`__sched_cpufree` allocation and
+  cleanup ABIs, dynamic word-boundary sizing, zero initialization,
+  boundary-bit operations, `errno`, provider ownership, and public
+  `CPU_FREE` semantics;
 - exact musl `__sched_cpucount` byte-range count ABI, zero-size/null handling,
   byte and word boundaries, observed 128-byte sizing, `errno`, and provider
   ownership;

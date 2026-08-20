@@ -328,6 +328,12 @@ preserves `errno`; this is `EXACT` on the qualified x86_64 ABI.
 `compat/sched_abi` verifies zero-size/null handling, counts across byte and
 word boundaries, the observed 128-byte size, and provider ownership.
 
+NVML imports `__sched_cpufree@GLIBC_2.7` to release those dynamically sized
+sets. The compatibility-core implementation delegates to public `CPU_FREE`,
+preserves successful-call `errno`, and is `EXACT` on the qualified x86_64 ABI.
+`compat/sched_abi` verifies direct provider ownership and cleanup through the
+internal symbol rather than only the public macro.
+
 The seven qualified NVIDIA/CUDA objects that perform ordinary system work
 import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
 legacy libpthread SONAME requirements. Musl’s unified libc returns the address

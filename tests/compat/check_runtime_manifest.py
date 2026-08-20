@@ -71,6 +71,15 @@ CORE_POLICIES = [
         "test": "compat/sched_abi",
         "quality": "EXACT",
     },
+    {
+        "name": "__sched_cpufree",
+        "version": "GLIBC_2.7",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-bsd-core:__sched_cpufree",
+        "test": "compat/sched_abi",
+        "quality": "EXACT",
+    },
 ]
 
 LIBC_POLICIES = [

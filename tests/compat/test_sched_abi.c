@@ -8,6 +8,7 @@
 
 extern cpu_set_t* __sched_cpualloc(size_t count);
 extern int __sched_cpucount(size_t size, const cpu_set_t* set);
+extern void __sched_cpufree(cpu_set_t* set);
 
 #define CHECK(condition)                                                         \
     do {                                                                         \
@@ -21,6 +22,7 @@ int main(void) {
     static const size_t counts[] = {1, 64, 65, 256, 1024};
     cpu_set_t* (*allocate_cpu_set)(size_t count) = __sched_cpualloc;
     int (*count_cpu_set)(size_t size, const cpu_set_t* set) = __sched_cpucount;
+    void (*free_cpu_set)(cpu_set_t* set) = __sched_cpufree;
     static const struct {
         size_t size;
         int expected;
@@ -42,6 +44,11 @@ int main(void) {
     CHECK(info.dli_fname != NULL);
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__sched_cpucount") == (void*)count_cpu_set);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)free_cpu_set, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") != NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__sched_cpufree") == (void*)free_cpu_set);
 
     for (index = 0; index < sizeof(counts) / sizeof(counts[0]); ++index) {
         size_t count = counts[index];
@@ -64,7 +71,9 @@ int main(void) {
         CPU_SET_S(count - 1, allocation_size, set);
         CHECK(CPU_ISSET_S(count - 1, allocation_size, set));
         CHECK(!CPU_ISSET_S(count, allocation_size, set));
-        CPU_FREE(set);
+        errno = ENOTTY;
+        free_cpu_set(set);
+        CHECK(errno == ENOTTY);
     }
 
     memset(storage, 0, sizeof(storage));
