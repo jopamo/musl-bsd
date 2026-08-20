@@ -7,6 +7,7 @@
 #include <string.h>
 
 extern locale_t __newlocale(int mask, const char* name, locale_t locale);
+extern char* __nl_langinfo_l(nl_item item, locale_t locale);
 extern locale_t __duplocale(locale_t locale);
 extern void __freelocale(locale_t locale);
 
@@ -19,6 +20,11 @@ extern void __freelocale(locale_t locale);
     } while (0)
 
 int main(void) {
+    static const nl_item gpucomp_items[] = {
+        0x40000, 0x40002, 0x40003, 0x40004, 0x40005, 0x40006, 0x40015,
+    };
+    char* (*query_langinfo)(nl_item, locale_t) = __nl_langinfo_l;
+    char* result;
     locale_t (*create_locale)(int, const char*, locale_t) = __newlocale;
     locale_t (*duplicate_locale)(locale_t) = __duplocale;
     void (*free_locale)(locale_t) = __freelocale;
@@ -32,7 +38,14 @@ int main(void) {
     locale_t snapshot;
     locale_t utf8_locale;
     Dl_info info;
+    size_t index;
 
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)query_langinfo, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__nl_langinfo_l") == (void*)query_langinfo);
+    CHECK(dlsym(RTLD_DEFAULT, "nl_langinfo_l") == (void*)query_langinfo);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)create_locale, &info) != 0);
     CHECK(info.dli_fname != NULL);
@@ -64,6 +77,20 @@ int main(void) {
     CHECK(errno == ERANGE);
     CHECK(uselocale((locale_t)0) == active_before);
 
+    for (index = 0; index < sizeof(gpucomp_items) / sizeof(gpucomp_items[0]); ++index) {
+        errno = EDOM;
+        result = query_langinfo(gpucomp_items[index], c_locale);
+        CHECK(result != NULL);
+        CHECK(result[0] == '\0');
+        CHECK(errno == EDOM);
+    }
+    errno = ERANGE;
+    CHECK(strcmp(query_langinfo(CODESET, c_locale), "ASCII") == 0);
+    CHECK(errno == ERANGE);
+    errno = EAGAIN;
+    CHECK(strcmp(query_langinfo(CODESET, utf8_locale), "UTF-8") == 0);
+    CHECK(errno == EAGAIN);
+
     /*
      * Gpucomp's compiled call site passes mask 0x40, "C", and a null base
      * locale. Keep that ABI path covered even though it is outside musl's
@@ -91,8 +118,8 @@ int main(void) {
     errno = E2BIG;
     CHECK(create_locale(LC_CTYPE_MASK, "C", owned_source) == owned_source);
     CHECK(errno == E2BIG);
-    CHECK(strcmp(nl_langinfo_l(CODESET, owned_source), "ASCII") == 0);
-    CHECK(strcmp(nl_langinfo_l(CODESET, snapshot), "UTF-8") == 0);
+    CHECK(strcmp(query_langinfo(CODESET, owned_source), "ASCII") == 0);
+    CHECK(strcmp(query_langinfo(CODESET, snapshot), "UTF-8") == 0);
     errno = E2BIG;
     free_locale(owned_source);
     CHECK(errno == E2BIG);
@@ -111,15 +138,15 @@ int main(void) {
     global_c_snapshot = duplicate_locale(LC_GLOBAL_LOCALE);
     CHECK(global_c_snapshot != (locale_t)0);
     CHECK(errno == E2BIG);
-    CHECK(strcmp(nl_langinfo_l(CODESET, global_c_snapshot), "ASCII") == 0);
+    CHECK(strcmp(query_langinfo(CODESET, global_c_snapshot), "ASCII") == 0);
 
     CHECK(setlocale(LC_ALL, "C.UTF-8") != NULL);
-    CHECK(strcmp(nl_langinfo_l(CODESET, global_c_snapshot), "ASCII") == 0);
+    CHECK(strcmp(query_langinfo(CODESET, global_c_snapshot), "ASCII") == 0);
     errno = EAGAIN;
     global_utf8_snapshot = duplicate_locale(LC_GLOBAL_LOCALE);
     CHECK(global_utf8_snapshot != (locale_t)0);
     CHECK(errno == EAGAIN);
-    CHECK(strcmp(nl_langinfo_l(CODESET, global_utf8_snapshot), "UTF-8") == 0);
+    CHECK(strcmp(query_langinfo(CODESET, global_utf8_snapshot), "UTF-8") == 0);
 
     errno = ECHILD;
     free_locale(global_utf8_snapshot);

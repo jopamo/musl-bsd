@@ -287,6 +287,16 @@ classification model than glibc. `compat/locale_ownership` verifies the
 observed construction, alias and provider identity, in-place category
 replacement, and successful `errno` preservation.
 
+Gpucomp's locale-facet paths import `__nl_langinfo_l@GLIBC_2.2.5` and query
+monetary items `0x40000`, `0x40002` through `0x40006`, and `0x40015` on the
+constructed locale. Musl's internal symbol is the canonical public
+`nl_langinfo_l` implementation; the observed C-locale path returns stable
+empty strings, preserves `errno`, and reports the expected ASCII/UTF-8
+`CODESET`. It is `DEGRADED` because musl's locale database and item coverage
+are narrower than glibc's outside this observed matrix. The shared locale
+regression owns the item matrix, return and pointer ABI, alias identity, and
+provider check.
+
 The seven qualified NVIDIA/CUDA objects that perform ordinary system work
 import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
 legacy libpthread SONAME requirements. Musl’s unified libc returns the address
