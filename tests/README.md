@@ -9,6 +9,7 @@ Tests are owned by the component they exercise:
 - `fts/`: file-tree traversal behavior
 - `headers/`: overlay header compile/link checks
 - `obstack/`: allocation and object-building behavior
+- `tools/`: black-box tests for repository analysis tools
 
 Each component has its own `meson.build`. The root test build file only
 dispatches to those component files.

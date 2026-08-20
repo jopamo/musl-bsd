@@ -1,0 +1,1090 @@
+#!/usr/bin/env python3
+"""Inventory the ELF requirements of locally installed NVIDIA libraries.
+
+The scanner deliberately has no package-manager or network integration.  It
+only reads the files named on the command line (or NVIDIA-shaped files found
+in the standard local library directories) and follows their DT_NEEDED edges.
+The JSON output is intended to be checked into a local qualification report,
+not to become a new compatibility manifest by itself.
+"""
+
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+import os
+from pathlib import Path
+import struct
+import sys
+from collections import deque
+from typing import Any, Iterable
+
+
+FORMAT_VERSION = 1
+MAX_FILE_SIZE = 512 * 1024 * 1024
+MAX_TABLE_ENTRIES = 16 * 1024 * 1024
+
+PT_LOAD = 1
+PT_DYNAMIC = 2
+PT_TLS = 7
+
+DT_NULL = 0
+DT_NEEDED = 1
+DT_PLTRELSZ = 2
+DT_STRTAB = 5
+DT_SYMTAB = 6
+DT_RELA = 7
+DT_RELASZ = 8
+DT_RELAENT = 9
+DT_STRSZ = 10
+DT_SYMENT = 11
+DT_SONAME = 14
+DT_RPATH = 15
+DT_REL = 17
+DT_RELSZ = 18
+DT_RELENT = 19
+DT_PLTREL = 20
+DT_JMPREL = 23
+DT_TEXTREL = 22
+DT_FLAGS = 30
+DT_VERSYM = 0x6FFFFFF0
+DT_RELACOUNT = 0x6FFFFFF9
+DT_FLAGS_1 = 0x6FFFFFFB
+DT_VERDEF = 0x6FFFFFFC
+DT_VERDEFNUM = 0x6FFFFFFD
+DT_VERNEED = 0x6FFFFFFE
+DT_VERNEEDNUM = 0x6FFFFFFF
+DT_GNU_HASH = 0x6FFFFEF5
+DT_HASH = 4
+DT_RUNPATH = 29
+
+SHN_UNDEF = 0
+STT_GNU_IFUNC = 10
+
+R_X86_64_NAMES = {
+    0: "R_X86_64_NONE",
+    1: "R_X86_64_64",
+    2: "R_X86_64_PC32",
+    3: "R_X86_64_GOT32",
+    4: "R_X86_64_PLT32",
+    5: "R_X86_64_COPY",
+    6: "R_X86_64_GLOB_DAT",
+    7: "R_X86_64_JUMP_SLOT",
+    8: "R_X86_64_RELATIVE",
+    9: "R_X86_64_GOTPCREL",
+    10: "R_X86_64_32",
+    11: "R_X86_64_32S",
+    12: "R_X86_64_16",
+    13: "R_X86_64_PC16",
+    14: "R_X86_64_8",
+    15: "R_X86_64_PC8",
+    16: "R_X86_64_DTPMOD64",
+    17: "R_X86_64_DTPOFF64",
+    18: "R_X86_64_TPOFF64",
+    19: "R_X86_64_TLSGD",
+    20: "R_X86_64_TLSLD",
+    21: "R_X86_64_DTPOFF32",
+    22: "R_X86_64_GOTTPOFF",
+    23: "R_X86_64_TPOFF32",
+    24: "R_X86_64_PC64",
+    25: "R_X86_64_GOTOFF64",
+    26: "R_X86_64_GOTPC32",
+    27: "R_X86_64_GOT64",
+    28: "R_X86_64_GOTPCREL64",
+    29: "R_X86_64_GOTPC64",
+    30: "R_X86_64_GOTPLT64",
+    31: "R_X86_64_PLTOFF64",
+    32: "R_X86_64_SIZE32",
+    33: "R_X86_64_SIZE64",
+    34: "R_X86_64_GOTPC32_TLSDESC",
+    35: "R_X86_64_TLSDESC_CALL",
+    36: "R_X86_64_TLSDESC",
+    37: "R_X86_64_IRELATIVE",
+    41: "R_X86_64_GOTPCRELX",
+    42: "R_X86_64_REX_GOTPCRELX",
+}
+
+TLS_RELOCATION_TYPES = {
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    34,
+    35,
+    36,
+}
+
+GLIBC_SONAMES = {
+    "libc.so.6",
+    "libdl.so.2",
+    "libm.so.6",
+    "libpthread.so.0",
+    "libresolv.so.2",
+    "librt.so.1",
+    "libutil.so.1",
+}
+
+DEFAULT_LIBRARY_PATHS = (
+    "/lib",
+    "/lib64",
+    "/usr/lib",
+    "/usr/lib64",
+    "/lib/x86_64-linux-gnu",
+    "/usr/lib/x86_64-linux-gnu",
+)
+
+TARGET_PATTERNS = (
+    "nvidia_drv.so",
+    "libGLX_nvidia.so.*",
+    "libnvidia-glcore.so.*",
+    "libnvidia-tls.so.*",
+    "libnvidia-ml.so.*",
+    "libcuda.so.*",
+    "libcudart.so.*",
+)
+
+
+class ScanError(Exception):
+    """An input cannot be inspected without guessing."""
+
+
+class Reader:
+    def __init__(self, data: bytes, path: Path):
+        self.data = data
+        self.path = path
+
+    def range(self, offset: int, size: int, what: str) -> None:
+        if offset < 0 or size < 0 or offset > len(self.data) or size > len(
+            self.data
+        ) - offset:
+            raise ScanError(
+                f"{self.path}: {what} is outside the file "
+                f"(offset={offset}, size={size})"
+            )
+
+    def unpack(self, fmt: str, offset: int, what: str) -> tuple[Any, ...]:
+        size = struct.calcsize(fmt)
+        self.range(offset, size, what)
+        return struct.unpack_from(fmt, self.data, offset)
+
+    def bytes(self, offset: int, size: int, what: str) -> bytes:
+        self.range(offset, size, what)
+        return self.data[offset : offset + size]
+
+    def c_string(self, offset: int, limit: int, what: str) -> str:
+        self.range(offset, 0, what)
+        end = min(len(self.data), offset + limit)
+        nul = self.data.find(b"\0", offset, end)
+        if nul < 0:
+            raise ScanError(f"{self.path}: unterminated {what}")
+        return self.data[offset:nul].decode("utf-8", "surrogateescape")
+
+
+def _file_bytes(path: Path) -> bytes:
+    try:
+        size = path.stat().st_size
+        if size > MAX_FILE_SIZE:
+            raise ScanError(
+                f"{path}: refusing to inspect a file larger than "
+                f"{MAX_FILE_SIZE} bytes"
+            )
+        return path.read_bytes()
+    except OSError as error:
+        raise ScanError(f"{path}: cannot read file: {error}") from error
+
+
+class ELFFile:
+    """The small ELF64 reader needed by the inventory contract.
+
+    NVIDIA's current x86_64 stack is the supported input.  Rejecting another
+    class, byte order, or machine is intentional: reporting partial metadata
+    for a different ABI would make the resulting qualification report unsafe
+    to act on.
+    """
+
+    def __init__(self, path: Path):
+        self.path = path
+        self.reader = Reader(_file_bytes(path), path)
+        self.data = self.reader.data
+        self._parse_header()
+        self._parse_program_headers()
+        self._parse_dynamic()
+
+    def _parse_header(self) -> None:
+        if len(self.data) < 64 or self.data[:4] != b"\x7fELF":
+            raise ScanError(f"{self.path}: not an ELF file")
+        if self.data[4] != 2:
+            raise ScanError(f"{self.path}: only ELF64 inputs are supported")
+        if self.data[5] != 1:
+            raise ScanError(
+                f"{self.path}: only little-endian ELF inputs are supported"
+            )
+        (
+            _ident,
+            self.e_type,
+            self.machine,
+            _version,
+            _entry,
+            self.phoff,
+            _shoff,
+            _flags,
+            _ehsize,
+            self.phentsize,
+            self.phnum,
+            _shentsize,
+            _shnum,
+            _shstrndx,
+        ) = self.reader.unpack("<16sHHIQQQIHHHHHH", 0, "ELF header")
+        if self.machine != 62:
+            raise ScanError(
+                f"{self.path}: unsupported ELF machine {self.machine}; "
+                "the scanner is qualified for x86_64 only"
+            )
+        if self.phentsize < 56:
+            raise ScanError(f"{self.path}: invalid program-header size")
+        if self.phnum > MAX_TABLE_ENTRIES:
+            raise ScanError(f"{self.path}: unreasonable program-header count")
+        self.reader.range(
+            self.phoff,
+            self.phentsize * self.phnum,
+            "program-header table",
+        )
+
+    def _parse_program_headers(self) -> None:
+        self.load_segments: list[tuple[int, int, int, int]] = []
+        self.dynamic_segment: tuple[int, int] | None = None
+        self.tls_segment: tuple[int, int, int, int] | None = None
+        for index in range(self.phnum):
+            offset = self.phoff + index * self.phentsize
+            (
+                p_type,
+                _p_flags,
+                p_offset,
+                p_vaddr,
+                _p_paddr,
+                p_filesz,
+                p_memsz,
+                p_align,
+            ) = self.reader.unpack(
+                "<IIQQQQQQ", offset, f"program header {index}"
+            )
+            self.reader.range(
+                p_offset, p_filesz, f"program header {index} file range"
+            )
+            if p_type == PT_LOAD:
+                self.load_segments.append((p_vaddr, p_memsz, p_offset, p_filesz))
+            elif p_type == PT_DYNAMIC:
+                if self.dynamic_segment is not None:
+                    raise ScanError(f"{self.path}: multiple PT_DYNAMIC segments")
+                self.dynamic_segment = (p_offset, p_filesz)
+            elif p_type == PT_TLS:
+                self.tls_segment = (p_vaddr, p_memsz, p_offset, p_filesz)
+                self.tls_align = p_align
+
+    def _vaddr_offset(self, address: int, size: int = 1) -> int:
+        for vaddr, _memsz, offset, filesz in self.load_segments:
+            if address < vaddr:
+                continue
+            delta = address - vaddr
+            if delta <= filesz and size <= filesz - delta:
+                return offset + delta
+        raise ScanError(
+            f"{self.path}: virtual address 0x{address:x} "
+            f"does not map to {size} file bytes"
+        )
+
+    def _parse_dynamic(self) -> None:
+        if self.dynamic_segment is None:
+            raise ScanError(f"{self.path}: no PT_DYNAMIC segment")
+        offset, size = self.dynamic_segment
+        if size % 16:
+            raise ScanError(f"{self.path}: malformed PT_DYNAMIC size")
+        self.dynamic: dict[int, int] = {}
+        self.needed_offsets: list[int] = []
+        self.reader.range(offset, size, "dynamic segment")
+        terminated = False
+        for index in range(size // 16):
+            tag, value = self.reader.unpack(
+                "<QQ", offset + index * 16, f"dynamic entry {index}"
+            )
+            if tag == DT_NULL:
+                terminated = True
+                break
+            if tag == DT_NEEDED:
+                self.needed_offsets.append(value)
+            elif tag not in self.dynamic:
+                self.dynamic[tag] = value
+        if not terminated:
+            raise ScanError(f"{self.path}: PT_DYNAMIC has no DT_NULL entry")
+        if DT_STRTAB not in self.dynamic or DT_STRSZ not in self.dynamic:
+            raise ScanError(f"{self.path}: dynamic string table is missing")
+        self.strtab = self._vaddr_offset(
+            self.dynamic[DT_STRTAB], self.dynamic[DT_STRSZ]
+        )
+        self.strsz = self.dynamic[DT_STRSZ]
+
+    def _string(self, offset: int, what: str) -> str:
+        if offset >= self.strsz:
+            raise ScanError(
+                f"{self.path}: {what} offset {offset} exceeds DT_STRSZ"
+            )
+        return self.reader.c_string(self.strtab + offset, self.strsz - offset, what)
+
+    def _address_range(self, address: int, size: int, what: str) -> int:
+        try:
+            return self._vaddr_offset(address, size)
+        except ScanError as error:
+            raise ScanError(f"{self.path}: invalid {what}: {error}") from error
+
+    def _symbol_count(self) -> int:
+        if DT_HASH in self.dynamic:
+            offset = self._address_range(self.dynamic[DT_HASH], 8, "DT_HASH")
+            _nbucket, nchain = self.reader.unpack("<II", offset, "DT_HASH header")
+            if nchain > MAX_TABLE_ENTRIES:
+                raise ScanError(f"{self.path}: unreasonable symbol count")
+            return nchain
+
+        if DT_GNU_HASH in self.dynamic:
+            offset = self._address_range(
+                self.dynamic[DT_GNU_HASH], 16, "DT_GNU_HASH"
+            )
+            nbuckets, symoffset, bloom_size, _bloom_shift = self.reader.unpack(
+                "<IIII", offset, "GNU hash header"
+            )
+            if (
+                nbuckets > MAX_TABLE_ENTRIES
+                or bloom_size > MAX_TABLE_ENTRIES
+                or symoffset > MAX_TABLE_ENTRIES
+            ):
+                raise ScanError(f"{self.path}: unreasonable GNU hash table")
+            buckets = offset + 16 + bloom_size * 8
+            self.reader.range(buckets, nbuckets * 4, "GNU hash buckets")
+            chains = buckets + nbuckets * 4
+            highest = symoffset - 1
+            for bucket_index in range(nbuckets):
+                bucket = self.reader.unpack(
+                    "<I",
+                    buckets + bucket_index * 4,
+                    "GNU hash bucket",
+                )[0]
+                if bucket < symoffset:
+                    continue
+                index = bucket
+                while True:
+                    chain_offset = chains + (index - symoffset) * 4
+                    value = self.reader.unpack(
+                        "<I", chain_offset, "GNU hash chain"
+                    )[0]
+                    highest = max(highest, index)
+                    if value & 1:
+                        break
+                    index += 1
+                    if index - symoffset > MAX_TABLE_ENTRIES:
+                        raise ScanError(
+                            f"{self.path}: unreasonable GNU hash chain"
+                        )
+            return highest + 1
+
+        # A DSO without either hash table is unusual but valid.  The dynamic
+        # string table normally follows dynsym, so this is a safe fallback for
+        # inspection-only purposes when the table order is conventional.
+        symtab = self.dynamic.get(DT_SYMTAB)
+        syment = self.dynamic.get(DT_SYMENT, 24)
+        if symtab is None or syment < 24:
+            return 0
+        symtab_offset = self._address_range(symtab, syment, "DT_SYMTAB")
+        strtab_offset = self.strtab
+        if strtab_offset <= symtab_offset:
+            return 0
+        count = (strtab_offset - symtab_offset) // syment
+        if count > MAX_TABLE_ENTRIES:
+            raise ScanError(f"{self.path}: unreasonable symbol count")
+        return count
+
+    def _version_requirements(self) -> dict[int, dict[str, str]]:
+        result: dict[int, dict[str, str]] = {}
+        address = self.dynamic.get(DT_VERNEED)
+        count = self.dynamic.get(DT_VERNEEDNUM, 0)
+        if address is None:
+            return result
+        if count > MAX_TABLE_ENTRIES:
+            raise ScanError(f"{self.path}: unreasonable version-need count")
+        current = self._address_range(address, 16, "DT_VERNEED")
+        for need_index in range(count):
+            version, aux_count, file_offset, aux_offset, next_offset = (
+                self.reader.unpack(
+                    "<HHIII", current, f"version need {need_index}"
+                )
+            )
+            if version == 0 or aux_count == 0:
+                raise ScanError(f"{self.path}: malformed version need entry")
+            library = self._string(file_offset, "version-need library")
+            aux = current + aux_offset
+            for aux_index in range(aux_count):
+                _hash, flags, other, name_offset, next_aux = self.reader.unpack(
+                    "<IHHII",
+                    aux,
+                    f"version need auxiliary {need_index}:{aux_index}",
+                )
+                result[other] = {
+                    "version": self._string(name_offset, "version-need name"),
+                    "library": library,
+                    "flags": str(flags),
+                }
+                if next_aux == 0:
+                    break
+                if next_aux < 16:
+                    raise ScanError(
+                        f"{self.path}: malformed version-need auxiliary link"
+                    )
+                aux += next_aux
+            if next_offset == 0:
+                break
+            if next_offset < 16:
+                raise ScanError(f"{self.path}: malformed version-need link")
+            current += next_offset
+        return result
+
+    def _symbols(self) -> list[dict[str, Any]]:
+        self.version_requirements: dict[int, dict[str, str]] = {}
+        address = self.dynamic.get(DT_SYMTAB)
+        if address is None:
+            return []
+        syment = self.dynamic.get(DT_SYMENT, 24)
+        if syment < 24:
+            raise ScanError(f"{self.path}: invalid DT_SYMENT")
+        count = self._symbol_count()
+        if count == 0:
+            return []
+        offset = self._address_range(address, count * syment, "dynamic symbols")
+        version_address = self.dynamic.get(DT_VERSYM)
+        versions: list[int] = []
+        if version_address is not None:
+            version_offset = self._address_range(
+                version_address, count * 2, "DT_VERSYM"
+            )
+            versions = [
+                self.reader.unpack(
+                    "<H", version_offset + index * 2, "symbol version"
+                )[0]
+                for index in range(count)
+            ]
+        self.version_requirements = self._version_requirements()
+        requirements = self.version_requirements
+        symbols: list[dict[str, Any]] = []
+        for index in range(count):
+            entry = offset + index * syment
+            name_offset, info, other, shndx, value, symbol_size = self.reader.unpack(
+                "<IBBHQQ", entry, f"dynamic symbol {index}"
+            )
+            name = self._string(name_offset, "dynamic symbol name") if name_offset else ""
+            version: dict[str, str] | None = None
+            version_index = 0
+            hidden = False
+            if versions:
+                version_index = versions[index] & 0x7FFF
+                hidden = bool(versions[index] & 0x8000)
+                version = requirements.get(version_index)
+            symbols.append(
+                {
+                    "index": index,
+                    "name": name,
+                    "bind": info >> 4,
+                    "type": info & 0xF,
+                    "other": other,
+                    "shndx": shndx,
+                    "value": value,
+                    "size": symbol_size,
+                    "version_index": version_index,
+                    "version": version,
+                    "hidden": hidden,
+                }
+            )
+        return symbols
+
+    def _relocations(self, symbols: list[dict[str, Any]]) -> tuple[
+        dict[str, int], list[dict[str, Any]], list[dict[str, Any]]
+    ]:
+        tables: list[tuple[int, int, int, str]] = []
+
+        def add_table(address: int | None, size: int | None, entry_size: int,
+                      kind: str) -> None:
+            if address is None or size is None:
+                return
+            if entry_size <= 0:
+                raise ScanError(f"{self.path}: invalid {kind} entry size")
+            if size % entry_size:
+                raise ScanError(f"{self.path}: malformed {kind} size")
+            tables.append((address, size, entry_size, kind))
+
+        add_table(
+            self.dynamic.get(DT_RELA),
+            self.dynamic.get(DT_RELASZ),
+            self.dynamic.get(DT_RELAENT, 24),
+            "RELA",
+        )
+        add_table(
+            self.dynamic.get(DT_REL),
+            self.dynamic.get(DT_RELSZ),
+            self.dynamic.get(DT_RELENT, 16),
+            "REL",
+        )
+        if DT_JMPREL in self.dynamic:
+            plt_type = self.dynamic.get(DT_PLTREL)
+            if plt_type == DT_RELA:
+                entry_size = self.dynamic.get(DT_RELAENT, 24)
+                kind = "PLT RELA"
+            elif plt_type == DT_REL:
+                entry_size = self.dynamic.get(DT_RELENT, 16)
+                kind = "PLT REL"
+            else:
+                raise ScanError(f"{self.path}: invalid DT_PLTREL")
+            add_table(
+                self.dynamic[DT_JMPREL],
+                self.dynamic.get(DT_PLTRELSZ),
+                entry_size,
+                kind,
+            )
+
+        type_counts: dict[str, int] = {}
+        tls_relocations: list[dict[str, Any]] = []
+        irelative_relocations: list[dict[str, Any]] = []
+        seen_tables: set[tuple[int, int, int]] = set()
+        total = 0
+        for address, size, entry_size, kind in tables:
+            table_key = (address, size, entry_size)
+            if table_key in seen_tables:
+                continue
+            seen_tables.add(table_key)
+            count = size // entry_size
+            total += count
+            if total > MAX_TABLE_ENTRIES:
+                raise ScanError(f"{self.path}: unreasonable relocation count")
+            offset = self._address_range(address, size, kind)
+            for index in range(count):
+                entry_offset = offset + index * entry_size
+                if kind.endswith("RELA"):
+                    relocation_offset, info, addend = self.reader.unpack(
+                        "<QQq", entry_offset, f"{kind} relocation {index}"
+                    )
+                else:
+                    relocation_offset, info = self.reader.unpack(
+                        "<QQ", entry_offset, f"{kind} relocation {index}"
+                    )
+                    addend = 0
+                relocation_type = info & 0xFFFFFFFF
+                symbol_index = info >> 32
+                type_name = R_X86_64_NAMES.get(
+                    relocation_type, f"R_X86_64_{relocation_type}"
+                )
+                type_counts[type_name] = type_counts.get(type_name, 0) + 1
+                symbol = (
+                    symbols[symbol_index]
+                    if symbol_index < len(symbols)
+                    else None
+                )
+                symbol_name = symbol["name"] if symbol else ""
+                record = {
+                    "type": type_name,
+                    "offset": relocation_offset,
+                    "addend": addend,
+                    "symbol_index": symbol_index,
+                }
+                if symbol_name:
+                    record["symbol"] = symbol_name
+                if relocation_type in TLS_RELOCATION_TYPES:
+                    tls_relocations.append(record)
+                if relocation_type == 37:
+                    irelative_relocations.append(record)
+        return type_counts, tls_relocations, irelative_relocations
+
+    def report(self) -> dict[str, Any]:
+        symbols = self._symbols()
+        type_counts, tls_relocations, irelative_relocations = self._relocations(
+            symbols
+        )
+        needed = [self._string(offset, "DT_NEEDED name") for offset in self.needed_offsets]
+        runpath: list[str] = []
+        for tag in (DT_RUNPATH, DT_RPATH):
+            if tag in self.dynamic:
+                runpath.extend(
+                    self._string(self.dynamic[tag], "runpath").split(":")
+                )
+        soname = (
+            self._string(self.dynamic[DT_SONAME], "DT_SONAME")
+            if DT_SONAME in self.dynamic
+            else None
+        )
+        undefined: set[tuple[str, str | None, str | None, bool]] = set()
+        ifuncs: set[tuple[str, str | None, bool]] = set()
+        for symbol in symbols:
+            version = symbol["version"]
+            version_name = version["version"] if version else None
+            version_library = version["library"] if version else None
+            if symbol["shndx"] == SHN_UNDEF and symbol["name"]:
+                undefined.add(
+                    (
+                        symbol["name"],
+                        version_name,
+                        version_library,
+                        symbol["hidden"],
+                    )
+                )
+            if symbol["type"] == STT_GNU_IFUNC and symbol["name"]:
+                ifuncs.add(
+                    (symbol["name"], version_name, symbol["shndx"] != SHN_UNDEF)
+                )
+
+        undefined_records = [
+            {
+                "name": name,
+                "version": version,
+                "library": library,
+                "hidden": hidden,
+            }
+            for name, version, library, hidden in sorted(undefined)
+        ]
+        ifunc_records = [
+            {"name": name, "version": version, "defined": defined}
+            for name, version, defined in sorted(ifuncs)
+        ]
+        glibc_versions = sorted(
+            {
+                item["version"]
+                for item in self.version_requirements.values()
+                if item["version"].startswith("GLIBC_")
+            }
+        )
+        glibc_sonames = sorted(set(needed) & GLIBC_SONAMES)
+        return {
+            "path": str(self.path),
+            "elf": {
+                "class": "ELF64",
+                "data": "little-endian",
+                "machine": "x86_64",
+                "type": self.e_type,
+            },
+            "soname": soname,
+            "runpath": runpath,
+            "needed": [
+                {"name": name, "resolved": None} for name in needed
+            ],
+            "required_glibc_sonames": glibc_sonames,
+            "glibc_versions": glibc_versions,
+            "undefined_symbols": undefined_records,
+            "ifunc_symbols": ifunc_records,
+            "irelative_relocations": irelative_relocations,
+            "tls": {
+                "program_header": self.tls_segment is not None,
+                "memsz": self.tls_segment[1] if self.tls_segment else 0,
+                "filesz": self.tls_segment[3] if self.tls_segment else 0,
+                "align": getattr(self, "tls_align", 0),
+                "relocations": tls_relocations,
+            },
+            "relocation_types": dict(sorted(type_counts.items())),
+            "dynamic": {
+                "textrel": DT_TEXTREL in self.dynamic,
+                "flags": self.dynamic.get(DT_FLAGS, 0),
+                "flags_1": self.dynamic.get(DT_FLAGS_1, 0),
+                "rela_count": self.dynamic.get(DT_RELACOUNT, 0),
+            },
+        }
+
+
+def _split_paths(values: Iterable[str]) -> list[Path]:
+    paths: list[Path] = []
+    for value in values:
+        for item in value.split(":"):
+            if item:
+                paths.append(Path(item))
+    return paths
+
+
+def _unique_paths(paths: Iterable[Path]) -> list[Path]:
+    result: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        try:
+            canonical = path.resolve(strict=True)
+        except OSError:
+            continue
+        if canonical not in seen:
+            seen.add(canonical)
+            result.append(canonical)
+    return result
+
+
+def discover_targets(paths: list[str], library_paths: list[Path]) -> list[Path]:
+    if paths:
+        result: list[Path] = []
+        for value in paths:
+            path = Path(value)
+            if any(character in value for character in "*?["):
+                matches = [Path(match) for match in sorted(glob.glob(value))]
+                if not matches:
+                    raise ScanError(f"{value}: no files matched")
+                result.extend(matches)
+            elif path.is_dir():
+                for pattern in TARGET_PATTERNS:
+                    result.extend(path.glob(pattern))
+                result.extend(path.rglob("nvidia_drv.so"))
+            elif path.is_file():
+                result.append(path)
+            else:
+                raise ScanError(f"{path}: file or directory does not exist")
+        result = _unique_paths(result)
+    else:
+        result = []
+        for directory in library_paths:
+            if not directory.is_dir():
+                continue
+            for pattern in TARGET_PATTERNS:
+                result.extend(directory.glob(pattern))
+            result.extend(directory.rglob("nvidia_drv.so"))
+        result = _unique_paths(result)
+    if not result:
+        raise ScanError(
+            "no NVIDIA libraries found; pass explicit files or "
+            "--library-path pointing at the installed driver"
+        )
+    return result
+
+
+class DependencyResolver:
+    def __init__(self, library_paths: list[Path]):
+        self.library_paths = _unique_paths(library_paths)
+
+    @staticmethod
+    def _expand(path: str, origin: Path) -> Path | None:
+        path = path.replace("${ORIGIN}", str(origin)).replace(
+            "$ORIGIN", str(origin)
+        )
+        if "$" in path:
+            return None
+        return Path(path)
+
+    def resolve(self, name: str, parent: Path, runpath: list[str]) -> Path | None:
+        if "/" in name:
+            candidate = Path(name)
+            if not candidate.is_absolute():
+                candidate = parent.parent / candidate
+            if candidate.is_file():
+                return candidate.resolve()
+            return None
+        candidates: list[Path] = []
+        for raw_path in runpath:
+            expanded = self._expand(raw_path, parent.parent)
+            if expanded is not None:
+                candidates.append(expanded / name)
+        candidates.extend(directory / name for directory in self.library_paths)
+        candidates.append(parent.parent / name)
+        for candidate in candidates:
+            if candidate.is_file():
+                try:
+                    return candidate.resolve(strict=True)
+                except OSError:
+                    continue
+        return None
+
+
+def scan(roots: list[Path], library_paths: list[Path], recursive: bool) -> dict[str, Any]:
+    resolver = DependencyResolver(library_paths)
+    queue: deque[Path] = deque(roots)
+    reports: dict[Path, dict[str, Any]] = {}
+    missing: list[dict[str, str]] = []
+    while queue:
+        path = queue.popleft()
+        try:
+            canonical = path.resolve(strict=True)
+        except OSError as error:
+            raise ScanError(f"{path}: cannot resolve file: {error}") from error
+        if canonical in reports:
+            continue
+        elf = ELFFile(canonical)
+        report = elf.report()
+        reports[canonical] = report
+        if not recursive:
+            continue
+        runpath = report["runpath"]
+        for dependency in report["needed"]:
+            resolved = resolver.resolve(dependency["name"], canonical, runpath)
+            if resolved is None:
+                missing.append(
+                    {"from": str(canonical), "name": dependency["name"]}
+                )
+            else:
+                dependency["resolved"] = str(resolved)
+                queue.append(resolved)
+
+    ordered_reports = [reports[path] for path in sorted(reports)]
+    missing = sorted(
+        {
+            (item["from"], item["name"])
+            for item in missing
+        }
+    )
+    missing_records = [{"from": source, "name": name} for source, name in missing]
+    return {
+        "format": FORMAT_VERSION,
+        "roots": [str(path) for path in roots],
+        "recursive": recursive,
+        "objects": ordered_reports,
+        "missing_dependencies": missing_records,
+        "summary": _summary(ordered_reports, missing_records),
+    }
+
+
+def _summary(
+    reports: list[dict[str, Any]], missing: list[dict[str, str]]
+) -> dict[str, Any]:
+    undefined: set[tuple[str, str | None, str | None, bool]] = set()
+    versions: set[str] = set()
+    sonames: set[str] = set()
+    relocation_types: dict[str, int] = {}
+    tls_types: dict[str, int] = {}
+    ifuncs: set[tuple[str, str | None, bool]] = set()
+    irelative_count = 0
+    tls_count = 0
+    for report in reports:
+        sonames.update(report["required_glibc_sonames"])
+        undefined.update(
+            (
+                item["name"],
+                item["version"],
+                item["library"],
+                item["hidden"],
+            )
+            for item in report["undefined_symbols"]
+            if item["version"] and item["version"].startswith("GLIBC_")
+        )
+        versions.update(report["glibc_versions"])
+        ifuncs.update(
+            (item["name"], item["version"], item["defined"])
+            for item in report["ifunc_symbols"]
+        )
+        irelative_count += len(report["irelative_relocations"])
+        tls_count += len(report["tls"]["relocations"])
+        for name, count in report["relocation_types"].items():
+            relocation_types[name] = relocation_types.get(name, 0) + count
+        for item in report["tls"]["relocations"]:
+            name = item["type"]
+            tls_types[name] = tls_types.get(name, 0) + 1
+
+    glibc_symbols = [
+        {
+            "name": name,
+            "version": version,
+            "library": library,
+            "hidden": hidden,
+        }
+        for name, version, library, hidden in sorted(undefined)
+    ]
+    return {
+        "object_count": len(reports),
+        "missing_dependency_count": len(missing),
+        "required_glibc_sonames": sorted(sonames),
+        "required_glibc_versions": sorted(versions),
+        "required_glibc_symbols": glibc_symbols,
+        "relocation_types": dict(sorted(relocation_types.items())),
+        "tls_relocation_types": dict(sorted(tls_types.items())),
+        "tls_relocation_count": tls_count,
+        "ifunc_symbol_count": len(ifuncs),
+        "irelative_relocation_count": irelative_count,
+        "compatibility_requirements": {
+            "glibc_sonames": sorted(sonames),
+            "glibc_versions": sorted(versions),
+            "glibc_symbols": glibc_symbols,
+            "tls_relocation_types": dict(sorted(tls_types.items())),
+            "ifunc_symbols": [
+                {"name": name, "version": version, "defined": defined}
+                for name, version, defined in sorted(ifuncs)
+            ],
+            "irelative_relocation_count": irelative_count,
+            "all_relocation_types": dict(sorted(relocation_types.items())),
+        },
+    }
+
+
+def _hex(value: int) -> str:
+    return f"0x{value:x}"
+
+
+def text_report(report: dict[str, Any]) -> str:
+    lines = [
+        "NVIDIA ELF inventory",
+        f"format: {report['format']}",
+        f"roots: {len(report['roots'])}",
+        "",
+    ]
+    for item in report["objects"]:
+        lines.append(item["path"])
+        if item["soname"]:
+            lines.append(f"  SONAME: {item['soname']}")
+        lines.append(f"  required glibc SONAMEs: "
+                     f"{', '.join(item['required_glibc_sonames']) or '(none)'}")
+        lines.append(
+            f"  requested GLIBC versions: "
+            f"{', '.join(item['glibc_versions']) or '(none)'}"
+        )
+        needed = [
+            f"{entry['name']} -> "
+            f"{entry['resolved'] or ('MISSING' if report['recursive'] else 'not checked')}"
+            for entry in item["needed"]
+        ]
+        lines.append(f"  DT_NEEDED: {', '.join(needed) or '(none)'}")
+        lines.append(
+            f"  undefined symbols: {len(item['undefined_symbols'])}"
+        )
+        for symbol in item["undefined_symbols"]:
+            suffix = (
+                f"@{symbol['version']}" if symbol["version"] else ""
+            )
+            library = f" [{symbol['library']}]" if symbol["library"] else ""
+            lines.append(f"    {symbol['name']}{suffix}{library}")
+        lines.append(
+            f"  TLS: {'present' if item['tls']['program_header'] else 'absent'}; "
+            f"relocations={len(item['tls']['relocations'])}"
+        )
+        for relocation in item["tls"]["relocations"]:
+            symbol = (
+                f" {relocation['symbol']}" if "symbol" in relocation else ""
+            )
+            lines.append(
+                f"    {relocation['type']} at "
+                f"{_hex(relocation['offset'])}{symbol}"
+            )
+        lines.append(
+            f"  IFUNC symbols: {len(item['ifunc_symbols'])}; "
+            f"IRELATIVE relocations: {len(item['irelative_relocations'])}"
+        )
+        if item["ifunc_symbols"]:
+            lines.append(
+                "    " + ", ".join(
+                    symbol["name"] for symbol in item["ifunc_symbols"]
+                )
+            )
+        lines.append(
+            "  relocation types: "
+            + ", ".join(
+                f"{name}={count}"
+                for name, count in item["relocation_types"].items()
+            )
+        )
+        lines.append("")
+
+    summary = report["summary"]
+    lines.extend(
+        [
+            "Consolidated compatibility requirements",
+            f"  objects: {summary['object_count']}",
+            f"  required glibc SONAMEs: "
+            f"{', '.join(summary['required_glibc_sonames']) or '(none)'}",
+            f"  required GLIBC versions: "
+            f"{', '.join(summary['required_glibc_versions']) or '(none)'}",
+            f"  required versioned undefined symbols: "
+            f"{len(summary['required_glibc_symbols'])}",
+            f"  TLS relocation types: "
+            f"{', '.join(summary['tls_relocation_types']) or '(none)'}",
+            f"  IFUNC symbols: {summary['ifunc_symbol_count']}",
+            f"  IRELATIVE relocations: {summary['irelative_relocation_count']}",
+            "",
+        ]
+    )
+    if summary["required_glibc_symbols"]:
+        lines.append("Required versioned undefined symbols:")
+        for symbol in summary["required_glibc_symbols"]:
+            lines.append(
+                f"  {symbol['name']}@{symbol['version']} "
+                f"[{symbol['library'] or 'unknown'}]"
+            )
+        lines.append("")
+    if report["missing_dependencies"]:
+        lines.append("Missing dependencies:")
+        for missing in report["missing_dependencies"]:
+            lines.append(f"  {missing['from']}: {missing['name']}")
+    else:
+        lines.append("Missing dependencies: none")
+    return "\n".join(lines) + "\n"
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=(
+            "scan locally installed NVIDIA ELF files and their DT_NEEDED "
+            "dependency graph"
+        )
+    )
+    parser.add_argument(
+        "paths",
+        nargs="*",
+        help="NVIDIA DSO files, directories, or shell-style globs",
+    )
+    parser.add_argument(
+        "--library-path",
+        action="append",
+        default=[],
+        metavar="DIR[:DIR...]",
+        help="additional dependency/search directories (repeatable)",
+    )
+    parser.add_argument(
+        "--no-recursive",
+        action="store_true",
+        help="inspect only explicitly discovered roots",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="report format (default: text)",
+    )
+    parser.add_argument(
+        "--output",
+        metavar="FILE",
+        help="write the report to FILE instead of stdout; '-' means stdout",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="return failure when any DT_NEEDED dependency cannot be resolved",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = _parser()
+    args = parser.parse_args(argv)
+    configured_paths = _split_paths(args.library_path)
+    if not configured_paths:
+        configured_paths = _split_paths(
+            [os.environ["NVIDIA_LIBDIR"]]
+            if os.environ.get("NVIDIA_LIBDIR")
+            else []
+        )
+    library_paths = _unique_paths(
+        configured_paths + [Path(path) for path in DEFAULT_LIBRARY_PATHS]
+    )
+    try:
+        roots = discover_targets(args.paths, library_paths)
+        report = scan(roots, library_paths, not args.no_recursive)
+        rendered = (
+            json.dumps(report, indent=2, sort_keys=True) + "\n"
+            if args.format == "json"
+            else text_report(report)
+        )
+        if args.output and args.output != "-":
+            Path(args.output).write_text(rendered, encoding="utf-8")
+        else:
+            sys.stdout.write(rendered)
+    except (OSError, ScanError) as error:
+        print(f"nvidia-scan: {error}", file=sys.stderr)
+        return 2
+    return 2 if args.strict and report["missing_dependencies"] else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

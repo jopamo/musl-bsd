@@ -78,6 +78,23 @@ Clang executable with GCC-only `-specs` files, or injects an installed
 compatibility DSO into test programs, is a test-toolchain construction defect;
 the runtime does not compensate for it.
 
+## NVIDIA ELF Inventory
+
+`tools/nvidia-scan` inspects locally installed NVIDIA DSOs and recursively
+follows their `DT_NEEDED` dependencies. It does not download drivers, invoke a
+package manager, or treat unresolved dependencies as satisfied:
+
+```sh
+NVIDIA_LIBDIR=/usr/lib \
+  tools/nvidia-scan --format json --output nvidia-inventory.json
+```
+
+The report records SONAMEs, versioned undefined symbols, TLS relocations,
+IFUNC/IRELATIVE use, relocation types, and a consolidated compatibility
+requirement list. Pass explicit DSO paths to avoid automatic NVIDIA filename
+discovery. `--strict` makes unresolved `DT_NEEDED` entries a command failure;
+malformed or unsupported ELF inputs always fail.
+
 ## API At A Glance
 
 - `libfts` types: `FTS`, `FTSENT`
