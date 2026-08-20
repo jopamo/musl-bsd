@@ -59,3 +59,5 @@ proves fail-closed behavior without early NVIDIA TLS and successful loading
 with `MUSL_BSD_NVIDIA_TLS_PATH`; proprietary binaries are never copied into the
 repository. A second local test discovers an exported `_nv*TLS` object and
 checks per-thread address and value isolation across eight concurrent threads.
+It also gates on the installed NVIDIA graph's destructor ABI and verifies
+pthread-key destructor delivery through the compatibility core.

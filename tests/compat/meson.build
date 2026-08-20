@@ -199,8 +199,9 @@ if glibc_runtime_enabled
       musl_linker_path,
       readelf.full_path(),
       nvidia_tls_threads.full_path(),
+      libcompat.full_path(),
     ],
-    depends: nvidia_tls_threads,
+    depends: [nvidia_tls_threads, libcompat],
     suite: ['compat', 'nvidia'],
     timeout: 60,
   )

@@ -134,7 +134,9 @@ It verifies that loading `libnvidia-glcore` fails without early NVIDIA TLS and
 succeeds through the complete compatibility-interpreter path when the explicit
 TLS policy is enabled. It also verifies that a discovered pointer-sized
 `_nv*TLS` object has distinct, stable storage in eight concurrent threads and
-remains isolated from the main thread.
+remains isolated from the main thread. The same workers exercise NVIDIA's
+observed pthread-key teardown model through the compatibility core and require
+all registered destructors to run.
 
 ## API At A Glance
 
