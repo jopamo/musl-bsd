@@ -327,6 +327,17 @@ successful-call `errno`. It is `DEGRADED` because musl's locale database and
 formatting extensions are narrower than glibc's; `compat/strftime_abi` covers
 the qualified C and C.UTF-8 paths and provider ownership.
 
+The NVIDIA compiler stack imports `__wcsftime_l@GLIBC_2.3` for wide locale-facet
+time formatting. Musl's internal symbol is the canonical public `wcsftime_l`
+provider and preserves the observed numeric formats, percent conversion,
+buffer truncation, zero-size behavior, and return ABI for C and C.UTF-8 handles.
+Its wide format parser leaves `errno` as `EINVAL` for non-empty formatting
+calls, while preserving an existing value for zero-size calls. It is `DEGRADED`
+because musl's locale database, formatting extensions, and successful-call
+`errno` behavior are narrower than glibc's; the consolidated
+`compat/strftime_abi` regression verifies the direct provider and public-alias
+identity.
+
 The NVIDIA stack imports `__strtof_l@GLIBC_2.2.5` and
 `__strtod_l@GLIBC_2.2.5` for locale-facet floating-point parsing. Musl's
 internal symbols are the canonical public `strtof_l`/`strtod_l` providers and

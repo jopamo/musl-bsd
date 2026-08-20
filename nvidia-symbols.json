@@ -421,9 +421,9 @@
       "binding": "global",
       "implementation": "musl-libc:__wcsftime_l",
       "name": "__wcsftime_l",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/strftime_abi",
       "version": "GLIBC_2.3"
     },
     {

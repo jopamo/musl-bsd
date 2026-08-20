@@ -106,9 +106,10 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - exact compatibility-core `__strdup` allocation ABI, embedded-NUL and empty
   strings, copy independence, `errno`, and provider ownership through
   `compat/strdup_abi`;
-- degraded compatibility-core `__strftime_l` formatting ABI, C and C.UTF-8
-  numeric formats, percent conversion, truncation, zero-size handling,
-  `errno`, and provider ownership through `compat/strftime_abi`;
+- degraded compatibility-core `__strftime_l` and direct musl
+  `__wcsftime_l` formatting ABIs, C and C.UTF-8 numeric formats, percent
+  conversion, truncation, zero-size handling, their distinct `errno` behavior,
+  provider ownership, and public-alias identity through `compat/strftime_abi`;
 - degraded musl `__strtof_l`/`__strtod_l` and public `strtof_l`/`strtod_l`
   floating-point conversion ABIs, decimal and hexadecimal input, end pointers,
   special values, range errors, invalid input, `errno`, provider ownership,

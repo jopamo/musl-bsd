@@ -4,16 +4,27 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <wchar.h>
 
 extern size_t __strftime_l(char* restrict string,
                            size_t size,
                            const char* restrict format,
                            const struct tm* restrict time_value,
                            locale_t locale);
+extern size_t __wcsftime_l(wchar_t* restrict string,
+                           size_t size,
+                           const wchar_t* restrict format,
+                           const struct tm* restrict time_value,
+                           locale_t locale);
 
 typedef size_t (*strftime_l_function)(char* restrict string,
                                       size_t size,
                                       const char* restrict format,
+                                      const struct tm* restrict time_value,
+                                      locale_t locale);
+typedef size_t (*wcsftime_l_function)(wchar_t* restrict string,
+                                      size_t size,
+                                      const wchar_t* restrict format,
                                       const struct tm* restrict time_value,
                                       locale_t locale);
 
@@ -42,6 +53,23 @@ static int verify_numeric_formats(strftime_l_function function, locale_t locale,
     return 0;
 }
 
+static int verify_wide_formats(wcsftime_l_function function, locale_t locale, const struct tm* time_value) {
+    wchar_t output[64];
+
+    errno = EDOM;
+    wmemset(output, 0, sizeof(output) / sizeof(output[0]));
+    CHECK(function(output, sizeof(output) / sizeof(output[0]), L"%Y-%m-%d %H:%M:%S", time_value, locale) == 19);
+    CHECK(wcscmp(output, L"2024-03-05 14:06:07") == 0);
+    CHECK(errno == EINVAL);
+
+    errno = ERANGE;
+    wmemset(output, 0, sizeof(output) / sizeof(output[0]));
+    CHECK(function(output, sizeof(output) / sizeof(output[0]), L"%j %%", time_value, locale) == 5);
+    CHECK(wcscmp(output, L"065 %") == 0);
+    CHECK(errno == EINVAL);
+    return 0;
+}
+
 int main(void) {
     static const struct tm time_value = {
         .tm_sec = 7,
@@ -56,7 +84,9 @@ int main(void) {
     };
     char small[8];
     char output[32];
+    wchar_t wide_small[8];
     strftime_l_function function = __strftime_l;
+    wcsftime_l_function wide_function = __wcsftime_l;
     locale_t c_locale;
     locale_t utf8_locale;
     Dl_info info;
@@ -66,6 +96,12 @@ int main(void) {
     CHECK(info.dli_fname != NULL);
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") != NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__strftime_l") == (void*)function);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)wide_function, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__wcsftime_l") == (void*)wide_function);
+    CHECK(dlsym(RTLD_DEFAULT, "wcsftime_l") == (void*)wide_function);
 
     c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
     CHECK(c_locale != (locale_t)0);
@@ -74,6 +110,19 @@ int main(void) {
 
     CHECK(verify_numeric_formats(function, c_locale, &time_value) == 0);
     CHECK(verify_numeric_formats(function, utf8_locale, &time_value) == 0);
+    CHECK(verify_wide_formats(wide_function, c_locale, &time_value) == 0);
+    CHECK(verify_wide_formats(wide_function, utf8_locale, &time_value) == 0);
+
+    errno = E2BIG;
+    wmemset(wide_small, 0xA5, sizeof(wide_small) / sizeof(wide_small[0]));
+    CHECK(wide_function(wide_small, sizeof(wide_small) / sizeof(wide_small[0]), L"%Y-%m-%d", &time_value, c_locale) ==
+          0);
+    CHECK(errno == EINVAL);
+
+    errno = EINTR;
+    wmemset(wide_small, 0xA5, sizeof(wide_small) / sizeof(wide_small[0]));
+    CHECK(wide_function(wide_small, 0, L"%Y", &time_value, c_locale) == 0);
+    CHECK(errno == EINTR);
 
     errno = E2BIG;
     memset(small, 0xA5, sizeof(small));
