@@ -145,6 +145,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   regular-file metadata above 4 GiB, directory/FIFO descriptors, relative and
   absolute paths, followed/no-follow/dangling symlinks, empty-path flags,
   path/descriptor/flag failures, `errno`, and distinct provider identities;
+- degraded musl `__xmknod` FIFO-creation ABI, mode and device metadata, accepted
+  version selectors, missing-parent failures, `errno`, and provider identity
+  through `compat/stat_abi`;
 - degraded musl `__getdelim` pointer/return ABI, public-alias identity,
   delimiter and embedded-NUL behavior, allocation growth and reuse,
   unterminated records, EOF and stream errors, invalid arguments, `errno`, and

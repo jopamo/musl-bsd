@@ -448,9 +448,9 @@
       "binding": "global",
       "implementation": "musl-libc:__xmknod",
       "name": "__xmknod",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/stat_abi",
       "version": "GLIBC_2.2.5"
     },
     {

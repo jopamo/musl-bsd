@@ -522,6 +522,14 @@ non-directory components, complete metadata, return values, and `errno`.
 Both symbols are `DEGRADED` only because musl accepts unknown version
 selectors that glibc rejects.
 
+The NVIDIA compiler stack imports `__xmknod@GLIBC_2.2.5` for special-file
+creation. Musl's direct provider drops the version argument and delegates to
+`mknod`, preserving the observed FIFO mode and device metadata, successful
+`errno`, and missing-parent failure behavior. It is `DEGRADED` because musl
+accepts unknown version selectors that glibc rejects; `compat/stat_abi`
+verifies the selector, creation, metadata, failure, and provider-ownership
+contracts.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh

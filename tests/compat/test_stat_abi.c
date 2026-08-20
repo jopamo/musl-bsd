@@ -15,6 +15,7 @@ extern int __fxstat64(int version, int fd, struct stat* status);
 extern int __fxstatat(int version, int dirfd, const char* path, struct stat* status, int flags);
 extern int __lxstat(int version, const char* path, struct stat* status);
 extern int __lxstat64(int version, const char* path, struct stat* status);
+extern int __xmknod(int version, const char* path, mode_t mode, dev_t* device);
 
 typedef int (*fxstat_function)(int version, int fd, struct stat* status);
 typedef int (*fxstatat_function)(int version, int dirfd, const char* path, struct stat* status, int flags);
@@ -176,6 +177,74 @@ static int verify_path_stat_failure(path_stat_function function, int version, co
     return 0;
 }
 
+static int verify_xmknod(void) {
+#define CHECK_XMKNOD(condition)                                             \
+    do {                                                                    \
+        if (!(condition)) {                                                 \
+            fprintf(stderr, "stat ABI test failed at line %d\n", __LINE__); \
+            goto cleanup;                                                   \
+        }                                                                   \
+    } while (0)
+    static const struct {
+        int version;
+        int preserved_errno;
+    } cases[] = {
+        {1, EDOM},
+        {0, ERANGE},
+        {INT_MAX, E2BIG},
+    };
+    char path[] = "/tmp/musl-bsd-xmknod-XXXXXX";
+    char missing_path[PATH_MAX];
+    struct stat status;
+    dev_t device = 0;
+    int fd = -1;
+    int length;
+    int path_exists = 0;
+    int result = 1;
+    mode_t old_umask;
+    int umask_changed = 0;
+    size_t index;
+
+    fd = mkstemp(path);
+    CHECK_XMKNOD(fd >= 0);
+    CHECK_XMKNOD(close(fd) == 0);
+    fd = -1;
+    CHECK_XMKNOD(unlink(path) == 0);
+    old_umask = umask(0);
+    umask_changed = 1;
+
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index) {
+        errno = cases[index].preserved_errno;
+        CHECK_XMKNOD(__xmknod(cases[index].version, path, S_IFIFO | 0640, &device) == 0);
+        path_exists = 1;
+        CHECK_XMKNOD(errno == cases[index].preserved_errno);
+        CHECK_XMKNOD(lstat(path, &status) == 0);
+        CHECK_XMKNOD(S_ISFIFO(status.st_mode));
+        CHECK_XMKNOD((status.st_mode & 0777) == 0640);
+        CHECK_XMKNOD(status.st_rdev == 0);
+        CHECK_XMKNOD(unlink(path) == 0);
+        path_exists = 0;
+    }
+
+    length = snprintf(missing_path, sizeof(missing_path), "%s/entry", path);
+    CHECK_XMKNOD(length > 0);
+    CHECK_XMKNOD((size_t)length < sizeof(missing_path));
+    errno = 0;
+    CHECK_XMKNOD(__xmknod(1, missing_path, S_IFIFO | 0600, &device) == -1);
+    CHECK_XMKNOD(errno == ENOENT);
+    result = 0;
+
+cleanup:
+    if (umask_changed)
+        umask(old_umask);
+    if (fd >= 0)
+        close(fd);
+    if (path_exists)
+        unlink(path);
+#undef CHECK_XMKNOD
+    return result;
+}
+
 static int verify_path_stat_functions(void) {
 #define CHECK_PATH(condition)                                               \
     do {                                                                    \
@@ -317,6 +386,7 @@ int main(void) {
         CHECK(verify_provider(path_stat_adapters[index].name, (const void*)path_stat_adapters[index].function,
                               path_stat_adapters[index].from_compatibility_core) == 0);
     }
+    CHECK(verify_provider("__xmknod", (const void*)__xmknod, 0) == 0);
 
     file_fd = mkstemp(path);
     CHECK(file_fd >= 0);
@@ -345,6 +415,7 @@ int main(void) {
     CHECK(close(pipe_fds[0]) == 0);
     CHECK(close(pipe_fds[1]) == 0);
 
+    CHECK(verify_xmknod() == 0);
     CHECK(close(file_fd) == 0);
     for (index = 0; index < sizeof(adapters) / sizeof(adapters[0]); ++index) {
         errno = 0;
