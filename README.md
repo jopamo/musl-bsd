@@ -254,6 +254,12 @@ management. Musl's canonical provider preserves cancellation return values,
 `compat/alarm_abi` isolates timer state in a child process and verifies the
 timer ABI and provider ownership.
 
+The NVIDIA compiler stack imports `alphasort@GLIBC_2.2.5` for directory-entry
+ordering. Musl's canonical provider preserves the comparator ABI, observed
+ASCII and UTF-8 ordering, and successful-call `errno` under C and C.UTF-8
+handles. It is `DEGRADED` because musl's locale collation policy is narrower;
+`compat/alphasort_abi` verifies the qualified ordering and provider ownership.
+
 NVML imports `__ctype_b_loc@GLIBC_2.3` at three whitespace checks. Each call
 indexes the returned table with a sign-extended byte and tests glibc’s
 `_ISspace` mask (`0x2000`). Musl supplies the required pointer-to-pointer ABI,

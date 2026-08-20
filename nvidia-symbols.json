@@ -538,9 +538,9 @@
       "binding": "global",
       "implementation": "musl-libc:alphasort",
       "name": "alphasort",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/alphasort_abi",
       "version": "GLIBC_2.2.5"
     },
     {
