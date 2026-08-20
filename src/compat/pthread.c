@@ -1,80 +1,18 @@
+#include "glibc_pthread_abi.h"
+
 #include <dlfcn.h>
+#include <errno.h>
 #include <pthread.h>
 #include <sched.h>
 #include <semaphore.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/syscall.h>
 #include <time.h>
 #include <unistd.h>
 
-/*
- * The NVIDIA userspace libraries are built against glibc.  Their pthread
- * objects are opaque to the caller, but glibc and musl use different
- * representations for those objects.  Passing a glibc mutex directly to a
- * musl pthread function therefore turns fields such as glibc's mutex kind
- * into musl futex state.
- *
- * Keep a native musl object behind each glibc object address.  The map is
- * deliberately private to this DSO: these wrappers are only for glibc ABI
- * entry points resolved from preloaded DSOs, not for musl applications.
- */
-struct pthread_node {
-	struct pthread_node *next;
-	const void *key;
-	int kind;
-	int initialized;
-	union {
-		pthread_mutex_t mutex;
-		pthread_cond_t cond;
-		pthread_mutexattr_t mutex_attr;
-		pthread_condattr_t cond_attr;
-		pthread_rwlock_t rwlock;
-		pthread_rwlockattr_t rwlock_attr;
-		sem_t sem;
-		pthread_attr_t attr;
-	} u;
-};
-
-static struct pthread_node *nodes;
-static volatile int nodes_lock;
-
-static void lock_nodes(void)
-{
-	while (__sync_lock_test_and_set(&nodes_lock, 1))
-		sched_yield();
-}
-
-static void unlock_nodes(void)
-{
-	__sync_lock_release(&nodes_lock);
-}
-
-static struct pthread_node *find_node(const void *key, int kind, int create)
-{
-	struct pthread_node *node;
-
-	lock_nodes();
-	for (node = nodes; node; node = node->next) {
-		if (node->key == key && node->kind == kind) {
-			unlock_nodes();
-			return node;
-		}
-	}
-
-	if (!create) {
-		unlock_nodes();
-		return NULL;
-	}
-
-	node = calloc(1, sizeof(*node));
-	if (node) {
-		node->key = key;
-		node->kind = kind;
-		node->next = nodes;
-		nodes = node;
-	}
-	unlock_nodes();
-	return node;
-}
+#define FUTEX_WAIT_PRIVATE 128
+#define FUTEX_WAKE_PRIVATE 129
 
 typedef int (*mutex_init_fn)(pthread_mutex_t *, const pthread_mutexattr_t *);
 typedef int (*mutex_lock_fn)(pthread_mutex_t *);
@@ -97,7 +35,6 @@ typedef int (*condattr_init_fn)(pthread_condattr_t *);
 typedef int (*condattr_destroy_fn)(pthread_condattr_t *);
 typedef int (*condattr_setclock_fn)(pthread_condattr_t *, clockid_t);
 typedef int (*condattr_setpshared_fn)(pthread_condattr_t *, int);
-typedef int (*once_fn)(pthread_once_t *, void (*)(void));
 typedef int (*rwlock_init_fn)(pthread_rwlock_t *,
 			      const pthread_rwlockattr_t *);
 typedef int (*rwlock_destroy_fn)(pthread_rwlock_t *);
@@ -131,6 +68,9 @@ typedef int (*create_fn)(pthread_t *, const pthread_attr_t *,
 typedef int (*join_fn)(pthread_t, void **);
 typedef int (*detach_fn)(pthread_t);
 
+typedef char dlsym_pointer_representation[
+	(sizeof(void *) == sizeof(detach_fn)) ? 1 : -1];
+
 static mutex_init_fn p_mutex_init;
 static mutex_lock_fn p_mutex_lock;
 static mutex_unlock_fn p_mutex_unlock;
@@ -151,7 +91,6 @@ static condattr_init_fn p_condattr_init;
 static condattr_destroy_fn p_condattr_destroy;
 static condattr_setclock_fn p_condattr_setclock;
 static condattr_setpshared_fn p_condattr_setpshared;
-static once_fn p_once;
 static rwlock_init_fn p_rwlock_init;
 static rwlock_destroy_fn p_rwlock_destroy;
 static rwlock_rdlock_fn p_rwlock_rdlock;
@@ -182,12 +121,72 @@ static create_fn p_create;
 static join_fn p_join;
 static detach_fn p_detach;
 
-static void resolve_native(void)
+enum resolver_state {
+	RESOLVER_UNINITIALIZED,
+	RESOLVER_RUNNING,
+	RESOLVER_READY,
+	RESOLVER_FAILED
+};
+
+static uint64_t resolver_status;
+static __thread int resolver_active;
+
+#define RESOLVER_STATUS(pid, state) \
+	(((uint64_t)(uint32_t)(pid) << 32) | (uint32_t)(state))
+#define RESOLVER_STATUS_STATE(status) ((uint32_t)(status))
+#define RESOLVER_STATUS_PID(status) ((uint32_t)((status) >> 32))
+
+static int resolve_native(void)
 {
+	uint64_t status;
+	uint64_t expected;
+	uint64_t running;
+	uint32_t state;
+	uint32_t pid;
+	int missing = 0;
+	void *address;
+
+	for (;;) {
+		status = __atomic_load_n(&resolver_status, __ATOMIC_ACQUIRE);
+		state = RESOLVER_STATUS_STATE(status);
+		if (state == RESOLVER_READY)
+			return 0;
+		if (state == RESOLVER_FAILED)
+			return ENOSYS;
+		if (state == RESOLVER_RUNNING) {
+			/* Do not deadlock if the dynamic linker re-enters us. */
+			if (resolver_active)
+				return ENOSYS;
+			pid = (uint32_t)getpid();
+			if (RESOLVER_STATUS_PID(status) != pid) {
+				expected = status;
+				__atomic_compare_exchange_n(&resolver_status,
+							    &expected, 0, 0,
+							    __ATOMIC_ACQ_REL,
+							    __ATOMIC_ACQUIRE);
+				continue;
+			}
+			sched_yield();
+			continue;
+		}
+
+		pid = (uint32_t)getpid();
+		running = RESOLVER_STATUS(pid, RESOLVER_RUNNING);
+		expected = RESOLVER_UNINITIALIZED;
+		if (__atomic_compare_exchange_n(&resolver_status, &expected,
+						running, 0,
+						__ATOMIC_ACQ_REL,
+						__ATOMIC_ACQUIRE))
+			break;
+	}
+
+	resolver_active = 1;
+
 #define RESOLVE(member, name) \
 	do { \
-		if (!p_##member) \
-			p_##member = (member##_fn)dlsym(RTLD_NEXT, name); \
+		address = dlsym(RTLD_NEXT, name); \
+		memcpy(&p_##member, &address, sizeof(p_##member)); \
+		missing |= address == NULL; \
 	} while (0)
 
 	RESOLVE(mutex_init, "pthread_mutex_init");
@@ -210,7 +209,6 @@ static void resolve_native(void)
 	RESOLVE(condattr_destroy, "pthread_condattr_destroy");
 	RESOLVE(condattr_setclock, "pthread_condattr_setclock");
 	RESOLVE(condattr_setpshared, "pthread_condattr_setpshared");
-	RESOLVE(once, "pthread_once");
 	RESOLVE(rwlock_init, "pthread_rwlock_init");
 	RESOLVE(rwlock_destroy, "pthread_rwlock_destroy");
 	RESOLVE(rwlock_rdlock, "pthread_rwlock_rdlock");
@@ -242,543 +240,415 @@ static void resolve_native(void)
 	RESOLVE(detach, "pthread_detach");
 
 #undef RESOLVE
+
+	resolver_active = 0;
+	__atomic_store_n(&resolver_status,
+			 RESOLVER_STATUS(pid, missing ? RESOLVER_FAILED :
+					 RESOLVER_READY),
+			 __ATOMIC_RELEASE);
+	return missing ? ENOSYS : 0;
 }
 
-static struct pthread_node *mutex_node(void *object)
+static int native_pthread_ready(void)
 {
-	return find_node(object, 1, 1);
+	return resolve_native();
 }
 
-static struct pthread_node *cond_node(void *object)
+static int native_sem_ready(void)
 {
-	return find_node(object, 2, 1);
+	int error = resolve_native();
+
+	if (error)
+		errno = error;
+	return error;
 }
 
-static struct pthread_node *rwlock_node(void *object)
+#define FORWARD_PTHREAD(call) \
+	do { \
+		int error = native_pthread_ready(); \
+		if (error) \
+			return error; \
+		return (call); \
+	} while (0)
+
+int pthread_mutexattr_init(pthread_mutexattr_t *attr)
 {
-	return find_node(object, 5, 1);
+	FORWARD_PTHREAD(p_mutexattr_init(attr));
 }
 
-static struct pthread_node *sem_node(void *object)
+int pthread_mutexattr_destroy(pthread_mutexattr_t *attr)
 {
-	return find_node(object, 6, 1);
+	FORWARD_PTHREAD(p_mutexattr_destroy(attr));
 }
 
-static struct pthread_node *attr_node(void *object)
+int pthread_mutexattr_setprotocol(pthread_mutexattr_t *attr, int protocol)
 {
-	return find_node(object, 7, 1);
+	FORWARD_PTHREAD(p_mutexattr_setprotocol(attr, protocol));
 }
 
-static struct pthread_node *rwlockattr_node(void *object)
+int pthread_mutexattr_setpshared(pthread_mutexattr_t *attr, int shared)
 {
-	return find_node(object, 8, 1);
+	FORWARD_PTHREAD(p_mutexattr_setpshared(attr, shared));
 }
 
-/*
- * A glibc static recursive mutex has kind == 1 at offset 16.  A zeroed
- * glibc mutex is a normal mutex and is also a valid zeroed musl mutex.  The
- * distinction matters because NVIDIA and its C++ runtime use recursive
- * static locks during compiler initialization.
- */
-static void init_static_mutex(struct pthread_node *node, pthread_mutex_t *m)
+int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int type)
 {
-	unsigned kind;
-	pthread_mutexattr_t attr;
-	int type;
+	FORWARD_PTHREAD(p_mutexattr_settype(attr, type));
+}
 
-	if (!node || node->initialized)
-		return;
+int pthread_mutex_init(pthread_mutex_t *mutex,
+		       const pthread_mutexattr_t *attr)
+{
+	FORWARD_PTHREAD(p_mutex_init(mutex, attr));
+}
 
-	kind = ((unsigned *)m)[4] & 3;
-	if (kind == PTHREAD_MUTEX_NORMAL) {
-		node->initialized = 1;
-		return;
+int pthread_mutex_destroy(pthread_mutex_t *mutex)
+{
+	int error = native_pthread_ready();
+
+	if (!error)
+		error = glibc_prepare_static_mutex(mutex);
+	return error ? error : p_mutex_destroy(mutex);
+}
+
+int pthread_mutex_lock(pthread_mutex_t *mutex)
+{
+	int error = native_pthread_ready();
+
+	if (!error)
+		error = glibc_prepare_static_mutex(mutex);
+	return error ? error : p_mutex_lock(mutex);
+}
+
+int pthread_mutex_trylock(pthread_mutex_t *mutex)
+{
+	int error = native_pthread_ready();
+
+	if (!error)
+		error = glibc_prepare_static_mutex(mutex);
+	return error ? error : p_mutex_trylock(mutex);
+}
+
+int pthread_mutex_unlock(pthread_mutex_t *mutex)
+{
+	int error = native_pthread_ready();
+
+	if (!error)
+		error = glibc_prepare_static_mutex(mutex);
+	return error ? error : p_mutex_unlock(mutex);
+}
+
+int pthread_condattr_init(pthread_condattr_t *attr)
+{
+	FORWARD_PTHREAD(p_condattr_init(attr));
+}
+
+int pthread_condattr_destroy(pthread_condattr_t *attr)
+{
+	FORWARD_PTHREAD(p_condattr_destroy(attr));
+}
+
+int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock)
+{
+	FORWARD_PTHREAD(p_condattr_setclock(attr, clock));
+}
+
+int pthread_condattr_setpshared(pthread_condattr_t *attr, int shared)
+{
+	FORWARD_PTHREAD(p_condattr_setpshared(attr, shared));
+}
+
+int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
+{
+	FORWARD_PTHREAD(p_cond_init(cond, attr));
+}
+
+int pthread_cond_destroy(pthread_cond_t *cond)
+{
+	FORWARD_PTHREAD(p_cond_destroy(cond));
+}
+
+int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+{
+	int error = native_pthread_ready();
+
+	if (!error)
+		error = glibc_prepare_static_mutex(mutex);
+	return error ? error : p_cond_wait(cond, mutex);
+}
+
+int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+			   const struct timespec *time)
+{
+	int error = native_pthread_ready();
+
+	if (!error)
+		error = glibc_prepare_static_mutex(mutex);
+	return error ? error : p_cond_timedwait(cond, mutex, time);
+}
+
+int pthread_cond_signal(pthread_cond_t *cond)
+{
+	FORWARD_PTHREAD(p_cond_signal(cond));
+}
+
+int pthread_cond_broadcast(pthread_cond_t *cond)
+{
+	FORWARD_PTHREAD(p_cond_broadcast(cond));
+}
+
+int pthread_rwlock_init(pthread_rwlock_t *rwlock,
+			const pthread_rwlockattr_t *attr)
+{
+	FORWARD_PTHREAD(p_rwlock_init(rwlock, attr));
+}
+
+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock)
+{
+	FORWARD_PTHREAD(p_rwlock_destroy(rwlock));
+}
+
+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock)
+{
+	FORWARD_PTHREAD(p_rwlock_rdlock(rwlock));
+}
+
+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock)
+{
+	FORWARD_PTHREAD(p_rwlock_wrlock(rwlock));
+}
+
+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock)
+{
+	FORWARD_PTHREAD(p_rwlock_unlock(rwlock));
+}
+
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock)
+{
+	FORWARD_PTHREAD(p_rwlock_tryrdlock(rwlock));
+}
+
+int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock)
+{
+	FORWARD_PTHREAD(p_rwlock_trywrlock(rwlock));
+}
+
+int pthread_rwlockattr_init(pthread_rwlockattr_t *attr)
+{
+	FORWARD_PTHREAD(p_rwlockattr_init(attr));
+}
+
+int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr)
+{
+	FORWARD_PTHREAD(p_rwlockattr_destroy(attr));
+}
+
+int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attr, int shared)
+{
+	FORWARD_PTHREAD(p_rwlockattr_setpshared(attr, shared));
+}
+
+#define ONCE_INPROGRESS 1u
+#define ONCE_DONE       2u
+#define ONCE_STATE_MASK 3u
+#define ONCE_GEN_INCR   4u
+#define ONCE_GEN_MASK   (~ONCE_STATE_MASK)
+
+static int once_pid;
+static unsigned int once_generation;
+
+static void once_futex_wait(volatile unsigned int *control,
+			    unsigned int value)
+{
+	syscall(SYS_futex, control, FUTEX_WAIT_PRIVATE, value, NULL);
+}
+
+static void once_futex_wake(volatile unsigned int *control)
+{
+	syscall(SYS_futex, control, FUTEX_WAKE_PRIVATE, INT32_MAX);
+}
+
+static unsigned int process_once_generation(void)
+{
+	int pid = (int)getpid();
+	int seen;
+	int expected;
+
+	for (;;) {
+		seen = __atomic_load_n(&once_pid, __ATOMIC_ACQUIRE);
+		if (seen == pid)
+			return __atomic_load_n(&once_generation,
+					       __ATOMIC_ACQUIRE);
+		if (seen == -pid) {
+			sched_yield();
+			continue;
+		}
+
+		expected = seen;
+		if (!__atomic_compare_exchange_n(&once_pid, &expected, -pid, 0,
+						 __ATOMIC_ACQ_REL,
+						 __ATOMIC_ACQUIRE))
+			continue;
+
+		seen = __atomic_add_fetch(&once_generation, ONCE_GEN_INCR,
+					  __ATOMIC_RELAXED);
+		__atomic_store_n(&once_pid, pid, __ATOMIC_RELEASE);
+		return (unsigned int)seen & ONCE_GEN_MASK;
 	}
-
-	type = kind == 1 ? PTHREAD_MUTEX_RECURSIVE :
-	       kind == 2 ? PTHREAD_MUTEX_ERRORCHECK : PTHREAD_MUTEX_NORMAL;
-	if (p_mutexattr_init && p_mutexattr_settype && p_mutex_init) {
-		p_mutexattr_init(&attr);
-		p_mutexattr_settype(&attr, type);
-		p_mutex_init(&node->u.mutex, &attr);
-		p_mutexattr_destroy(&attr);
-	}
-	node->initialized = 1;
 }
 
-int pthread_mutexattr_init(pthread_mutexattr_t *a)
+static void once_cancel(void *argument)
 {
-	struct pthread_node *node;
+	volatile unsigned int *control = argument;
 
-	resolve_native();
-	node = find_node(a, 3, 1);
-	return node ? p_mutexattr_init(&node->u.mutex_attr) : ENOMEM;
-}
-
-int pthread_mutexattr_destroy(pthread_mutexattr_t *a)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 3, 0);
-	return node ? p_mutexattr_destroy(&node->u.mutex_attr) : 0;
-}
-
-int pthread_mutexattr_setprotocol(pthread_mutexattr_t *a, int protocol)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 3, 1);
-	return node ? p_mutexattr_setprotocol(&node->u.mutex_attr, protocol) : ENOMEM;
-}
-
-int pthread_mutexattr_setpshared(pthread_mutexattr_t *a, int shared)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 3, 1);
-	return node ? p_mutexattr_setpshared(&node->u.mutex_attr, shared) : ENOMEM;
-}
-
-int pthread_mutexattr_settype(pthread_mutexattr_t *a, int type)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 3, 1);
-	return node ? p_mutexattr_settype(&node->u.mutex_attr, type) : ENOMEM;
-}
-
-int pthread_mutex_init(pthread_mutex_t *m, const pthread_mutexattr_t *a)
-{
-	struct pthread_node *node, *attr_node_ptr = NULL;
-	int result;
-
-	resolve_native();
-	node = mutex_node(m);
-	if (!node)
-		return ENOMEM;
-	if (a)
-		attr_node_ptr = find_node((void *)a, 3, 0);
-	result = p_mutex_init(&node->u.mutex,
-			      attr_node_ptr ? &attr_node_ptr->u.mutex_attr : NULL);
-	if (!result)
-		node->initialized = 1;
-	return result;
-}
-
-int pthread_mutex_destroy(pthread_mutex_t *m)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = mutex_node(m);
-	return node && node->initialized ? p_mutex_destroy(&node->u.mutex) : 0;
-}
-
-int pthread_mutex_lock(pthread_mutex_t *m)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = mutex_node(m);
-	init_static_mutex(node, m);
-	return node ? p_mutex_lock(&node->u.mutex) : ENOMEM;
-}
-
-int pthread_mutex_trylock(pthread_mutex_t *m)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = mutex_node(m);
-	init_static_mutex(node, m);
-	return node ? p_mutex_trylock(&node->u.mutex) : ENOMEM;
-}
-
-int pthread_mutex_unlock(pthread_mutex_t *m)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = mutex_node(m);
-	init_static_mutex(node, m);
-	return node ? p_mutex_unlock(&node->u.mutex) : 0;
-}
-
-int pthread_condattr_init(pthread_condattr_t *a)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 4, 1);
-	return node ? p_condattr_init(&node->u.cond_attr) : ENOMEM;
-}
-
-int pthread_condattr_destroy(pthread_condattr_t *a)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 4, 0);
-	return node ? p_condattr_destroy(&node->u.cond_attr) : 0;
-}
-
-int pthread_condattr_setclock(pthread_condattr_t *a, clockid_t clock)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 4, 1);
-	return node ? p_condattr_setclock(&node->u.cond_attr, clock) : ENOMEM;
-}
-
-int pthread_condattr_setpshared(pthread_condattr_t *a, int shared)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = find_node(a, 4, 1);
-	return node ? p_condattr_setpshared(&node->u.cond_attr, shared) : ENOMEM;
-}
-
-int pthread_cond_init(pthread_cond_t *c, const pthread_condattr_t *a)
-{
-	struct pthread_node *node, *attr_node_ptr = NULL;
-
-	resolve_native();
-	node = cond_node(c);
-	if (!node)
-		return ENOMEM;
-	if (a)
-		attr_node_ptr = find_node((void *)a, 4, 0);
-	return p_cond_init(&node->u.cond,
-			   attr_node_ptr ? &attr_node_ptr->u.cond_attr : NULL);
-}
-
-int pthread_cond_destroy(pthread_cond_t *c)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = cond_node(c);
-	return node ? p_cond_destroy(&node->u.cond) : 0;
-}
-
-int pthread_cond_wait(pthread_cond_t *c, pthread_mutex_t *m)
-{
-	struct pthread_node *cond, *mutex;
-
-	resolve_native();
-	cond = cond_node(c);
-	mutex = mutex_node(m);
-	init_static_mutex(mutex, m);
-	return cond && mutex ? p_cond_wait(&cond->u.cond, &mutex->u.mutex) : ENOMEM;
-}
-
-int pthread_cond_timedwait(pthread_cond_t *c, pthread_mutex_t *m,
-			   const struct timespec *at)
-{
-	struct pthread_node *cond, *mutex;
-
-	resolve_native();
-	cond = cond_node(c);
-	mutex = mutex_node(m);
-	init_static_mutex(mutex, m);
-	return cond && mutex ?
-		p_cond_timedwait(&cond->u.cond, &mutex->u.mutex, at) : ENOMEM;
-}
-
-int pthread_cond_signal(pthread_cond_t *c)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = cond_node(c);
-	return node ? p_cond_signal(&node->u.cond) : 0;
-}
-
-int pthread_cond_broadcast(pthread_cond_t *c)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = cond_node(c);
-	return node ? p_cond_broadcast(&node->u.cond) : 0;
-}
-
-int pthread_rwlock_init(pthread_rwlock_t *r, const pthread_rwlockattr_t *a)
-{
-	struct pthread_node *node, *attr_node_ptr = NULL;
-
-	resolve_native();
-	node = rwlock_node(r);
-	if (a)
-		attr_node_ptr = find_node((void *)a, 8, 0);
-	return node ? p_rwlock_init(&node->u.rwlock,
-				    attr_node_ptr ?
-				    &attr_node_ptr->u.rwlock_attr : NULL) : ENOMEM;
-}
-
-int pthread_rwlock_destroy(pthread_rwlock_t *r)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlock_node(r);
-	return node ? p_rwlock_destroy(&node->u.rwlock) : 0;
-}
-
-int pthread_rwlock_rdlock(pthread_rwlock_t *r)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlock_node(r);
-	return node ? p_rwlock_rdlock(&node->u.rwlock) : ENOMEM;
-}
-
-int pthread_rwlock_wrlock(pthread_rwlock_t *r)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlock_node(r);
-	return node ? p_rwlock_wrlock(&node->u.rwlock) : ENOMEM;
-}
-
-int pthread_rwlock_unlock(pthread_rwlock_t *r)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlock_node(r);
-	return node ? p_rwlock_unlock(&node->u.rwlock) : 0;
-}
-
-int pthread_rwlock_tryrdlock(pthread_rwlock_t *r)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlock_node(r);
-	return node ? p_rwlock_tryrdlock(&node->u.rwlock) : ENOMEM;
-}
-
-int pthread_rwlock_trywrlock(pthread_rwlock_t *r)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlock_node(r);
-	return node ? p_rwlock_trywrlock(&node->u.rwlock) : ENOMEM;
-}
-
-int pthread_rwlockattr_init(pthread_rwlockattr_t *a)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlockattr_node(a);
-	return node ? p_rwlockattr_init(&node->u.rwlock_attr) : ENOMEM;
-}
-
-int pthread_rwlockattr_destroy(pthread_rwlockattr_t *a)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlockattr_node(a);
-	return node ? p_rwlockattr_destroy(&node->u.rwlock_attr) : 0;
-}
-
-int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *a, int shared)
-{
-	struct pthread_node *node;
-
-	resolve_native();
-	node = rwlockattr_node(a);
-	return node ? p_rwlockattr_setpshared(&node->u.rwlock_attr, shared) : ENOMEM;
+	__atomic_store_n(control, 0, __ATOMIC_RELEASE);
+	once_futex_wake(control);
 }
 
 int pthread_once(pthread_once_t *once, void (*init)(void))
 {
-	resolve_native();
-	return p_once(once, init);
+	volatile unsigned int *control = (volatile unsigned int *)once;
+	unsigned int generation;
+	unsigned int current;
+	unsigned int desired;
+
+	current = __atomic_load_n(control, __ATOMIC_ACQUIRE);
+	if ((current & ONCE_STATE_MASK) == ONCE_DONE)
+		return 0;
+
+	for (;;) {
+		generation = process_once_generation();
+		desired = generation | ONCE_INPROGRESS;
+		current = __atomic_load_n(control, __ATOMIC_ACQUIRE);
+		if ((current & ONCE_STATE_MASK) == ONCE_DONE)
+			return 0;
+
+		if (!(current & ONCE_INPROGRESS) ||
+		    (current & ONCE_GEN_MASK) != generation) {
+			if (!__atomic_compare_exchange_n(control, &current,
+							 desired, 0,
+							 __ATOMIC_ACQ_REL,
+							 __ATOMIC_ACQUIRE))
+				continue;
+
+			pthread_cleanup_push(once_cancel, (void *)control);
+			init();
+			pthread_cleanup_pop(0);
+
+			__atomic_store_n(control, ONCE_DONE, __ATOMIC_RELEASE);
+			once_futex_wake(control);
+			return 0;
+		}
+
+		once_futex_wait(control, current);
+	}
 }
 
-int pthread_attr_init(pthread_attr_t *a)
+int pthread_attr_init(pthread_attr_t *attr)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_init(&node->u.attr) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_init(attr));
 }
 
-int pthread_attr_destroy(pthread_attr_t *a)
+int pthread_attr_destroy(pthread_attr_t *attr)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_destroy(&node->u.attr) : 0;
+	FORWARD_PTHREAD(p_attr_destroy(attr));
 }
 
-int pthread_attr_setstacksize(pthread_attr_t *a, size_t size)
+int pthread_attr_setstacksize(pthread_attr_t *attr, size_t size)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setstacksize(&node->u.attr, size) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setstacksize(attr, size));
 }
 
-int pthread_attr_setdetachstate(pthread_attr_t *a, int state)
+int pthread_attr_setdetachstate(pthread_attr_t *attr, int state)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setdetachstate(&node->u.attr, state) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setdetachstate(attr, state));
 }
 
-int pthread_attr_setinheritsched(pthread_attr_t *a, int inherit)
+int pthread_attr_setinheritsched(pthread_attr_t *attr, int inherit)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setinheritsched(&node->u.attr, inherit) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setinheritsched(attr, inherit));
 }
 
-int pthread_attr_setschedparam(pthread_attr_t *a,
+int pthread_attr_setschedparam(pthread_attr_t *attr,
 			       const struct sched_param *param)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setschedparam(&node->u.attr, param) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setschedparam(attr, param));
 }
 
-int pthread_attr_setschedpolicy(pthread_attr_t *a, int policy)
+int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setschedpolicy(&node->u.attr, policy) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setschedpolicy(attr, policy));
 }
 
-int pthread_attr_setscope(pthread_attr_t *a, int scope)
+int pthread_attr_setscope(pthread_attr_t *attr, int scope)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setscope(&node->u.attr, scope) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setscope(attr, scope));
 }
 
-int pthread_attr_setstack(pthread_attr_t *a, void *stack, size_t size)
+int pthread_attr_setstack(pthread_attr_t *attr, void *stack, size_t size)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setstack(&node->u.attr, stack, size) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setstack(attr, stack, size));
 }
 
-int pthread_attr_setguardsize(pthread_attr_t *a, size_t size)
+int pthread_attr_setguardsize(pthread_attr_t *attr, size_t size)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = attr_node(a);
-	return node ? p_attr_setguardsize(&node->u.attr, size) : ENOMEM;
+	FORWARD_PTHREAD(p_attr_setguardsize(attr, size));
 }
 
-int pthread_create(pthread_t *thread, const pthread_attr_t *a,
-		   void *(*start)(void *), void *arg)
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+		   void *(*start)(void *), void *argument)
 {
-	struct pthread_node *node = NULL;
-
-	resolve_native();
-	if (a)
-		node = find_node((void *)a, 7, 0);
-	return p_create(thread, node ? &node->u.attr : NULL, start, arg);
+	FORWARD_PTHREAD(p_create(thread, attr, start, argument));
 }
 
 int pthread_join(pthread_t thread, void **result)
 {
-	resolve_native();
-	return p_join(thread, result);
+	FORWARD_PTHREAD(p_join(thread, result));
 }
 
 int pthread_detach(pthread_t thread)
 {
-	resolve_native();
-	return p_detach(thread);
+	FORWARD_PTHREAD(p_detach(thread));
 }
 
-int sem_init(sem_t *s, int shared, unsigned value)
+int sem_init(sem_t *sem, int shared, unsigned int value)
 {
-	struct pthread_node *node;
-	int result;
-
-	resolve_native();
-	node = sem_node(s);
-	if (!node)
-		return ENOMEM;
-	result = p_sem_init(&node->u.sem, shared, value);
-	if (!result)
-		node->initialized = 1;
-	return result;
+	if (native_sem_ready())
+		return -1;
+	return p_sem_init(sem, shared, value);
 }
 
-int sem_destroy(sem_t *s)
+int sem_destroy(sem_t *sem)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = sem_node(s);
-	return node && node->initialized ? p_sem_destroy(&node->u.sem) : 0;
+	if (native_sem_ready())
+		return -1;
+	return p_sem_destroy(sem);
 }
 
-int sem_post(sem_t *s)
+int sem_post(sem_t *sem)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = sem_node(s);
-	return node && node->initialized ? p_sem_post(&node->u.sem) : -1;
+	if (native_sem_ready())
+		return -1;
+	return p_sem_post(sem);
 }
 
-int sem_wait(sem_t *s)
+int sem_wait(sem_t *sem)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = sem_node(s);
-	return node && node->initialized ? p_sem_wait(&node->u.sem) : -1;
+	if (native_sem_ready())
+		return -1;
+	return p_sem_wait(sem);
 }
 
-int sem_trywait(sem_t *s)
+int sem_trywait(sem_t *sem)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = sem_node(s);
-	return node && node->initialized ? p_sem_trywait(&node->u.sem) : -1;
+	if (native_sem_ready())
+		return -1;
+	return p_sem_trywait(sem);
 }
 
-int sem_timedwait(sem_t *s, const struct timespec *at)
+int sem_timedwait(sem_t *sem, const struct timespec *time)
 {
-	struct pthread_node *node;
-
-	resolve_native();
-	node = sem_node(s);
-	return node && node->initialized ? p_sem_timedwait(&node->u.sem, at) : -1;
+	if (native_sem_ready())
+		return -1;
+	return p_sem_timedwait(sem, time);
 }

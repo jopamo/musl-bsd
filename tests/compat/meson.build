@@ -19,23 +19,40 @@ test(
   suite: 'compat',
 )
 
-pthread_abi_test = executable(
-  'test_compat_pthread_abi',
-  'test_pthread_abi.c',
-  include_directories: [overlay_inc, compat_test_inc],
-  c_args: c_flags,
-  install: false,
-)
+if pthread_abi_supported
+  pthread_abi_test = executable(
+    'test_compat_pthread_abi',
+    'test_pthread_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
 
-pthread_abi_env = environment()
-pthread_abi_env.set('LD_PRELOAD', libcompat.full_path())
-test(
-  'compat/pthread_abi',
-  pthread_abi_test,
-  env: pthread_abi_env,
-  depends: libcompat,
-  suite: 'compat',
-)
+  pthread_abi_env = environment()
+  pthread_abi_env.set('LD_PRELOAD', libcompat.full_path())
+  test(
+    'compat/pthread_abi',
+    pthread_abi_test,
+    env: pthread_abi_env,
+    depends: libcompat,
+    suite: 'compat',
+    timeout: 30,
+  )
+
+  if cc.get_define('__GLIBC__', prefix: '#include <features.h>') != ''
+    glibc_pthread_layout_test = executable(
+      'test_glibc_pthread_layout',
+      'test_glibc_pthread_layout.c',
+      c_args: c_flags,
+      install: false,
+    )
+    test(
+      'compat/glibc_pthread_layout',
+      glibc_pthread_layout_test,
+      suite: 'compat',
+    )
+  endif
+endif
 
 compat_tests = [
   'runtime',

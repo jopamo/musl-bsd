@@ -246,9 +246,15 @@ compat_common_sources = [
 
 compat_interpose_sources = [
   'src/compat/exec.c',
-  'src/compat/pthread.c',
   'src/compat/readlink.c',
 ]
+
+pthread_abi_supported = cpu_family == 'x86_64' and cc.sizeof('void *') == 8
+if pthread_abi_supported
+  compat_interpose_sources += 'src/compat/pthread.c'
+else
+  warning('glibc pthread ABI bridge is disabled: no verified fixture for ' + cpu_family)
+endif
 
 libcompat = shared_library(
   'musl-bsd-compat',
