@@ -544,6 +544,13 @@ implementation ownership boundary. It is `DEGRADED` because the adapter
 accepts unknown version selectors that glibc rejects; `compat/stat_abi`
 verifies both providers and their distinct follow-versus-no-follow paths.
 
+The NVIDIA compiler stack imports `_exit@GLIBC_2.2.5` for non-returning process
+termination. Musl's canonical provider terminates the process with the
+requested low-byte status without running `atexit` handlers, matching the
+observed ABI and lifecycle behavior. It is `EXACT`; `compat/exit_abi` verifies
+provider ownership, status propagation, and handler suppression in forked
+children.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh

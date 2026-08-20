@@ -111,6 +111,15 @@ CORE_POLICIES = [
 
 LIBC_POLICIES = [
     {
+        "name": "_exit",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:_exit",
+        "test": "compat/exit_abi",
+        "quality": "EXACT",
+    },
+    {
         "name": "_IO_getc",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",

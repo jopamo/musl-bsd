@@ -146,6 +146,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   directory/FIFO descriptors, relative and absolute paths,
   followed/no-follow/dangling symlinks, empty-path flags, path/descriptor/flag
   failures, `errno`, and distinct provider identities;
+- exact musl `_exit` non-returning process-status ABI, low-byte status
+  propagation, atexit suppression, and provider identity through
+  `compat/exit_abi`;
 - degraded musl `__xmknod` FIFO-creation ABI, mode and device metadata, accepted
   version selectors, missing-parent failures, `errno`, and provider identity
   through `compat/stat_abi`;
