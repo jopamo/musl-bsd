@@ -537,6 +537,13 @@ behavior, failures, and `errno`. It is `DEGRADED` because musl accepts unknown
 version selectors that glibc rejects; the shared `compat/stat_abi` regression
 now verifies the distinct follow-versus-no-follow provider behavior.
 
+Gpucomp and nvoptix import `__xstat64@GLIBC_2.2.5` through followed pathname
+adapters. The compatibility-core provider delegates to `stat` with the same
+qualified x86_64 LP64 layout and behavior as `__xstat`, preserving the
+implementation ownership boundary. It is `DEGRADED` because the adapter
+accepts unknown version selectors that glibc rejects; `compat/stat_abi`
+verifies both providers and their distinct follow-versus-no-follow paths.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh

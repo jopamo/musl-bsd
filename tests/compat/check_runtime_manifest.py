@@ -98,6 +98,15 @@ CORE_POLICIES = [
         "test": "compat/strftime_abi",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__xstat64",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-bsd-core:__xstat64",
+        "test": "compat/stat_abi",
+        "quality": "DEGRADED",
+    },
 ]
 
 LIBC_POLICIES = [

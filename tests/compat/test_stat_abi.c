@@ -16,6 +16,7 @@ extern int __fxstatat(int version, int dirfd, const char* path, struct stat* sta
 extern int __lxstat(int version, const char* path, struct stat* status);
 extern int __lxstat64(int version, const char* path, struct stat* status);
 extern int __xstat(int version, const char* path, struct stat* status);
+extern int __xstat64(int version, const char* path, struct stat* status);
 extern int __xmknod(int version, const char* path, mode_t mode, dev_t* device);
 
 typedef int (*fxstat_function)(int version, int fd, struct stat* status);
@@ -39,6 +40,7 @@ static const struct path_stat_adapter path_stat_adapters[] = {
     {"__lxstat", __lxstat, 0, 0},
     {"__lxstat64", __lxstat64, 1, 0},
     {"__xstat", __xstat, 0, 1},
+    {"__xstat64", __xstat64, 1, 1},
 };
 
 #if defined(__x86_64__) && __SIZEOF_POINTER__ == 8

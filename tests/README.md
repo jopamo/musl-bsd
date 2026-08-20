@@ -141,11 +141,11 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   mutation visibility, syscall updates, simultaneous thread isolation,
   provider identity, and libc/libpthread manifest requirements;
 - degraded musl `__fxstat`/`__fxstatat`/`__lxstat`/`__xstat` and
-  compatibility-core `__fxstat64`/`__lxstat64` x86_64 layout, accepted version
-  selectors, complete regular-file metadata above 4 GiB, directory/FIFO
-  descriptors, relative and absolute paths, followed/no-follow/dangling
-  symlinks, empty-path flags, path/descriptor/flag failures, `errno`, and
-  distinct provider identities;
+  compatibility-core `__fxstat64`/`__lxstat64`/`__xstat64` x86_64 layout,
+  accepted version selectors, complete regular-file metadata above 4 GiB,
+  directory/FIFO descriptors, relative and absolute paths,
+  followed/no-follow/dangling symlinks, empty-path flags, path/descriptor/flag
+  failures, `errno`, and distinct provider identities;
 - degraded musl `__xmknod` FIFO-creation ABI, mode and device metadata, accepted
   version selectors, missing-parent failures, `errno`, and provider identity
   through `compat/stat_abi`;
