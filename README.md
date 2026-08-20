@@ -76,7 +76,9 @@ workaround.
 run before the loader path can be accepted. A compiler wrapper that combines a
 Clang executable with GCC-only `-specs` files, or injects an installed
 compatibility DSO into test programs, is a test-toolchain construction defect;
-the runtime does not compensate for it.
+the runtime does not compensate for it. The compatibility suite also checks
+that the result is ET_DYN, has no `PT_INTERP`, and contains relative
+relocations for static-PIE startup.
 
 ## NVIDIA ELF Inventory
 

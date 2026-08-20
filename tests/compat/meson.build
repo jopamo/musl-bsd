@@ -1,6 +1,9 @@
 compat_test_inc = include_directories('.')
 
 if glibc_runtime_enabled
+  python = find_program('python3')
+  readelf = find_program('readelf')
+
   static_pie_baseline = executable(
     'static_pie_baseline',
     'static_pie_baseline.c',
@@ -11,6 +14,18 @@ if glibc_runtime_enabled
   test(
     'compat/static_pie_baseline',
     static_pie_baseline,
+    suite: 'compat',
+  )
+  static_pie_checker = files('check_static_pie.py')
+  test(
+    'compat/static_pie_metadata',
+    python,
+    args: [
+      static_pie_checker,
+      readelf.full_path(),
+      static_pie_baseline.full_path(),
+    ],
+    depends: static_pie_baseline,
     suite: 'compat',
   )
 
@@ -46,9 +61,7 @@ if glibc_runtime_enabled
     install: false,
   )
 
-  python = find_program('python3')
   patchelf = find_program('patchelf')
-  readelf = find_program('readelf')
   loader_runner = files('run_loader_tests.py')
   test(
     'compat/loader',
