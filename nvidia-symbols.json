@@ -241,9 +241,9 @@
       "binding": "global",
       "implementation": "musl-libc:__newlocale",
       "name": "__newlocale",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/locale_ownership",
       "version": "GLIBC_2.2.5"
     },
     {

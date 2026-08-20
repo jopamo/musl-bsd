@@ -93,6 +93,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   source-snapshot independence, inactive construction, thread-local
   publication and withdrawal, global/static and allocated ownership, cleanup,
   `errno`, and public-alias identity;
+- degraded musl `__newlocale` construction ABI, C and C.UTF-8 handles,
+  inactive construction, in-place category replacement, `errno`, and
+  internal/public provider identity;
 - exact musl `__errno_location` pointer ABI, stable address, macro and direct
   mutation visibility, syscall updates, simultaneous thread isolation,
   provider identity, and libc/libpthread manifest requirements;

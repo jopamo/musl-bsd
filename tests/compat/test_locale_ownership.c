@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern locale_t __newlocale(int mask, const char* name, locale_t locale);
 extern locale_t __duplocale(locale_t locale);
 extern void __freelocale(locale_t locale);
 
@@ -18,6 +19,7 @@ extern void __freelocale(locale_t locale);
     } while (0)
 
 int main(void) {
+    locale_t (*create_locale)(int, const char*, locale_t) = __newlocale;
     locale_t (*duplicate_locale)(locale_t) = __duplocale;
     void (*free_locale)(locale_t) = __freelocale;
     locale_t active_before;
@@ -25,11 +27,18 @@ int main(void) {
     locale_t global_c_snapshot;
     locale_t global_utf8_snapshot;
     locale_t owned_source;
+    locale_t observed_locale;
     locale_t previous;
     locale_t snapshot;
     locale_t utf8_locale;
     Dl_info info;
 
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)create_locale, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__newlocale") == (void*)create_locale);
+    CHECK(dlsym(RTLD_DEFAULT, "newlocale") == (void*)create_locale);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)duplicate_locale, &info) != 0);
     CHECK(info.dli_fname != NULL);
@@ -43,12 +52,31 @@ int main(void) {
     CHECK(dlsym(RTLD_DEFAULT, "__freelocale") == (void*)free_locale);
     CHECK(dlsym(RTLD_DEFAULT, "freelocale") == (void*)free_locale);
 
-    c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
-    CHECK(c_locale != (locale_t)0);
-    utf8_locale = newlocale(LC_ALL_MASK, "C.UTF-8", (locale_t)0);
-    CHECK(utf8_locale != (locale_t)0);
     active_before = uselocale((locale_t)0);
     CHECK(active_before != (locale_t)0);
+    errno = EDOM;
+    c_locale = create_locale(LC_ALL_MASK, "C", (locale_t)0);
+    CHECK(c_locale != (locale_t)0);
+    CHECK(errno == EDOM);
+    errno = ERANGE;
+    utf8_locale = create_locale(LC_ALL_MASK, "C.UTF-8", (locale_t)0);
+    CHECK(utf8_locale != (locale_t)0);
+    CHECK(errno == ERANGE);
+    CHECK(uselocale((locale_t)0) == active_before);
+
+    /*
+     * Gpucomp's compiled call site passes mask 0x40, "C", and a null base
+     * locale. Keep that ABI path covered even though it is outside musl's
+     * standard LC_* mask range.
+     */
+    errno = ECHILD;
+    observed_locale = create_locale(0x40, "C", (locale_t)0);
+    CHECK(observed_locale != (locale_t)0);
+    CHECK(errno == ECHILD);
+    CHECK(uselocale((locale_t)0) == active_before);
+    errno = ENOEXEC;
+    free_locale(observed_locale);
+    CHECK(errno == ENOEXEC);
 
     errno = EDOM;
     owned_source = duplicate_locale(utf8_locale);
@@ -60,7 +88,9 @@ int main(void) {
     CHECK(errno == ERANGE);
     CHECK(uselocale((locale_t)0) == active_before);
 
-    CHECK(newlocale(LC_CTYPE_MASK, "C", owned_source) == owned_source);
+    errno = E2BIG;
+    CHECK(create_locale(LC_CTYPE_MASK, "C", owned_source) == owned_source);
+    CHECK(errno == E2BIG);
     CHECK(strcmp(nl_langinfo_l(CODESET, owned_source), "ASCII") == 0);
     CHECK(strcmp(nl_langinfo_l(CODESET, snapshot), "UTF-8") == 0);
     errno = E2BIG;

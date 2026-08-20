@@ -278,6 +278,15 @@ snapshot does not affect independent copies or current thread state. The
 duplicator and releaser are therefore covered by one `EXACT` locale-ownership
 regression rather than parallel lifecycle tests.
 
+Gpucomp imports `__newlocale@GLIBC_2.2.5` through a constructor that passes
+mask `0x40`, the literal `C` locale, and no base handle. Musl's internal symbol
+is the canonical public `newlocale` implementation; it returns a valid
+built-in/default handle without changing the calling thread's active locale.
+It is `DEGRADED` because musl supports a narrower locale database and
+classification model than glibc. `compat/locale_ownership` verifies the
+observed construction, alias and provider identity, in-place category
+replacement, and successful `errno` preservation.
+
 The seven qualified NVIDIA/CUDA objects that perform ordinary system work
 import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
 legacy libpthread SONAME requirements. Musl’s unified libc returns the address

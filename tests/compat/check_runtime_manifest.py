@@ -236,6 +236,15 @@ LIBC_POLICIES = [
         "test": "compat/stat_abi",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__newlocale",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__newlocale",
+        "test": "compat/locale_ownership",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {
