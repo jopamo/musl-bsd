@@ -404,6 +404,15 @@ if glibc_runtime_enabled
   )
   test('compat/acos_abi', acos_abi_test, suite: 'compat')
 
+  alarm_abi_test = executable(
+    'test_compat_alarm_abi',
+    'test_alarm_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/alarm_abi', alarm_abi_test, suite: 'compat')
+
   exit_abi_test = executable(
     'test_compat_exit_abi',
     'test_exit_abi.c',

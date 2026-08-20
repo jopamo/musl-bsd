@@ -165,6 +165,15 @@ LIBC_POLICIES = [
         "quality": "DEGRADED",
     },
     {
+        "name": "alarm",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:alarm",
+        "test": "compat/alarm_abi",
+        "quality": "EXACT",
+    },
+    {
         "name": "_IO_getc",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",

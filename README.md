@@ -248,6 +248,12 @@ domain NaNs without publishing `EDOM` where glibc does. They are `DEGRADED`;
 the shared `compat/acos_abi` verifies both scalar floating-point ABIs, distinct
 error behavior, and provider ownership.
 
+The NVIDIA compiler stack imports `alarm@GLIBC_2.2.5` for process timer
+management. Musl's canonical provider preserves cancellation return values,
+`SIGALRM` delivery, and successful-call `errno`; it is `EXACT`.
+`compat/alarm_abi` isolates timer state in a child process and verifies the
+timer ABI and provider ownership.
+
 NVML imports `__ctype_b_loc@GLIBC_2.3` at three whitespace checks. Each call
 indexes the returned table with a sign-extended byte and tests glibc’s
 `_ISspace` mask (`0x2000`). Musl supplies the required pointer-to-pointer ABI,

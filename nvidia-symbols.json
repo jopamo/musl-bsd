@@ -529,9 +529,9 @@
       "binding": "global",
       "implementation": "musl-libc:alarm",
       "name": "alarm",
-      "quality": "UNSUPPORTED",
+      "quality": "EXACT",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/alarm_abi",
       "version": "GLIBC_2.2.5"
     },
     {
