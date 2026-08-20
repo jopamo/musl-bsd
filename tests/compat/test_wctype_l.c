@@ -7,8 +7,11 @@
 #include <wctype.h>
 
 extern int __iswctype_l(wint_t character, wctype_t descriptor, locale_t locale);
+extern wint_t __towlower_l(wint_t character, locale_t locale);
+extern wint_t __towupper_l(wint_t character, locale_t locale);
 
 typedef int (*iswctype_l_function)(wint_t character, wctype_t descriptor, locale_t locale);
+typedef wint_t (*tow_conversion_function)(wint_t character, locale_t locale);
 
 struct classification_case {
     const char* name;
@@ -77,8 +80,44 @@ static int verify_locale_divergence(iswctype_l_function function, locale_t c_loc
     return 0;
 }
 
+static int verify_case_conversion(tow_conversion_function lower,
+                                  tow_conversion_function upper,
+                                  locale_t c_locale,
+                                  locale_t utf8_locale) {
+    static const struct {
+        wint_t input;
+        wint_t lower;
+        wint_t upper;
+    } cases[] = {
+        {L'A', L'a', L'A'},
+        {L'a', L'a', L'A'},
+        {0x00C4, 0x00E4, 0x00C4},
+        {0x00E4, 0x00E4, 0x00C4},
+    };
+    size_t index;
+
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index) {
+        errno = EDOM;
+        CHECK(lower(cases[index].input, c_locale) == cases[index].lower);
+        CHECK(upper(cases[index].input, c_locale) == cases[index].upper);
+        CHECK(errno == EDOM);
+        errno = ERANGE;
+        CHECK(lower(cases[index].input, utf8_locale) == cases[index].lower);
+        CHECK(upper(cases[index].input, utf8_locale) == cases[index].upper);
+        CHECK(errno == ERANGE);
+    }
+
+    errno = E2BIG;
+    CHECK(lower(WEOF, c_locale) == WEOF);
+    CHECK(upper(WEOF, utf8_locale) == WEOF);
+    CHECK(errno == E2BIG);
+    return 0;
+}
+
 int main(void) {
     iswctype_l_function function = __iswctype_l;
+    tow_conversion_function lower = __towlower_l;
+    tow_conversion_function upper = __towupper_l;
     locale_t c_locale;
     locale_t previous;
     locale_t utf8_locale;
@@ -107,6 +146,19 @@ int main(void) {
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__iswctype_l") == (void*)function);
     CHECK(dlsym(RTLD_DEFAULT, "iswctype_l") == (void*)function);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)lower, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__towlower_l") == (void*)lower);
+    CHECK(dlsym(RTLD_DEFAULT, "towlower_l") == (void*)lower);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)upper, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__towupper_l") == (void*)upper);
+    CHECK(dlsym(RTLD_DEFAULT, "towupper_l") == (void*)upper);
+    CHECK(verify_case_conversion(lower, upper, c_locale, utf8_locale) == 0);
 
     freelocale(utf8_locale);
     freelocale(c_locale);

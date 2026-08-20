@@ -362,6 +362,24 @@ LIBC_POLICIES = [
         "test": "compat/tls_abi",
         "quality": "EXACT",
     },
+    {
+        "name": "__towlower_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__towlower_l",
+        "test": "compat/wctype_l",
+        "quality": "DEGRADED",
+    },
+    {
+        "name": "__towupper_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__towupper_l",
+        "test": "compat/wctype_l",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

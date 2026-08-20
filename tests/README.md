@@ -148,6 +148,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   classes, ASCII and non-ASCII behavior with C/C.UTF-8 handles,
   current-versus-explicit locale selection, `WEOF`, unknown descriptors,
   `errno`, provider identity, and public-alias identity;
+- degraded musl `__towlower_l`/`__towupper_l` Unicode case-conversion ABIs,
+  ASCII and non-ASCII mappings, C/C.UTF-8 handles, `WEOF`, `errno`, provider
+  ownership, and public-alias identity through `compat/wctype_l`;
 - translated musl `__libc_current_sigrtmin` integer ABI, stable realtime
   range, signal-set operations, queued payload and direct `tgkill` delivery,
   handler execution, `errno`, provider identity, and legacy-libpthread

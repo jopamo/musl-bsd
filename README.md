@@ -337,6 +337,14 @@ x86_64 two-word TLS module/offset ABI from its runtime libc. The policy is
 general-dynamic TLS DSO across multiple threads while preserving the main
 thread's storage and `errno`.
 
+The NVIDIA compiler stack imports `__towlower_l@GLIBC_2.2.5` and
+`__towupper_l@GLIBC_2.2.5` for locale-facet Unicode case conversion. Musl's
+internal symbols are the canonical public `towlower_l`/`towupper_l` providers
+and preserve the observed ASCII and Unicode mappings, `WEOF`, return ABI, and
+successful-call `errno`. They are `DEGRADED` because musl applies one Unicode
+case model regardless of the explicit locale; `compat/wctype_l` now verifies
+both provider and public-alias identities.
+
 Gpucomp and the NVIDIA compiler stack import `__strxfrm_l@GLIBC_2.2.5` for
 locale-facet collation keys. Musl's internal symbol is the canonical public
 `strxfrm_l` provider and returns identity/code-point transformation lengths,
