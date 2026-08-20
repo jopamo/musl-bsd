@@ -5,9 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 extern int __strcoll_l(const char* left, const char* right, locale_t locale);
 extern size_t __strxfrm_l(char* destination, const char* source, size_t size, locale_t locale);
+extern int __wcscoll_l(const wchar_t* left, const wchar_t* right, locale_t locale);
 extern locale_t __newlocale(int mask, const char* name, locale_t locale);
 extern char* __nl_langinfo_l(nl_item item, locale_t locale);
 extern locale_t __duplocale(locale_t locale);
@@ -16,6 +18,7 @@ extern locale_t __uselocale(locale_t locale);
 
 typedef int (*strcoll_l_function)(const char* left, const char* right, locale_t locale);
 typedef size_t (*strxfrm_l_function)(char* destination, const char* source, size_t size, locale_t locale);
+typedef int (*wcscoll_l_function)(const wchar_t* left, const wchar_t* right, locale_t locale);
 
 #define CHECK(condition)                                                            \
     do {                                                                            \
@@ -78,12 +81,31 @@ static int verify_transformation(strxfrm_l_function function, locale_t locale) {
     return 0;
 }
 
+static int verify_wide_collation(wcscoll_l_function function, locale_t locale) {
+    static const struct {
+        const wchar_t* left;
+        const wchar_t* right;
+        int expected_sign;
+    } cases[] = {
+        {L"", L"", 0}, {L"alpha", L"alpha", 0}, {L"alpha", L"beta", -1}, {L"beta", L"alpha", 1}, {L"\u00E4", L"z", 1},
+    };
+    size_t index;
+
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index) {
+        errno = EDOM;
+        CHECK(sign_of(function(cases[index].left, cases[index].right, locale)) == cases[index].expected_sign);
+        CHECK(errno == EDOM);
+    }
+    return 0;
+}
+
 int main(void) {
     static const nl_item gpucomp_items[] = {
         0x40000, 0x40002, 0x40003, 0x40004, 0x40005, 0x40006, 0x40015,
     };
     strcoll_l_function compare_locale = __strcoll_l;
     strxfrm_l_function transform_locale = __strxfrm_l;
+    wcscoll_l_function wide_compare_locale = __wcscoll_l;
     char* (*query_langinfo)(nl_item, locale_t) = __nl_langinfo_l;
     char* result;
     locale_t (*create_locale)(int, const char*, locale_t) = __newlocale;
@@ -114,6 +136,12 @@ int main(void) {
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__strxfrm_l") == (void*)transform_locale);
     CHECK(dlsym(RTLD_DEFAULT, "strxfrm_l") == (void*)transform_locale);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)wide_compare_locale, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__wcscoll_l") == (void*)wide_compare_locale);
+    CHECK(dlsym(RTLD_DEFAULT, "wcscoll_l") == (void*)wide_compare_locale);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)query_langinfo, &info) != 0);
     CHECK(info.dli_fname != NULL);
@@ -171,6 +199,8 @@ int main(void) {
     CHECK(verify_collation(compare_locale, utf8_locale) == 0);
     CHECK(verify_transformation(transform_locale, c_locale) == 0);
     CHECK(verify_transformation(transform_locale, utf8_locale) == 0);
+    CHECK(verify_wide_collation(wide_compare_locale, c_locale) == 0);
+    CHECK(verify_wide_collation(wide_compare_locale, utf8_locale) == 0);
 
     for (index = 0; index < sizeof(gpucomp_items) / sizeof(gpucomp_items[0]); ++index) {
         errno = EDOM;
