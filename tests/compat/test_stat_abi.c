@@ -13,9 +13,11 @@
 extern int __fxstat(int version, int fd, struct stat* status);
 extern int __fxstat64(int version, int fd, struct stat* status);
 extern int __fxstatat(int version, int dirfd, const char* path, struct stat* status, int flags);
+extern int __lxstat(int version, const char* path, struct stat* status);
 
 typedef int (*fxstat_function)(int version, int fd, struct stat* status);
 typedef int (*fxstatat_function)(int version, int dirfd, const char* path, struct stat* status, int flags);
+typedef int (*path_stat_function)(int version, const char* path, struct stat* status);
 
 struct stat_adapter {
     const char* name;
@@ -138,7 +140,22 @@ static int verify_fxstatat_success(fxstatat_function function,
     return 0;
 }
 
-static int verify_fxstatat_paths(void) {
+static int verify_path_stat_success(path_stat_function function,
+                                    int version,
+                                    const char* path,
+                                    const struct stat* expected,
+                                    int preserved_errno) {
+    struct stat actual;
+
+    memset(&actual, 0, sizeof(actual));
+    errno = preserved_errno;
+    CHECK(function(version, path, &actual) == 0);
+    CHECK(errno == preserved_errno);
+    CHECK(same_status(&actual, expected));
+    return 0;
+}
+
+static int verify_path_stat_functions(void) {
 #define CHECK_PATH(condition)                                               \
     do {                                                                    \
         if (!(condition)) {                                                 \
@@ -147,8 +164,13 @@ static int verify_fxstatat_paths(void) {
         }                                                                   \
     } while (0)
     static const int versions[] = {1, 0, INT_MAX};
-    char directory_path[] = "/tmp/musl-bsd-fxstatat-XXXXXX";
+    char directory_path[] = "/tmp/musl-bsd-stat-paths-XXXXXX";
+    char dangling_path[PATH_MAX];
+    char link_path[PATH_MAX];
+    char missing_path[PATH_MAX];
+    char nested_path[PATH_MAX];
     char target_path[PATH_MAX];
+    struct stat expected_dangling;
     struct stat expected_link;
     struct stat expected_target;
     struct stat status;
@@ -170,22 +192,48 @@ static int verify_fxstatat_paths(void) {
     CHECK_PATH(symlinkat("target", directory_fd, "link") == 0);
     CHECK_PATH(fstatat(directory_fd, "link", &expected_link, AT_SYMLINK_NOFOLLOW) == 0);
     CHECK_PATH(S_ISLNK(expected_link.st_mode));
+    CHECK_PATH(symlinkat("missing-target", directory_fd, "dangling") == 0);
+    CHECK_PATH(fstatat(directory_fd, "dangling", &expected_dangling, AT_SYMLINK_NOFOLLOW) == 0);
+    CHECK_PATH(S_ISLNK(expected_dangling.st_mode));
+
+    length = snprintf(target_path, sizeof(target_path), "%s/target", directory_path);
+    CHECK_PATH(length > 0);
+    CHECK_PATH((size_t)length < sizeof(target_path));
+    length = snprintf(link_path, sizeof(link_path), "%s/link", directory_path);
+    CHECK_PATH(length > 0);
+    CHECK_PATH((size_t)length < sizeof(link_path));
+    length = snprintf(dangling_path, sizeof(dangling_path), "%s/dangling", directory_path);
+    CHECK_PATH(length > 0);
+    CHECK_PATH((size_t)length < sizeof(dangling_path));
+    length = snprintf(nested_path, sizeof(nested_path), "%s/target/child", directory_path);
+    CHECK_PATH(length > 0);
+    CHECK_PATH((size_t)length < sizeof(nested_path));
+    length = snprintf(missing_path, sizeof(missing_path), "%s/missing", directory_path);
+    CHECK_PATH(length > 0);
+    CHECK_PATH((size_t)length < sizeof(missing_path));
 
     for (index = 0; index < sizeof(versions) / sizeof(versions[0]); ++index) {
         CHECK_PATH(verify_fxstatat_success(__fxstatat, versions[index], directory_fd, "target", 0, &expected_target,
                                            EDOM + (int)index) == 0);
+        CHECK_PATH(
+            verify_path_stat_success(__lxstat, versions[index], link_path, &expected_link, ENFILE + (int)index) == 0);
     }
 
+    CHECK_PATH(verify_path_stat_success(__lxstat, 1, target_path, &expected_target, EBUSY) == 0);
+    CHECK_PATH(verify_path_stat_success(__lxstat, 1, dangling_path, &expected_dangling, ECHILD) == 0);
     CHECK_PATH(
         verify_fxstatat_success(__fxstatat, 1, directory_fd, "link", AT_SYMLINK_NOFOLLOW, &expected_link, ENOSPC) == 0);
     CHECK_PATH(verify_fxstatat_success(__fxstatat, 1, directory_fd, "link", 0, &expected_target, ENOTTY) == 0);
     CHECK_PATH(verify_fxstatat_success(__fxstatat, 1, file_fd, "", AT_EMPTY_PATH, &expected_target, EAGAIN) == 0);
 
-    length = snprintf(target_path, sizeof(target_path), "%s/target", directory_path);
-    CHECK_PATH(length > 0);
-    CHECK_PATH((size_t)length < sizeof(target_path));
     CHECK_PATH(verify_fxstatat_success(__fxstatat, 1, -1, target_path, 0, &expected_target, EBUSY) == 0);
 
+    errno = 0;
+    CHECK_PATH(__lxstat(1, nested_path, &status) == -1);
+    CHECK_PATH(errno == ENOTDIR);
+    errno = 0;
+    CHECK_PATH(__lxstat(1, missing_path, &status) == -1);
+    CHECK_PATH(errno == ENOENT);
     errno = 0;
     CHECK_PATH(__fxstatat(1, directory_fd, "missing", &status, 0) == -1);
     CHECK_PATH(errno == ENOENT);
@@ -198,6 +246,7 @@ static int verify_fxstatat_paths(void) {
 
     CHECK_PATH(close(file_fd) == 0);
     file_fd = -1;
+    CHECK_PATH(unlinkat(directory_fd, "dangling", 0) == 0);
     CHECK_PATH(unlinkat(directory_fd, "link", 0) == 0);
     CHECK_PATH(unlinkat(directory_fd, "target", 0) == 0);
     CHECK_PATH(close(directory_fd) == 0);
@@ -210,6 +259,7 @@ cleanup:
     if (file_fd >= 0)
         close(file_fd);
     if (directory_fd >= 0) {
+        unlinkat(directory_fd, "dangling", 0);
         unlinkat(directory_fd, "link", 0);
         unlinkat(directory_fd, "target", 0);
         close(directory_fd);
@@ -239,6 +289,7 @@ int main(void) {
                               adapters[index].from_compatibility_core) == 0);
     }
     CHECK(verify_provider("__fxstatat", (const void*)__fxstatat, 0) == 0);
+    CHECK(verify_provider("__lxstat", (const void*)__lxstat, 0) == 0);
 
     file_fd = mkstemp(path);
     CHECK(file_fd >= 0);
@@ -273,6 +324,6 @@ int main(void) {
         CHECK(adapters[index].function(1, file_fd, &actual) == -1);
         CHECK(errno == EBADF);
     }
-    CHECK(verify_fxstatat_paths() == 0);
+    CHECK(verify_path_stat_functions() == 0);
     return 0;
 }

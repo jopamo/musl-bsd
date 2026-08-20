@@ -218,6 +218,15 @@ LIBC_POLICIES = [
         "test": "compat/sigrtmin",
         "quality": "TRANSLATED",
     },
+    {
+        "name": "__lxstat",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__lxstat",
+        "test": "compat/stat_abi",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

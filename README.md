@@ -355,6 +355,14 @@ synchronous thread coordination. This is `TRANSLATED`, not numerically exact:
 focused test proves stable range reporting, queued payloads, mask operations,
 and direct handler delivery.
 
+Gpucomp imports `__lxstat@GLIBC_2.2.5` through two static paths, both passing
+selector `1`. Musl delegates to `lstat`, matching the observed no-follow
+pathname behavior and x86_64 metadata layout. The shared stat regression covers
+regular files, symlinks, dangling links, missing paths, non-directory
+components, complete metadata, return values, and `errno`. The symbol is
+`DEGRADED` only because musl accepts unknown version selectors that glibc
+rejects.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh
