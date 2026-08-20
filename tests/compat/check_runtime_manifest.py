@@ -147,6 +147,15 @@ LIBC_POLICIES = [
         "quality": "EXACT",
     },
     {
+        "name": "acos",
+        "version": "GLIBC_2.2.5",
+        "soname": "libm.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:acos",
+        "test": "compat/acos_abi",
+        "quality": "DEGRADED",
+    },
+    {
         "name": "_IO_getc",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",

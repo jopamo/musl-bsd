@@ -240,6 +240,13 @@ read/write/execute, symlink-following, invalid-mode, missing-path, and
 successful-call `errno` behavior. It is `EXACT`; `compat/access_abi` verifies
 the path/mode ABI and provider ownership.
 
+The NVIDIA compiler stack imports `acos@GLIBC_2.2.5` from `libm.so.6` for
+inverse-cosine calculations. Musl's provider preserves the observed
+finite-domain values, signed-zero and endpoint behavior, NaN handling, domain
+errors, and successful-call `errno`, but returns domain NaNs without publishing
+`EDOM` where glibc does. It is `DEGRADED`; `compat/acos_abi` verifies the
+scalar floating-point ABI, distinct error behavior, and provider ownership.
+
 NVML imports `__ctype_b_loc@GLIBC_2.3` at three whitespace checks. Each call
 indexes the returned table with a sign-extended byte and tests glibc’s
 `_ISspace` mask (`0x2000`). Musl supplies the required pointer-to-pointer ABI,

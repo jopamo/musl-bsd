@@ -395,6 +395,15 @@ if glibc_runtime_enabled
   )
   test('compat/access_abi', access_abi_test, suite: 'compat')
 
+  acos_abi_test = executable(
+    'test_compat_acos_abi',
+    'test_acos_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/acos_abi', acos_abi_test, suite: 'compat')
+
   exit_abi_test = executable(
     'test_compat_exit_abi',
     'test_exit_abi.c',
