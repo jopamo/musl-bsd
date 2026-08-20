@@ -44,6 +44,7 @@ int main(void) {
     inverse_float_function acosf_function = acosf;
     inverse_function asin_function = asin;
     inverse_float_function asinf_function = asinf;
+    inverse_function atan_function = atan;
     double result;
     float float_result;
     Dl_info info;
@@ -68,6 +69,11 @@ int main(void) {
     CHECK(info.dli_fname != NULL);
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "asinf") == (void*)asinf_function);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)atan_function, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "atan") == (void*)atan_function);
 
     CHECK(verify_value(acos_function, 1.0, 0.0) == 0);
     CHECK(verify_value(acos_function, -1.0, pi) == 0);
@@ -95,6 +101,14 @@ int main(void) {
     CHECK(signbit(asinf_function(-0.0f)) != 0);
     CHECK(verify_float_value(asinf_function, 0.5f, float_pi / 6.0f) == 0);
     CHECK(verify_float_value(asinf_function, -0.5f, -float_pi / 6.0f) == 0);
+    CHECK(verify_value(atan_function, 0.0, 0.0) == 0);
+    CHECK(verify_value(atan_function, -0.0, -0.0) == 0);
+    CHECK(signbit(atan_function(-0.0)) != 0);
+    CHECK(verify_value(atan_function, 1.0, pi / 4.0) == 0);
+    CHECK(verify_value(atan_function, -1.0, -pi / 4.0) == 0);
+    CHECK(verify_value(atan_function, 0.5, 0.4636476090008061162) == 0);
+    CHECK(verify_value(atan_function, INFINITY, pi / 2.0) == 0);
+    CHECK(verify_value(atan_function, -INFINITY, -pi / 2.0) == 0);
 
     errno = ERANGE;
     result = acos_function(nextafter(1.0, 0.0));
@@ -144,6 +158,10 @@ int main(void) {
     errno = ENOTTY;
     float_result = asinf_function(NAN);
     CHECK(isnan(float_result));
+    CHECK(errno == ENOTTY);
+    errno = ENOTTY;
+    result = atan_function(NAN);
+    CHECK(isnan(result));
     CHECK(errno == ENOTTY);
 
     errno = 0;

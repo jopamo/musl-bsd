@@ -249,6 +249,10 @@ where glibc does. They are `DEGRADED`; the shared `compat/invtrig_abi`
 verifies all three scalar floating-point ABIs, distinct error behavior, and
 provider ownership.
 
+`atan@GLIBC_2.2.5` is also provided by musl's canonical libm implementation.
+Its finite, signed-zero, infinity, NaN, and `errno` behavior is `EXACT`;
+`compat/invtrig_abi` covers the shared provider and scalar ABI.
+
 The NVIDIA compiler stack imports `alarm@GLIBC_2.2.5` for process timer
 management. Musl's canonical provider preserves cancellation return values,
 `SIGALRM` delivery, and successful-call `errno`; it is `EXACT`.

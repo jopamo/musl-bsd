@@ -201,6 +201,15 @@ LIBC_POLICIES = [
         "quality": "EXACT",
     },
     {
+        "name": "atan",
+        "version": "GLIBC_2.2.5",
+        "soname": "libm.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:atan",
+        "test": "compat/invtrig_abi",
+        "quality": "EXACT",
+    },
+    {
         "name": "alphasort",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",
