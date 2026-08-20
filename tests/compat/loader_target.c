@@ -111,17 +111,17 @@ static int check_load(const char* dso_path) {
     return 0;
 }
 
-static int check_weak(const char* dso_path, int expected) {
+static int check_dso_value(const char* dso_path, const char* symbol, int expected) {
     int (*value)(void);
     void* handle;
     int result = 0;
 
     handle = dlopen(dso_path, RTLD_NOW | RTLD_LOCAL);
     if (handle == NULL) {
-        fprintf(stderr, "weak consumer dlopen: %s\n", dlerror());
+        fprintf(stderr, "value consumer dlopen: %s\n", dlerror());
         return 72;
     }
-    value = (int (*)(void))dlsym(handle, "loader_weak_value");
+    value = (int (*)(void))dlsym(handle, symbol);
     if (value == NULL || value() != expected)
         result = 73;
     if (dlclose(handle) != 0 && result == 0)
@@ -398,7 +398,9 @@ int main(int argc, char** argv) {
     if (strcmp(argv[1], "load") == 0 && argc == 3)
         return check_load(argv[2]);
     if (strcmp(argv[1], "weak") == 0 && argc == 4)
-        return check_weak(argv[2], atoi(argv[3]));
+        return check_dso_value(argv[2], "loader_weak_value", atoi(argv[3]));
+    if (strcmp(argv[1], "versioned") == 0 && argc == 5)
+        return check_dso_value(argv[2], argv[3], atoi(argv[4]));
     if (strcmp(argv[1], "nvidia-weak") == 0 && argc >= 4)
         return check_nvidia_weak(argv[2], argc - 3, argv + 3);
     if (strcmp(argv[1], "global-load") == 0 && argc >= 4)

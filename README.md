@@ -124,6 +124,219 @@ not claim glibc version-quality equivalence. `--strict` makes unresolved
 failure. Unresolved weak imports are reported separately as optional. Malformed,
 unsupported, or ambiguous input always fails.
 
+`nvidia-symbols.json` is the checked compatibility-policy manifest for the
+observed NVIDIA 610.x and CUDA 13.3 roots. It contains only their versioned
+glibc imports and records each symbol's requested version, expected SONAME,
+binding, selected runtime implementation, qualification test, and quality:
+
+```sh
+tools/nvidia-manifest validate nvidia-symbols.json
+
+tools/nvidia-manifest generate nvidia-inventory.json \
+  --base nvidia-symbols.json \
+  --output nvidia-symbols.new.json
+
+tools/nvidia-manifest check \
+  nvidia-symbols.json nvidia-inventory.json
+```
+
+Generation requires scanner provider analysis with no unresolved mandatory
+symbols. `--base` preserves audited test and quality policy for unchanged
+requirements while removing stale entries and defaulting only new entries to
+`UNSUPPORTED`: finding a same-name provider proves availability, not ABI or
+semantic equivalence. The focused compatibility audit promotes entries to
+`EXACT`, `TRANSLATED`, `DEGRADED`, or `STUB` only after their recorded tests
+justify that claim. Validation rejects unknown fields, qualities, versions,
+duplicate or unsorted entries, and `GLIBC_PRIVATE`; inventory checking also
+rejects requirements outside the exact scanned root set. The manifest records
+no proprietary binary content or absolute local paths.
+
+The NVIDIA-required pthread subset is audited separately. Direct musl scalar
+ABIs are classified `EXACT`; compatibility-core opaque-object and old-version
+bridges are `TRANSLATED`. The pthread manifest test ties every promoted entry
+to `compat/pthread_abi` and verifies that compatibility-core exports carry the
+requested `GLIBC_*` version.
+
+The observed `dladdr1@GLIBC_2.3.3` use is limited to
+`RTLD_DL_LINKMAP` and is classified `TRANSLATED`. The adapter derives a real
+musl link map through `dladdr`/`dlinfo`; it rejects `RTLD_DL_SYMENT` rather
+than fabricating an `ElfW(Sym)`.
+
+`dlvsym@GLIBC_2.2.5` is also actively used. musl cannot select among glibc
+symbol definitions, so this adapter is explicitly `DEGRADED`: it resolves by
+name only for the finite set of `GLIBC_*` versions observed in the qualified
+NVIDIA/CUDA graph and its direct probes. Unknown versions, `GLIBC_PRIVATE`,
+and null versions return `NULL` with `dlerror` set instead of silently
+downgrading.
+
+CUDA 13.3 actively requests `dlmopen(LM_ID_NEWLM, ..., RTLD_NOW)`. musl has no
+link-map namespace mechanism, so that operation is classified `UNSUPPORTED`
+and fails with `dlerror`. `LM_ID_BASE` remains an exact adapter to `dlopen`;
+the runtime never silently widens a requested new namespace into the base
+namespace.
+
+The Xorg driver requires `__rawmemchr@GLIBC_2.2.5`. The compatibility-core
+implementation is classified `EXACT` and tested across unaligned starts,
+high-byte conversion, first-match behavior, and an inaccessible page boundary.
+
+Glcore requires `fallocate64@GLIBC_2.10` for ordinary allocation and
+`FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE`. On the qualified x86_64 LP64
+ABI, `off64_t` and `off_t` are the same 64-bit type, so the compatibility-core
+adapter delegates directly to musl `fallocate` and is classified `EXACT`.
+Regression coverage includes offsets above 4 GiB, size changes, hole contents,
+return values, and `errno`.
+
+Glcore calls `backtrace@GLIBC_2.2.5` from 47 diagnostic paths, each with room
+for sixteen frames. The compatibility core uses the toolchain's standard
+Itanium unwinder, omits its own frame, bounds writes to the caller's capacity,
+and detects a non-progressing unwind. This is classified `TRANSLATED` because
+it provides glibc-compatible behavior through the musl toolchain unwinder
+rather than glibc's own unwind-loading machinery.
+
+Glcore also probes `__malloc_hook`, `__realloc_hook`, `__free_hook`, and
+`__memalign_hook` by name. These are not ELF imports, and its probe explicitly
+accepts all four names being absent. The compatibility core therefore does not
+export writable hook state or claim allocator interposition that musl cannot
+provide. These optional names are deliberately excluded from the symbol
+manifest.
+
+No qualified NVIDIA/CUDA object imports or probes `secure_getenv` or
+`__secure_getenv`. Musl already provides the public `secure_getenv` using its
+authoritative startup security state, so the compatibility core delegates to
+that implementation and does not export a duplicate public function or a
+fabricated internal alias. The loader’s separate launch boundary continues to
+reject secure execution before reading environment-controlled policy.
+
+Gpucomp and NVML import `_IO_getc@GLIBC_2.2.5` for ordinary locked byte input.
+Musl provides `_IO_getc` as its weak alias of `getc`, matching glibc’s alias
+and observed success/EOF behavior. It is classified `DEGRADED`, however,
+because musl sets the stream error indicator but preserves `errno` when called
+on a write-only stream, whereas glibc reports `EBADF`. The NVIDIA call sites
+use readable streams. Focused coverage includes unsigned-byte conversion, EOF
+and stream error state, pushback, `errno`, and provider ownership.
+
+Gpucomp also imports `_IO_putc@GLIBC_2.2.5` for one byte-output loop. Its
+observed calls pass values from 0 through 255 to a writable stream. Musl
+provides `_IO_putc` as the weak alias of locked `putc` and matches that path,
+including `int`-to-`unsigned char` conversion. It is `DEGRADED` because a call
+on a read-only stream sets the stream error indicator but preserves `errno`
+instead of reporting glibc’s `EBADF`.
+
+Libcuda and NVML import `__assert_fail@GLIBC_2.2.5` for compiler-generated
+invariant failures. Musl preserves the essential non-returning diagnostic and
+`SIGABRT` behavior, so failed invariants remain fail-closed. The provider is
+classified `DEGRADED` because musl uses a signed line parameter and a different
+diagnostic format without glibc’s abort-message metadata.
+
+NVML imports `__ctype_b_loc@GLIBC_2.3` at three whitespace checks. Each call
+indexes the returned table with a sign-extended byte and tests glibc’s
+`_ISspace` mask (`0x2000`). Musl supplies the required pointer-to-pointer ABI,
+the complete `-128..255` indexing range, and glibc-compatible masks, so the
+observed NVML path is preserved. The provider remains `DEGRADED`: musl’s table
+does not implement glibc’s per-thread, current-locale table switching for
+legacy locale-specific single-byte classifications.
+
+Gpucomp imports `__ctype_get_mb_cur_max@GLIBC_2.2.5` for two locale-facet
+queries. Both temporarily select the facet’s thread-local locale; one tests
+whether the maximum is one byte and the other returns the maximum width. Musl
+correctly follows `uselocale`, returning one for C/POSIX and four for UTF-8,
+and its four-byte result bounds its Unicode conversion behavior. This is
+`DEGRADED`, not `EXACT`, because glibc’s UTF-8 charmap declares a historical
+six-byte maximum and glibc supports additional legacy encodings.
+
+Libcuda, glcore, NVML, gpucomp, and libcudart import
+`__cxa_atexit@GLIBC_2.2.5` for compiler-generated static destructor
+registration; gpucomp alone contains 2,485 call sites. Musl commits successful
+registrations to a locked process-wide list and runs them exactly once in
+reverse order at normal process exit. This is `DEGRADED`: musl does not retain
+the supplied DSO handle, so it cannot provide glibc’s per-DSO finalization
+ownership or unload-time callback execution. The qualified musl loader keeps
+DSOs resident and NVIDIA’s process-exit path remains functional.
+
+Glcore strongly imports `__cxa_finalize@GLIBC_2.2.5`; the other qualified
+NVIDIA/CUDA objects import it weakly through compiler-generated finalizers.
+Glcore also has explicit finalization calls, including one that preserves
+`errno`. Musl’s implementation is an intentional no-op and is classified
+`STUB`: neither a supplied DSO handle nor `NULL` publishes registered
+destructors. Because musl’s `__cxa_atexit` list is process-owned and its loader
+keeps DSOs resident, those callbacks remain valid and run later from the
+authoritative process-exit path rather than being lost or invoked twice.
+
+Gpucomp imports `__duplocale@GLIBC_2.2.5` through one wrapper used by two
+locale-facet constructors. Each duplicates a supplied locale before retaining
+it and caching time or monetary data. Musl’s internal function and public
+`duplocale` are one implementation that allocates an independently owned
+locale snapshot, including for `LC_GLOBAL_LOCALE`. The result remains inactive
+until explicitly selected with `uselocale` and remains valid if the source is
+changed or released. This contract is classified `EXACT`.
+
+Gpucomp’s matching `__freelocale@GLIBC_2.2.5` cleanup wrapper releases those
+retained facet snapshots after they are no longer active. Musl frees allocated
+locale handles while recognizing its non-owned built-in handles, and its
+internal symbol is the public `freelocale` implementation. Releasing one owned
+snapshot does not affect independent copies or current thread state. The
+duplicator and releaser are therefore covered by one `EXACT` locale-ownership
+regression rather than parallel lifecycle tests.
+
+The seven qualified NVIDIA/CUDA objects that perform ordinary system work
+import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
+legacy libpthread SONAME requirements. Musl’s unified libc returns the address
+of `errno_val` in the current thread control block. That address is stable for
+the thread, is exactly the storage used by the `errno` macro and syscall
+wrappers, and is isolated from every concurrently live thread. Both manifest
+requirements therefore use the canonical musl provider and are `EXACT`.
+
+Seven qualified NVIDIA/CUDA objects import `__fxstat@GLIBC_2.2.5` at 27 call
+sites, all passing x86_64 `_STAT_VER_LINUX` value `1`. Musl’s provider drops
+the version argument and delegates to `fstat`; its `struct stat` layout matches
+glibc x86_64 and the observed path is exact, including 64-bit sizes and
+timestamps. The broader adapter is `DEGRADED` because glibc accepts only its
+known x86_64 selectors (`0` and `1`), while musl also accepts unknown values.
+
+Gpucomp separately imports `__fxstat64@GLIBC_2.2.5` at two sites, also passing
+selector `1`. On x86_64 LP64, `struct stat64` and `struct stat` are the same
+144-byte ABI, so the compatibility-core adapter shares the same table-driven
+metadata and error tests as direct musl `__fxstat`. It is likewise
+`DEGRADED` only because the adapter accepts unknown selectors. Provider checks
+keep direct-musl and compatibility-core ownership distinct.
+
+NVML imports `__fxstatat@GLIBC_2.4` through one ABI wrapper reached by six
+internal callers. It fixes the selector to `1`; all callers use flags zero.
+Musl delegates directly to `fstatat`, matching that observed relative-directory
+path and the x86_64 stat layout. The shared stat regression additionally
+verifies absolute paths, symlink follow/no-follow, empty-path descriptor
+lookup, invalid paths, descriptors and flags, complete metadata, and `errno`.
+The symbol remains `DEGRADED` because musl accepts unknown version selectors
+that glibc rejects.
+
+Glcore, NVML, libcuda, and libcudart import
+`__getdelim@GLIBC_2.2.5` at 20 call sites. All pass newline as the delimiter,
+valid line/capacity pointers, and readable native streams; their loops exercise
+both fresh allocation and buffer reuse. Musl’s internal symbol is the canonical
+public `getdelim` implementation and matches those paths, including embedded
+NUL handling, delimiter retention, final unterminated records, EOF, and
+`errno`. It is `DEGRADED` because read attempts on write-only streams preserve
+`errno`, whereas glibc reports `EBADF`.
+
+Glcore, NVML, and libcuda import `__isoc99_fscanf@GLIBC_2.7` at 23 sites.
+Their five formats cover signed and unsigned decimal integers, bounded
+scansets, bounded strings with suppressed tails, and `%lu`, all on readable
+native streams. Musl’s symbol aliases its canonical C99 `fscanf` and matches
+those conversions, assignment counts, widths, suppression, stream position,
+and successful `errno` behavior. It is `DEGRADED`: an initial integer mismatch
+sets `EINVAL` instead of preserving `errno`, and a write-only stream preserves
+`errno` rather than reporting glibc’s `EBADF`.
+
+Glcore, NVML, libcuda, and gpucomp import
+`__isoc99_sscanf@GLIBC_2.7` at 98 sites using 23 unique formats. Those formats
+cover PCI identifiers, CUDA versions, names, characters, scansets, suppression,
+fixed literals, and signed and unsigned integers across the observed widths and
+bases. Musl aliases the symbol to the same C99 scanning engine as public
+`sscanf`, and the successful paths match. It is `DEGRADED` because integer
+matching failures set `EINVAL` where glibc preserves `errno`. Both ISO C99
+entry points share `compat/scanf_abi` rather than maintaining parallel
+conversion tests.
+
 The local proprietary-driver loader check is opt-in:
 
 ```sh

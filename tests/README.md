@@ -49,9 +49,72 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - fail-closed secure-policy checks;
 - a glibc-named ELF fixture traversing the compatibility interpreter and musl
   loader;
-- argument, constructor, destructor, `dlopen`, preload-order, recursion,
-  missing-target, missing-library, exit-status, and signal tests;
+- argument, `dlopen`, preload-order, recursion, missing-target,
+  missing-library, exit-status, and signal tests;
+- constructor dependency ordering and reverse-order teardown with readiness
+  assertions at every phase;
+- all NVIDIA/CUDA-required pthread and semaphore bridge calls, direct scalar
+  ABIs, compatibility-core export versions, return behavior, and error
+  contracts;
+- `dladdr1` public ABI and `RTLD_DL_LINKMAP` identity, including explicit
+  rejection of unsupported `RTLD_DL_SYMENT`;
+- bounded name-based `dlvsym` compatibility, including all observed versions,
+  unknown-version rejection, `GLIBC_PRIVATE`, `dlerror`, and `errno`;
+- exact `dlmopen(LM_ID_BASE)` adaptation and fail-closed rejection of
+  libcudart's unsupported `LM_ID_NEWLM` namespace request;
+- exact `__rawmemchr` byte conversion, first-match, alignment, return-address,
+  `errno`, and guarded-page behavior;
+- exact `fallocate64` LP64 offsets, allocation, hole punching, file-size,
+  return-value, and `errno` behavior;
+- translated `backtrace` frame ordering, caller identity, capacity bounds,
+  non-positive sizes, return values, and `errno` preservation;
+- fail-closed exclusion of obsolete malloc-hook state, including runtime
+  lookup failure, normal allocator behavior, and real-glcore probe discovery;
+- canonical musl `secure_getenv` ownership, lookup identity, environment and
+  `errno` behavior, internal-alias exclusion, and compatibility-version use;
+- degraded musl `_IO_getc` byte conversion, EOF, stream-error, pushback,
+  `errno`, and provider-identity behavior;
+- degraded musl `_IO_putc` byte conversion, persisted output, stream-error,
+  `errno`, and provider-identity behavior;
+- degraded musl `__assert_fail` provider identity, argument diagnostics,
+  non-returning behavior, and `SIGABRT` termination;
+- degraded musl `__ctype_b_loc` pointer ABI, glibc mask encoding, signed-byte
+  indexing range, C/C.UTF-8 classification, `errno`, and provider identity;
+- degraded musl `__ctype_get_mb_cur_max` return ABI, C and C.UTF-8 widths,
+  thread-local locale switching, conversion bounds, `errno`, and provider
+  identity;
+- degraded musl `__cxa_atexit` registration ABI, argument delivery,
+  allocation-backed capacity, reverse process-exit ordering, exactly-once
+  execution, `errno`, status preservation, and provider identity;
+- stub musl `__cxa_finalize` ABI, DSO-specific and all-DSO no-op behavior,
+  repeated calls, delayed process-exit publication, `errno`, and both strong
+  and weak manifest requirements;
+- exact musl `__duplocale`/`__freelocale` lifecycle: pointer ABIs,
+  source-snapshot independence, inactive construction, thread-local
+  publication and withdrawal, global/static and allocated ownership, cleanup,
+  `errno`, and public-alias identity;
+- exact musl `__errno_location` pointer ABI, stable address, macro and direct
+  mutation visibility, syscall updates, simultaneous thread isolation,
+  provider identity, and libc/libpthread manifest requirements;
+- degraded musl `__fxstat`/`__fxstatat` and compatibility-core `__fxstat64`
+  x86_64 layout, accepted version selectors, complete regular-file metadata
+  above 4 GiB, directory/FIFO descriptors, relative and absolute paths,
+  symlink and empty-path flags, path/descriptor/flag failures, `errno`, and
+  distinct provider identities;
+- degraded musl `__getdelim` pointer/return ABI, public-alias identity,
+  delimiter and embedded-NUL behavior, allocation growth and reuse,
+  unterminated records, EOF and stream errors, invalid arguments, `errno`, and
+  provider identity;
+- degraded musl `__isoc99_fscanf`/`__isoc99_sscanf` variadic ABIs and
+  public-alias identities, all NVIDIA-observed formatted stream/string
+  conversions, C99 hexadecimal floating input, widths, length modifiers,
+  suppression, assignment counts, stream position, matching/input failures,
+  write-only stream errors, `errno`, and provider identities;
 - absent and provider-backed weak symbol relocation;
+- fail-closed and provider-backed name resolution for a `GLIBC_*` undefined
+  symbol;
+- schema, normalization, provider consistency, and fail-closed coverage for
+  the checked NVIDIA/CUDA symbol manifest;
 - facade SONAME, dependency, export, and symbol-version inspection.
 
 When `NVIDIA_LIBDIR` is set, the `nvidia` suite also exercises the real local
@@ -62,8 +125,13 @@ with `MUSL_BSD_NVIDIA_TLS_PATH`. It also verifies `RTLD_LOCAL` isolation and
 32 repeated cycles per scope exercise overlapping handle ownership and
 close-order safety. The same real-binary test inventories weak imports and
 requires both unresolved optional probes and runtime-provided weak symbols to
-relocate successfully. Proprietary binaries are never copied into the
-repository. A second local test discovers an exported `_nv*TLS` object and
-checks per-thread address and value isolation across eight concurrent threads.
-It also gates on the installed NVIDIA graph's destructor ABI and verifies
-pthread-key destructor delivery through the compatibility core.
+relocate successfully. It also requires strong `GLIBC_*` imports in the
+installed graph before the `RTLD_NOW` load, proving that the load exercises
+NVIDIA's actual versioned undefined symbols. The runner also verifies that
+glcore and its gpucomp and TLS dependencies all carry initializers and that
+the corresponding `DT_NEEDED` edges exist before loading the graph.
+Proprietary binaries are never copied into the repository. A second local test
+discovers an exported `_nv*TLS` object and checks per-thread address and value
+isolation across eight concurrent threads. It also gates on the installed
+NVIDIA graph's destructor ABI and verifies pthread-key destructor delivery
+through the compatibility core.

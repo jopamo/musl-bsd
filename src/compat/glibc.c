@@ -8,18 +8,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
-#include <sys/auxv.h>
+#include <stdint.h>
 
-/*
- * NVIDIA's GLX module probes the old glibc malloc-hook ABI at runtime.  The
- * hooks were removed from modern glibc, and musl has never provided them.
- * Leave them NULL: the module uses their presence as a capability probe and
- * falls back to the normal allocator when they are unset.
- */
-void* (*__malloc_hook)(size_t, const void*) = NULL;
-void* (*__realloc_hook)(void*, size_t, const void*) = NULL;
-void* (*__memalign_hook)(size_t, size_t, const void*) = NULL;
-void (*__free_hook)(void*, const void*) = NULL;
+#ifdef MUSL_BSD_HAVE_UNWIND
+#include <unwind.h>
+#endif
 
 int __register_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void), void* dso_handle) {
     (void)dso_handle;
@@ -82,18 +75,6 @@ char* __realpath_chk(const char* path, char* resolved_path, size_t resolved_len)
     return realpath(path, resolved_path);
 }
 
-char* __secure_getenv(const char* name) {
-    if (getauxval(AT_SECURE) != 0 || geteuid() != getuid() ||
-        getegid() != getgid())
-        return NULL;
-
-    return getenv(name);
-}
-
-char* secure_getenv(const char* name) {
-    return __secure_getenv(name);
-}
-
 char* __strdup(const char* string) {
     return strdup(string);
 }
@@ -102,15 +83,66 @@ char* __strtok_r(char* s, const char* delim, char** save_ptr) {
     return strtok_r(s, delim, save_ptr);
 }
 
+#ifdef MUSL_BSD_HAVE_UNWIND
+struct backtrace_state {
+    void** frames;
+    uintptr_t previous_cfa;
+    uintptr_t previous_ip;
+    int count;
+    int capacity;
+    int skip_current;
+};
+
+static _Unwind_Reason_Code capture_backtrace_frame(struct _Unwind_Context* context, void* argument) {
+    struct backtrace_state* state = argument;
+    uintptr_t cfa;
+    uintptr_t ip;
+
+    if (state->skip_current) {
+        state->skip_current = 0;
+        return _URC_NO_REASON;
+    }
+
+    cfa = _Unwind_GetCFA(context);
+    ip = _Unwind_GetIP(context);
+    if (state->count > 0 && cfa == state->previous_cfa && ip == state->previous_ip)
+        return _URC_END_OF_STACK;
+
+    state->frames[state->count++] = (void*)(uintptr_t)ip;
+    state->previous_cfa = cfa;
+    state->previous_ip = ip;
+    return state->count == state->capacity ? _URC_END_OF_STACK : _URC_NO_REASON;
+}
+#endif
+
 /*
- * NVIDIA's error/reporting path references glibc's execinfo entry point.
- * musl does not ship execinfo.h or a public backtrace implementation.  A
- * zero-frame result is the documented failure result for backtrace() and
- * keeps the optional diagnostic path from making an otherwise loadable DSO
- * fail relocation.
+ * Glcore records up to sixteen return addresses in diagnostic messages.
+ * Follow glibc's _Unwind_Backtrace model: omit this function's frame, stop at
+ * the caller's capacity, reject a non-progressing unwinder, and remove the
+ * null sentinel some unwinders report above _start.
  */
 int backtrace(void** buffer, int size) {
+#ifdef MUSL_BSD_HAVE_UNWIND
+    struct backtrace_state state = {
+        .frames = buffer,
+        .previous_cfa = 0,
+        .previous_ip = 0,
+        .count = 0,
+        .capacity = size,
+        .skip_current = 1,
+    };
+    int saved_errno = errno;
+
+    if (size <= 0)
+        return 0;
+    _Unwind_Backtrace(capture_backtrace_frame, &state);
+    if (state.count > 0 && state.frames[state.count - 1] == NULL)
+        --state.count;
+    errno = saved_errno;
+    return state.count;
+#else
     (void)buffer;
     (void)size;
     return 0;
+#endif
 }

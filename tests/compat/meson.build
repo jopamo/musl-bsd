@@ -123,9 +123,25 @@ if glibc_runtime_enabled
     install: false,
   )
 
+  loader_dependency_leaf = shared_library(
+    'loader-dependency-leaf',
+    'loader_dependency_leaf.c',
+    c_args: c_flags,
+    install: false,
+  )
+
+  loader_dependency_middle = shared_library(
+    'loader-dependency-middle',
+    'loader_dependency_middle.c',
+    link_with: loader_dependency_leaf,
+    c_args: c_flags,
+    install: false,
+  )
+
   loader_plugin = shared_library(
     'loader-plugin',
     'loader_plugin.c',
+    link_with: loader_dependency_middle,
     c_args: c_flags,
     install: false,
   )
@@ -151,6 +167,31 @@ if glibc_runtime_enabled
     install: false,
   )
 
+  loader_versioned_map = meson.current_source_dir() / 'loader_versioned_provider.map'
+  loader_versioned_reference = shared_library(
+    'loader-versioned-reference',
+    'loader_versioned_provider.c',
+    c_args: c_flags,
+    link_args: ['-Wl,--version-script=' + loader_versioned_map],
+    link_depends: loader_versioned_map,
+    install: false,
+  )
+
+  loader_versioned_consumer = shared_library(
+    'loader-versioned-consumer',
+    'loader_versioned_consumer.c',
+    link_with: loader_versioned_reference,
+    c_args: c_flags,
+    install: false,
+  )
+
+  loader_versioned_runtime = shared_library(
+    'loader-versioned-runtime',
+    'loader_versioned_provider.c',
+    c_args: c_flags,
+    install: false,
+  )
+
   patchelf = find_program('patchelf')
   loader_runner = files('run_loader_tests.py')
   test(
@@ -166,17 +207,25 @@ if glibc_runtime_enabled
       loader_user_preload.full_path(),
       loader_weak_consumer.full_path(),
       loader_weak_provider.full_path(),
+      loader_versioned_consumer.full_path(),
+      loader_versioned_runtime.full_path(),
       musl_linker_path,
+      readelf.full_path(),
       patchelf.full_path(),
     ],
     depends: [
       glibc_loader,
       libcompat,
       compat_loader_test,
+      loader_dependency_leaf,
+      loader_dependency_middle,
       loader_plugin,
       loader_user_preload,
       loader_weak_consumer,
       loader_weak_provider,
+      loader_versioned_reference,
+      loader_versioned_consumer,
+      loader_versioned_runtime,
     ] + glibc_facades,
     suite: 'compat',
     timeout: 60,
@@ -244,6 +293,188 @@ if glibc_runtime_enabled
     depends: [libcompat] + glibc_facades,
     suite: 'compat',
   )
+
+  dlfcn_manifest_checker = files('check_dlfcn_manifest.py')
+  test(
+    'compat/dlfcn_manifest',
+    python,
+    args: [
+      dlfcn_manifest_checker,
+      meson.project_source_root() / 'nvidia-symbols.json',
+    ],
+    suite: 'compat',
+  )
+
+  runtime_manifest_checker = files('check_runtime_manifest.py')
+  test(
+    'compat/runtime_manifest',
+    python,
+    args: [
+      runtime_manifest_checker,
+      readelf.full_path(),
+      meson.project_source_root() / 'nvidia-symbols.json',
+      libcompat.full_path(),
+      musl_linker_path,
+    ],
+    depends: libcompat,
+    suite: 'compat',
+  )
+
+  backtrace_test = executable(
+    'test_compat_backtrace',
+    'test_backtrace.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    link_args: ['-Wl,--export-dynamic'],
+    install: false,
+  )
+  test('compat/backtrace', backtrace_test, suite: 'compat')
+
+  malloc_hook_scope_test = executable(
+    'test_compat_malloc_hook_scope',
+    'test_malloc_hook_scope.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    install: false,
+  )
+  test(
+    'compat/malloc_hook_scope',
+    malloc_hook_scope_test,
+    suite: 'compat',
+  )
+
+  secure_getenv_scope_test = executable(
+    'test_compat_secure_getenv_scope',
+    'test_secure_getenv_scope.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    install: false,
+  )
+  test(
+    'compat/secure_getenv_scope',
+    secure_getenv_scope_test,
+    suite: 'compat',
+  )
+
+  io_getc_test = executable(
+    'test_compat_io_getc',
+    'test_io_getc.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/io_getc', io_getc_test, suite: 'compat')
+
+  io_putc_test = executable(
+    'test_compat_io_putc',
+    'test_io_putc.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/io_putc', io_putc_test, suite: 'compat')
+
+  assert_fail_test = executable(
+    'test_compat_assert_fail',
+    'test_assert_fail.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/assert_fail', assert_fail_test, suite: 'compat')
+
+  ctype_b_loc_test = executable(
+    'test_compat_ctype_b_loc',
+    'test_ctype_b_loc.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/ctype_b_loc', ctype_b_loc_test, suite: 'compat')
+
+  ctype_get_mb_cur_max_test = executable(
+    'test_compat_ctype_get_mb_cur_max',
+    'test_ctype_get_mb_cur_max.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test(
+    'compat/ctype_get_mb_cur_max',
+    ctype_get_mb_cur_max_test,
+    suite: 'compat',
+  )
+
+  cxa_atexit_test = executable(
+    'test_compat_cxa_atexit',
+    'test_cxa_atexit.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/cxa_atexit', cxa_atexit_test, suite: 'compat')
+
+  cxa_finalize_test = executable(
+    'test_compat_cxa_finalize',
+    'test_cxa_finalize.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/cxa_finalize', cxa_finalize_test, suite: 'compat')
+
+  locale_ownership_test = executable(
+    'test_compat_locale_ownership',
+    'test_locale_ownership.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test(
+    'compat/locale_ownership',
+    locale_ownership_test,
+    suite: 'compat',
+  )
+
+  errno_location_test = executable(
+    'test_compat_errno_location',
+    'test_errno_location.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/errno_location', errno_location_test, suite: 'compat')
+
+  stat_abi_test = executable(
+    'test_compat_stat_abi',
+    'test_stat_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/stat_abi', stat_abi_test, suite: 'compat')
+
+  getdelim_test = executable(
+    'test_compat_getdelim',
+    'test_getdelim.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/getdelim', getdelim_test, suite: 'compat')
+
+  scanf_abi_test = executable(
+    'test_compat_scanf_abi',
+    'test_scanf_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/scanf_abi', scanf_abi_test, suite: 'compat')
 endif
 
 if pthread_abi_supported
@@ -265,9 +496,23 @@ if pthread_abi_supported
       libcompat.full_path(),
       patchelf.full_path(),
     ],
-    depends: libcompat,
+    depends: [pthread_abi_test, libcompat],
     suite: 'compat',
     timeout: 30,
+  )
+
+  pthread_manifest_checker = files('check_pthread_manifest.py')
+  test(
+    'compat/pthread_manifest',
+    python,
+    args: [
+      pthread_manifest_checker,
+      readelf.full_path(),
+      meson.project_source_root() / 'nvidia-symbols.json',
+      libcompat.full_path(),
+    ],
+    depends: libcompat,
+    suite: 'compat',
   )
 
   if cc.get_define('__GLIBC__', prefix: '#include <features.h>') != ''
@@ -287,8 +532,10 @@ endif
 
 compat_tests = [
   'runtime',
+  'fallocate64',
   'glibc_api',
   'mount_link',
+  'rawmemchr',
 ]
 
 foreach test_name : compat_tests

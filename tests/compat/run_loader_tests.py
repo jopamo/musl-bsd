@@ -65,8 +65,26 @@ def prepare_fixture(patchelf, source, destination, loader):
         fail(f"fixture is not glibc-named: DT_NEEDED={names}")
 
 
+def require_versioned_undefined(readelf, path, symbol, version):
+    result = subprocess.run(
+        [str(readelf), "--dyn-syms", "-W", str(path)],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    expected = f"{symbol}@{version}"
+    if result.returncode != 0:
+        fail(f"cannot inspect versioned-symbol fixture {path}", result)
+    for line in result.stdout.splitlines():
+        fields = line.split()
+        if len(fields) >= 8 and fields[6] == "UND" and fields[7] == expected:
+            return
+    fail(f"{path}: missing undefined {expected}")
+
+
 def main():
-    if len(sys.argv) != 11:
+    if len(sys.argv) != 14:
         fail("invalid runner arguments")
 
     (
@@ -78,12 +96,15 @@ def main():
         user_preload,
         weak_consumer,
         weak_provider,
+        versioned_consumer,
+        versioned_runtime,
         musl_linker,
+        readelf,
+        patchelf,
     ) = (
         Path(value).resolve()
-        for value in sys.argv[1:10]
+        for value in sys.argv[1:14]
     )
-    patchelf = sys.argv[10]
 
     with tempfile.TemporaryDirectory(prefix="musl-bsd loader ") as temp_name:
         temp = Path(temp_name)
@@ -113,6 +134,67 @@ def main():
         )
         if result.returncode != 0:
             fail("provided weak symbol binding", result)
+
+        versioned_fixture = temp / "versioned GLIBC consumer.so"
+        shutil.copy2(versioned_consumer, versioned_fixture)
+        reference_names = [
+            name
+            for name in needed(patchelf, versioned_fixture)
+            if name.startswith("libloader-versioned-reference.so")
+        ]
+        if len(reference_names) != 1:
+            fail(
+                "versioned fixture has no unique reference provider: "
+                f"DT_NEEDED={needed(patchelf, versioned_fixture)}"
+            )
+        subprocess.run(
+            [
+                str(patchelf),
+                "--remove-needed",
+                reference_names[0],
+                str(versioned_fixture),
+            ],
+            check=True,
+        )
+        require_versioned_undefined(
+            readelf,
+            versioned_fixture,
+            "loader_versioned_symbol",
+            "GLIBC_2.2.5",
+        )
+
+        result = run(
+            target,
+            [
+                "versioned-absent",
+                "versioned",
+                str(versioned_fixture),
+                "loader_versioned_value",
+                "113",
+            ],
+            env,
+        )
+        if (
+            result.returncode == 0
+            or "loader_versioned_symbol" not in result.stderr
+        ):
+            fail("missing provider for versioned undefined symbol", result)
+
+        versioned_env = env.copy()
+        versioned_env["LD_PRELOAD"] = str(versioned_runtime)
+        result = run(
+            target,
+            [
+                "versioned-provided",
+                "versioned",
+                str(versioned_fixture),
+                "loader_versioned_value",
+                "113",
+            ],
+            versioned_env,
+        )
+        if result.returncode != 0:
+            fail("name-based GLIBC-versioned symbol relocation", result)
 
         for argv0, executable, cwd in (
             ("ordinary-program", target, None),
@@ -144,10 +226,14 @@ def main():
         expected = [
             "target-constructor",
             "main",
+            "dependency-leaf-constructor",
+            "dependency-middle-constructor",
             "plugin-constructor",
             "plugin-entry",
             "after-dlclose",
             "plugin-destructor",
+            "dependency-middle-destructor",
+            "dependency-leaf-destructor",
             "target-destructor",
         ]
         actual = trace.read_text().splitlines()

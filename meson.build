@@ -60,6 +60,26 @@ glibc_runtime_enabled = glibc_runtime_option == 'enabled' or (
   glibc_runtime_option == 'auto' and glibc_runtime_qualified
 )
 
+unwind_backtrace_supported = cc.links(
+  '''
+    #include <unwind.h>
+    static _Unwind_Reason_Code trace(struct _Unwind_Context *context, void *argument) {
+      (void)argument;
+      return _Unwind_GetIP(context) == 0 ? _URC_END_OF_STACK : _URC_NO_REASON;
+    }
+    int main(void) {
+      return _Unwind_Backtrace(trace, 0) == _URC_FATAL_PHASE1_ERROR;
+    }
+  ''',
+  name: 'compiler unwinder for backtrace',
+)
+if glibc_runtime_enabled and not unwind_backtrace_supported
+  error('Qualified glibc runtime requires the compiler unwinder for backtrace()')
+endif
+if unwind_backtrace_supported
+  c_flags += '-DMUSL_BSD_HAVE_UNWIND=1'
+endif
+
 # This distro is usrmerge-only.  The interpreter alias is in /usr/lib, while
 # all project payload and glibc facade DSOs live under a private project tree.
 compat_runtime_install_dir = '/usr/lib/musl-bsd'

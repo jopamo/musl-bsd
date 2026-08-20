@@ -87,8 +87,12 @@ def main():
 
         # Directory discovery must be local and deterministic; it must not
         # require an NVIDIA installation just to exercise the naming rules.
-        discovered = Path(name) / "libcuda.so.1"
-        discovered.write_bytes(Path(sys.executable).read_bytes())
+        discovered = [
+            Path(name) / "libcuda.so.1",
+            Path(name) / "libcudart.so.13",
+        ]
+        for path in discovered:
+            path.write_bytes(Path(sys.executable).read_bytes())
         result = run(
             scanner,
             "--no-recursive",
@@ -99,7 +103,8 @@ def main():
         if result.returncode != 0:
             fail("directory target discovery failed", result)
         report = json.loads(result.stdout)
-        if report["roots"] != [str(discovered.resolve())]:
+        expected_roots = sorted(str(path.resolve()) for path in discovered)
+        if report["roots"] != expected_roots:
             fail(f"unexpected discovered root: {report['roots']!r}")
 
     result = run(

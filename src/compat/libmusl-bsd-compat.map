@@ -12,16 +12,11 @@ MUSL_BSD_COMPAT_1.0 {
 		__isnanf;
 		__isnanl;
 		__lxstat64;
-		__free_hook;
-		__malloc_hook;
-		__memalign_hook;
-		__realloc_hook;
 		__realpath_chk;
 		__register_atfork;
 		__rawmemchr;
 		__sched_cpualloc;
 		__sched_cpufree;
-		__secure_getenv;
 		__strftime_l;
 		__strdup;
 		__strtok_r;
@@ -67,7 +62,6 @@ MUSL_BSD_COMPAT_1.0 {
 		readlink;
 		register_atfork;
 		scandir64;
-		secure_getenv;
 		stat64;
 		strlcat;
 		strlcpy;

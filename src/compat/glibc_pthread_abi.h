@@ -3,7 +3,9 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <sched.h>
 #include <semaphore.h>
+#include <signal.h>
 
 /*
  * This bridge is enabled only for ABIs verified here.  These constants are
@@ -35,9 +37,24 @@
 #define GLIBC_PTHREAD_ONCE_ALIGN          4
 #define GLIBC_SEM_ALIGN                   8
 
+#define GLIBC_PTHREAD_T_SIZE              8
+#define GLIBC_PTHREAD_T_ALIGN             8
+#define GLIBC_PTHREAD_KEY_SIZE            4
+#define GLIBC_PTHREAD_KEY_ALIGN           4
+#define GLIBC_PTHREAD_SPIN_SIZE           4
+#define GLIBC_PTHREAD_SPIN_ALIGN          4
+#define GLIBC_CPU_SET_SIZE              128
+#define GLIBC_CPU_SET_ALIGN               8
+#define GLIBC_SIGSET_SIZE               128
+#define GLIBC_SIGSET_ALIGN                8
+
 #define ABI_FITS(name, type, size, align) \
 	typedef char name##_size_fits[(sizeof(type) <= (size)) ? 1 : -1]; \
 	typedef char name##_alignment_fits[(__alignof__(type) <= (align)) ? 1 : -1]
+
+#define ABI_EQUALS(name, type, size, align) \
+	typedef char name##_size_matches[(sizeof(type) == (size)) ? 1 : -1]; \
+	typedef char name##_alignment_matches[(__alignof__(type) == (align)) ? 1 : -1]
 
 ABI_FITS(pthread_attr, pthread_attr_t, GLIBC_PTHREAD_ATTR_SIZE,
 	 GLIBC_PTHREAD_ATTR_ALIGN);
@@ -57,8 +74,17 @@ ABI_FITS(pthread_rwlockattr, pthread_rwlockattr_t,
 ABI_FITS(pthread_once, pthread_once_t, GLIBC_PTHREAD_ONCE_SIZE,
 	 GLIBC_PTHREAD_ONCE_ALIGN);
 ABI_FITS(sem, sem_t, GLIBC_SEM_SIZE, GLIBC_SEM_ALIGN);
+ABI_EQUALS(pthread_t, pthread_t, GLIBC_PTHREAD_T_SIZE,
+	   GLIBC_PTHREAD_T_ALIGN);
+ABI_EQUALS(pthread_key, pthread_key_t, GLIBC_PTHREAD_KEY_SIZE,
+	   GLIBC_PTHREAD_KEY_ALIGN);
+ABI_EQUALS(pthread_spin, pthread_spinlock_t, GLIBC_PTHREAD_SPIN_SIZE,
+	   GLIBC_PTHREAD_SPIN_ALIGN);
+ABI_EQUALS(cpu_set, cpu_set_t, GLIBC_CPU_SET_SIZE, GLIBC_CPU_SET_ALIGN);
+ABI_EQUALS(sigset, sigset_t, GLIBC_SIGSET_SIZE, GLIBC_SIGSET_ALIGN);
 
 #undef ABI_FITS
+#undef ABI_EQUALS
 
 /*
  * An untouched x86_64 glibc static mutex stores its kind in word 4.  Musl

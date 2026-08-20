@@ -46,14 +46,53 @@ def installed_dso(directory, pattern):
     return matches[0]
 
 
-def dynamic_symbols(readelf, path):
+def readelf_output(readelf, path, *options):
     result = subprocess.run(
-        [readelf, "--dyn-syms", "-W", str(path)],
+        [readelf, *options, str(path)],
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
     )
     if result.returncode != 0:
-        fail(f"cannot inspect dynamic symbols in {path}", result)
-    return [line.split() for line in result.stdout.splitlines()]
+        fail(f"cannot inspect ELF metadata in {path}", result)
+    return result.stdout
+
+
+def dynamic_symbols(readelf, path):
+    return [
+        line.split()
+        for line in readelf_output(
+            readelf, path, "--dyn-syms", "-W"
+        ).splitlines()
+    ]
+
+
+def verify_constructor_dependencies(readelf, parent, *dependencies):
+    dynamic_sections = {
+        path: readelf_output(readelf, path, "-dW")
+        for path in (parent, *dependencies)
+    }
+    for path, dynamic in dynamic_sections.items():
+        if "(INIT)" not in dynamic and "(INIT_ARRAY)" not in dynamic:
+            fail(f"{path}: NVIDIA constructor dependency has no initializer")
+    parent_dynamic = dynamic_sections[parent]
+    for dependency in dependencies:
+        if f"Shared library: [{dependency.name}]" not in parent_dynamic:
+            fail(f"{parent}: no DT_NEEDED edge to {dependency.name}")
+
+
+def versioned_undefined_symbols(readelf, *paths):
+    requirements = set()
+    for path in paths:
+        for fields in dynamic_symbols(readelf, path):
+            if (
+                len(fields) >= 8
+                and fields[4] == "GLOBAL"
+                and fields[5] == "DEFAULT"
+                and fields[6] == "UND"
+            ):
+                name, separator, version = fields[7].partition("@")
+                if separator and version.startswith("GLIBC_"):
+                    requirements.add((name, version))
+    return sorted(requirements)

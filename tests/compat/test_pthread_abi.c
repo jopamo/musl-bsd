@@ -31,6 +31,9 @@ OLD_SYMBOL(compat_mutexattr_settype, pthread_mutexattr_settype, "GLIBC_2.2.5",
 OLD_SYMBOL(compat_mutexattr_setpshared, pthread_mutexattr_setpshared,
 	   "GLIBC_2.2.5",
 	   int compat_mutexattr_setpshared(pthread_mutexattr_t *, int));
+OLD_SYMBOL(compat_mutexattr_setprotocol, pthread_mutexattr_setprotocol,
+	   "GLIBC_2.4",
+	   int compat_mutexattr_setprotocol(pthread_mutexattr_t *, int));
 OLD_SYMBOL(compat_mutex_init, pthread_mutex_init, "GLIBC_2.2.5",
 	   int compat_mutex_init(pthread_mutex_t *, const pthread_mutexattr_t *));
 OLD_SYMBOL(compat_mutex_destroy, pthread_mutex_destroy, "GLIBC_2.2.5",
@@ -55,8 +58,13 @@ OLD_SYMBOL(compat_cond_destroy, pthread_cond_destroy, "GLIBC_2.3.2",
 	   int compat_cond_destroy(pthread_cond_t *));
 OLD_SYMBOL(compat_cond_wait, pthread_cond_wait, "GLIBC_2.3.2",
 	   int compat_cond_wait(pthread_cond_t *, pthread_mutex_t *));
+OLD_SYMBOL(compat_cond_timedwait, pthread_cond_timedwait, "GLIBC_2.3.2",
+	   int compat_cond_timedwait(pthread_cond_t *, pthread_mutex_t *,
+				     const struct timespec *));
 OLD_SYMBOL(compat_cond_signal, pthread_cond_signal, "GLIBC_2.3.2",
 	   int compat_cond_signal(pthread_cond_t *));
+OLD_SYMBOL(compat_cond_broadcast, pthread_cond_broadcast, "GLIBC_2.3.2",
+	   int compat_cond_broadcast(pthread_cond_t *));
 
 OLD_SYMBOL(compat_rwlockattr_init, pthread_rwlockattr_init, "GLIBC_2.2.5",
 	   int compat_rwlockattr_init(pthread_rwlockattr_t *));
@@ -77,9 +85,31 @@ OLD_SYMBOL(compat_rwlock_wrlock, pthread_rwlock_wrlock, "GLIBC_2.2.5",
 	   int compat_rwlock_wrlock(pthread_rwlock_t *));
 OLD_SYMBOL(compat_rwlock_unlock, pthread_rwlock_unlock, "GLIBC_2.2.5",
 	   int compat_rwlock_unlock(pthread_rwlock_t *));
+OLD_SYMBOL(compat_rwlock_tryrdlock, pthread_rwlock_tryrdlock, "GLIBC_2.2.5",
+	   int compat_rwlock_tryrdlock(pthread_rwlock_t *));
+OLD_SYMBOL(compat_rwlock_trywrlock, pthread_rwlock_trywrlock, "GLIBC_2.2.5",
+	   int compat_rwlock_trywrlock(pthread_rwlock_t *));
 
 OLD_SYMBOL(compat_once, pthread_once, "GLIBC_2.2.5",
 	   int compat_once(pthread_once_t *, void (*)(void)));
+
+OLD_SYMBOL(compat_attr_init, pthread_attr_init, "GLIBC_2.2.5",
+	   int compat_attr_init(pthread_attr_t *));
+OLD_SYMBOL(compat_attr_destroy, pthread_attr_destroy, "GLIBC_2.2.5",
+	   int compat_attr_destroy(pthread_attr_t *));
+OLD_SYMBOL(compat_attr_setstack, pthread_attr_setstack, "GLIBC_2.2.5",
+	   int compat_attr_setstack(pthread_attr_t *, void *, size_t));
+OLD_SYMBOL(compat_attr_setstacksize, pthread_attr_setstacksize, "GLIBC_2.2.5",
+	   int compat_attr_setstacksize(pthread_attr_t *, size_t));
+OLD_SYMBOL(compat_create, pthread_create, "GLIBC_2.2.5",
+	   int compat_create(pthread_t *, const pthread_attr_t *,
+			     void *(*)(void *), void *));
+OLD_SYMBOL(compat_join, pthread_join, "GLIBC_2.2.5",
+	   int compat_join(pthread_t, void **));
+OLD_SYMBOL(compat_detach, pthread_detach, "GLIBC_2.2.5",
+	   int compat_detach(pthread_t));
+OLD_SYMBOL(compat_internal_key_create, __pthread_key_create, "GLIBC_2.2.5",
+	   int compat_internal_key_create(pthread_key_t *, void (*)(void *)));
 
 OLD_SYMBOL(compat_sem_init, sem_init, "GLIBC_2.2.5",
 	   int compat_sem_init(sem_t *, int, unsigned int));
@@ -89,11 +119,16 @@ OLD_SYMBOL(compat_sem_post, sem_post, "GLIBC_2.2.5",
 	   int compat_sem_post(sem_t *));
 OLD_SYMBOL(compat_sem_timedwait, sem_timedwait, "GLIBC_2.2.5",
 	   int compat_sem_timedwait(sem_t *, const struct timespec *));
+OLD_SYMBOL(compat_sem_trywait, sem_trywait, "GLIBC_2.2.5",
+	   int compat_sem_trywait(sem_t *));
+OLD_SYMBOL(compat_sem_wait, sem_wait, "GLIBC_2.2.5",
+	   int compat_sem_wait(sem_t *));
 
 #define pthread_mutexattr_init compat_mutexattr_init
 #define pthread_mutexattr_destroy compat_mutexattr_destroy
 #define pthread_mutexattr_settype compat_mutexattr_settype
 #define pthread_mutexattr_setpshared compat_mutexattr_setpshared
+#define pthread_mutexattr_setprotocol compat_mutexattr_setprotocol
 #define pthread_mutex_init compat_mutex_init
 #define pthread_mutex_destroy compat_mutex_destroy
 #define pthread_mutex_lock compat_mutex_lock
@@ -105,7 +140,9 @@ OLD_SYMBOL(compat_sem_timedwait, sem_timedwait, "GLIBC_2.2.5",
 #define pthread_cond_init compat_cond_init
 #define pthread_cond_destroy compat_cond_destroy
 #define pthread_cond_wait compat_cond_wait
+#define pthread_cond_timedwait compat_cond_timedwait
 #define pthread_cond_signal compat_cond_signal
+#define pthread_cond_broadcast compat_cond_broadcast
 #define pthread_rwlockattr_init compat_rwlockattr_init
 #define pthread_rwlockattr_destroy compat_rwlockattr_destroy
 #define pthread_rwlockattr_setpshared compat_rwlockattr_setpshared
@@ -114,14 +151,31 @@ OLD_SYMBOL(compat_sem_timedwait, sem_timedwait, "GLIBC_2.2.5",
 #define pthread_rwlock_rdlock compat_rwlock_rdlock
 #define pthread_rwlock_wrlock compat_rwlock_wrlock
 #define pthread_rwlock_unlock compat_rwlock_unlock
+#define pthread_rwlock_tryrdlock compat_rwlock_tryrdlock
+#define pthread_rwlock_trywrlock compat_rwlock_trywrlock
 #define pthread_once compat_once
+#define pthread_attr_init compat_attr_init
+#define pthread_attr_destroy compat_attr_destroy
+#define pthread_attr_setstack compat_attr_setstack
+#define pthread_attr_setstacksize compat_attr_setstacksize
+#define pthread_create compat_create
+#define pthread_join compat_join
+#define pthread_detach compat_detach
+#define __pthread_key_create compat_internal_key_create
 #define sem_init compat_sem_init
 #define sem_destroy compat_sem_destroy
 #define sem_post compat_sem_post
 #define sem_timedwait compat_sem_timedwait
+#define sem_trywait compat_sem_trywait
+#define sem_wait compat_sem_wait
 #endif
 
 #define THREAD_COUNT 24
+
+#if !defined(__GLIBC__)
+extern int __pthread_key_create(pthread_key_t *, void (*)(void *))
+	__attribute__((weak));
+#endif
 
 union glibc_mutex_storage {
 	uint64_t align;
@@ -294,6 +348,233 @@ static int wait_until(volatile int *value)
 		nanosleep(&delay, NULL);
 	}
 	return -1;
+}
+
+static int wait_until_at_least(volatile int *value, int expected)
+{
+	struct timespec delay = { 0, 1000000 };
+	int i;
+
+	for (i = 0; i < 3000; i++) {
+		if (__atomic_load_n(value, __ATOMIC_ACQUIRE) >= expected)
+			return 0;
+		nanosleep(&delay, NULL);
+	}
+	return -1;
+}
+
+static void *return_argument(void *argument)
+{
+	return argument;
+}
+
+static volatile int detached_done;
+
+static void *detached_worker(void *argument)
+{
+	(void)argument;
+	__atomic_store_n(&detached_done, 1, __ATOMIC_RELEASE);
+	return NULL;
+}
+
+static int test_thread_attributes_and_lifecycle(void)
+{
+	long page_size = sysconf(_SC_PAGESIZE);
+	size_t stack_size;
+	pthread_attr_t attr;
+	pthread_t thread;
+	void *stack;
+	void *result;
+	int token;
+	int error;
+
+	if (page_size <= 0)
+		return __LINE__;
+	stack_size = (size_t)PTHREAD_STACK_MIN * 2;
+	stack_size = (stack_size + (size_t)page_size - 1) /
+		     (size_t)page_size * (size_t)page_size;
+	stack = mmap(NULL, stack_size, PROT_READ | PROT_WRITE,
+		     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	if (stack == MAP_FAILED)
+		return __LINE__;
+
+	if (pthread_attr_init(&attr) != 0) {
+		munmap(stack, stack_size);
+		return __LINE__;
+	}
+	errno = EDOM;
+	error = pthread_attr_setstacksize(&attr, PTHREAD_STACK_MIN - 1);
+	if (error != EINVAL || errno != EDOM ||
+	    pthread_attr_setstacksize(&attr, stack_size) != 0 ||
+	    pthread_attr_setstack(&attr, stack, stack_size) != 0 ||
+	    pthread_create(&thread, &attr, return_argument, &token) != 0 ||
+	    pthread_join(thread, &result) != 0 || result != &token ||
+	    pthread_attr_destroy(&attr) != 0) {
+		munmap(stack, stack_size);
+		return __LINE__;
+	}
+	if (munmap(stack, stack_size) != 0)
+		return __LINE__;
+
+	__atomic_store_n(&detached_done, 0, __ATOMIC_RELEASE);
+	if (pthread_create(&thread, NULL, detached_worker, NULL) != 0 ||
+	    pthread_detach(thread) != 0 ||
+	    wait_until(&detached_done) != 0)
+		return __LINE__;
+	return 0;
+}
+
+struct cond_group {
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+	volatile int ready;
+	int release;
+};
+
+static void *cond_waiter(void *argument)
+{
+	struct cond_group *group = argument;
+
+	if (pthread_mutex_lock(&group->mutex) != 0)
+		return (void *)(uintptr_t)1;
+	__atomic_add_fetch(&group->ready, 1, __ATOMIC_RELEASE);
+	while (!group->release)
+		if (pthread_cond_wait(&group->cond, &group->mutex) != 0)
+			return (void *)(uintptr_t)2;
+	if (pthread_mutex_unlock(&group->mutex) != 0)
+		return (void *)(uintptr_t)3;
+	return NULL;
+}
+
+static int test_condition_broadcast_and_timeout(void)
+{
+	struct cond_group group;
+	struct timespec deadline;
+	pthread_t threads[2];
+	void *result;
+	int error;
+	int i;
+
+	memset(&group, 0, sizeof(group));
+	if (pthread_mutex_init(&group.mutex, NULL) != 0 ||
+	    pthread_cond_init(&group.cond, NULL) != 0)
+		return __LINE__;
+	for (i = 0; i < 2; i++)
+		if (pthread_create(&threads[i], NULL, cond_waiter, &group) != 0)
+			return __LINE__;
+	if (wait_until_at_least(&group.ready, 2) != 0 ||
+	    pthread_mutex_lock(&group.mutex) != 0)
+		return __LINE__;
+	group.release = 1;
+	if (pthread_cond_broadcast(&group.cond) != 0 ||
+	    pthread_mutex_unlock(&group.mutex) != 0)
+		return __LINE__;
+	for (i = 0; i < 2; i++)
+		if (pthread_join(threads[i], &result) != 0 || result != NULL)
+			return __LINE__;
+
+	if (pthread_mutex_lock(&group.mutex) != 0 ||
+	    clock_gettime(CLOCK_REALTIME, &deadline) != 0)
+		return __LINE__;
+	deadline.tv_nsec += 20000000;
+	if (deadline.tv_nsec >= 1000000000) {
+		deadline.tv_sec++;
+		deadline.tv_nsec -= 1000000000;
+	}
+	errno = EDOM;
+	do {
+		error = pthread_cond_timedwait(&group.cond, &group.mutex,
+					       &deadline);
+	} while (error == 0);
+	if (error != ETIMEDOUT || errno != EDOM ||
+	    pthread_mutex_unlock(&group.mutex) != 0 ||
+	    pthread_cond_destroy(&group.cond) != 0 ||
+	    pthread_mutex_destroy(&group.mutex) != 0)
+		return __LINE__;
+	return 0;
+}
+
+static int test_required_lock_and_semaphore_errors(void)
+{
+	pthread_mutexattr_t mutex_attr;
+	pthread_rwlock_t rwlock;
+	sem_t sem;
+	int error;
+
+	if (pthread_mutexattr_init(&mutex_attr) != 0 ||
+	    pthread_mutexattr_setprotocol(&mutex_attr, PTHREAD_PRIO_NONE) != 0)
+		return __LINE__;
+	errno = EDOM;
+	error = pthread_mutexattr_setprotocol(&mutex_attr, -1);
+	if (error != EINVAL || errno != EDOM ||
+	    pthread_mutexattr_destroy(&mutex_attr) != 0)
+		return __LINE__;
+
+	if (pthread_rwlock_init(&rwlock, NULL) != 0 ||
+	    pthread_rwlock_rdlock(&rwlock) != 0 ||
+	    pthread_rwlock_trywrlock(&rwlock) != EBUSY ||
+	    pthread_rwlock_unlock(&rwlock) != 0 ||
+	    pthread_rwlock_wrlock(&rwlock) != 0 ||
+	    pthread_rwlock_tryrdlock(&rwlock) != EBUSY ||
+	    pthread_rwlock_unlock(&rwlock) != 0 ||
+	    pthread_rwlock_destroy(&rwlock) != 0)
+		return __LINE__;
+
+	if (sem_init(&sem, 0, 0) != 0)
+		return __LINE__;
+	errno = 0;
+	if (sem_trywait(&sem) != -1 || errno != EAGAIN ||
+	    sem_post(&sem) != 0 || sem_wait(&sem) != 0 ||
+	    sem_destroy(&sem) != 0)
+		return __LINE__;
+	return 0;
+}
+
+static int test_direct_pthread_abi(void)
+{
+	cpu_set_t affinity;
+	sigset_t block;
+	sigset_t old;
+	pthread_spinlock_t spin;
+	pthread_key_t key;
+	pthread_t self;
+	int value = 0;
+	int error;
+
+	self = pthread_self();
+	if (self != pthread_self())
+		return __LINE__;
+	errno = EDOM;
+	if (pthread_key_create(&key, NULL) != 0 ||
+	    pthread_setspecific(key, &value) != 0 ||
+	    pthread_getspecific(key) != &value ||
+	    pthread_key_delete(key) != 0 || errno != EDOM)
+		return __LINE__;
+	if (__pthread_key_create == NULL ||
+	    __pthread_key_create(&key, NULL) != 0 ||
+	    pthread_key_delete(key) != 0)
+		return __LINE__;
+
+	if (pthread_spin_init(&spin, PTHREAD_PROCESS_PRIVATE) != 0 ||
+	    pthread_spin_lock(&spin) != 0 ||
+	    pthread_spin_trylock(&spin) != EBUSY ||
+	    pthread_spin_unlock(&spin) != 0 ||
+	    pthread_spin_destroy(&spin) != 0)
+		return __LINE__;
+
+	sigemptyset(&block);
+	sigaddset(&block, SIGUSR1);
+	if (pthread_sigmask(SIG_BLOCK, &block, &old) != 0 ||
+	    pthread_kill(self, 0) != 0 ||
+	    pthread_sigmask(SIG_SETMASK, &old, NULL) != 0)
+		return __LINE__;
+
+	CPU_ZERO(&affinity);
+	error = pthread_getaffinity_np(self, sizeof(affinity), &affinity);
+	if (error != 0 ||
+	    pthread_setaffinity_np(self, sizeof(affinity), &affinity) != 0)
+		return __LINE__;
+	return 0;
 }
 
 struct shared_mutex {
@@ -604,6 +885,13 @@ int main(void)
 		{ "concurrent static mutex", test_concurrent_static_mutex },
 		{ "static mutexes", test_static_mutexes },
 		{ "explicit mutex attributes", test_explicit_mutex_attributes },
+		{ "thread attributes and lifecycle",
+		  test_thread_attributes_and_lifecycle },
+		{ "condition broadcast and timeout",
+		  test_condition_broadcast_and_timeout },
+		{ "required lock and semaphore errors",
+		  test_required_lock_and_semaphore_errors },
+		{ "direct pthread ABI", test_direct_pthread_abi },
 		{ "pshared mutex", test_pshared_mutex },
 		{ "pshared condition variable", test_pshared_cond },
 		{ "pshared rwlock", test_pshared_rwlock },

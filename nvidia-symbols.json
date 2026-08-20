@@ -1,0 +1,4408 @@
+{
+  "matching_policy": "musl-name-based-runtime-resolution",
+  "missing_dependencies": [
+    {
+      "from": "libcudart.so.13.3.29",
+      "name": "libstdc++.so.6"
+    }
+  ],
+  "schema": 1,
+  "scope": "observed NVIDIA/CUDA GLIBC-versioned undefined symbols",
+  "source_roots": [
+    {
+      "file": "libGLX_nvidia.so.610.43.02",
+      "soname": "libGLX_nvidia.so.0"
+    },
+    {
+      "file": "libcuda.so.610.43.02",
+      "soname": "libcuda.so.1"
+    },
+    {
+      "file": "libcudart.so.13.3.29",
+      "soname": "libcudart.so.13"
+    },
+    {
+      "file": "libnvidia-glcore.so.610.43.02",
+      "soname": "libnvidia-glcore.so.610.43.02"
+    },
+    {
+      "file": "libnvidia-ml.so.610.43.02",
+      "soname": "libnvidia-ml.so.1"
+    },
+    {
+      "file": "libnvidia-tls.so.610.43.02",
+      "soname": "libnvidia-tls.so.610.43.02"
+    },
+    {
+      "file": "nvidia_drv.so",
+      "soname": null
+    }
+  ],
+  "symbols": [
+    {
+      "binding": "global",
+      "implementation": "musl-libc:_IO_getc",
+      "name": "_IO_getc",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/io_getc",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:_IO_putc",
+      "name": "_IO_putc",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/io_putc",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__assert_fail",
+      "name": "__assert_fail",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/assert_fail",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__ctype_b_loc",
+      "name": "__ctype_b_loc",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/ctype_b_loc",
+      "version": "GLIBC_2.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__ctype_get_mb_cur_max",
+      "name": "__ctype_get_mb_cur_max",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/ctype_get_mb_cur_max",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__cxa_atexit",
+      "name": "__cxa_atexit",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/cxa_atexit",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__cxa_finalize",
+      "name": "__cxa_finalize",
+      "quality": "STUB",
+      "soname": "libc.so.6",
+      "test": "compat/cxa_finalize",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-libc:__cxa_finalize",
+      "name": "__cxa_finalize",
+      "quality": "STUB",
+      "soname": "libc.so.6",
+      "test": "compat/cxa_finalize",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__duplocale",
+      "name": "__duplocale",
+      "quality": "EXACT",
+      "soname": "libc.so.6",
+      "test": "compat/locale_ownership",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__errno_location",
+      "name": "__errno_location",
+      "quality": "EXACT",
+      "soname": "libc.so.6",
+      "test": "compat/errno_location",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__errno_location",
+      "name": "__errno_location",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/errno_location",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__freelocale",
+      "name": "__freelocale",
+      "quality": "EXACT",
+      "soname": "libc.so.6",
+      "test": "compat/locale_ownership",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__fxstat",
+      "name": "__fxstat",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/stat_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__fxstat64",
+      "name": "__fxstat64",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/stat_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__fxstatat",
+      "name": "__fxstatat",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/stat_abi",
+      "version": "GLIBC_2.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__getdelim",
+      "name": "__getdelim",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/getdelim",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__isoc99_fscanf",
+      "name": "__isoc99_fscanf",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/scanf_abi",
+      "version": "GLIBC_2.7"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__isoc99_sscanf",
+      "name": "__isoc99_sscanf",
+      "quality": "DEGRADED",
+      "soname": "libc.so.6",
+      "test": "compat/scanf_abi",
+      "version": "GLIBC_2.7"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__iswctype_l",
+      "name": "__iswctype_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__libc_current_sigrtmin",
+      "name": "__libc_current_sigrtmin",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__lxstat",
+      "name": "__lxstat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__lxstat64",
+      "name": "__lxstat64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__newlocale",
+      "name": "__newlocale",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__nl_langinfo_l",
+      "name": "__nl_langinfo_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__progname_full",
+      "name": "__progname_full",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-bsd-core:__pthread_key_create",
+      "name": "__pthread_key_create",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__rawmemchr",
+      "name": "__rawmemchr",
+      "quality": "EXACT",
+      "soname": "libc.so.6",
+      "test": "compat/rawmemchr",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__register_atfork",
+      "name": "__register_atfork",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3.2"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__sched_cpualloc",
+      "name": "__sched_cpualloc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.7"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__sched_cpucount",
+      "name": "__sched_cpucount",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.6"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__sched_cpufree",
+      "name": "__sched_cpufree",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.7"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__strcoll_l",
+      "name": "__strcoll_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__strdup",
+      "name": "__strdup",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__strftime_l",
+      "name": "__strftime_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__strtod_l",
+      "name": "__strtod_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__strtof_l",
+      "name": "__strtof_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__strxfrm_l",
+      "name": "__strxfrm_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__tls_get_addr",
+      "name": "__tls_get_addr",
+      "quality": "UNSUPPORTED",
+      "soname": "ld-linux-x86-64.so.2",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__towlower_l",
+      "name": "__towlower_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__towupper_l",
+      "name": "__towupper_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__uselocale",
+      "name": "__uselocale",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__wcscoll_l",
+      "name": "__wcscoll_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__wcsftime_l",
+      "name": "__wcsftime_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__wcsxfrm_l",
+      "name": "__wcsxfrm_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__wctype_l",
+      "name": "__wctype_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__xmknod",
+      "name": "__xmknod",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:__xstat",
+      "name": "__xstat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:__xstat64",
+      "name": "__xstat64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:_exit",
+      "name": "_exit",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:_setjmp",
+      "name": "_setjmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:abort",
+      "name": "abort",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:access",
+      "name": "access",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:acos",
+      "name": "acos",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:acosf",
+      "name": "acosf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:alarm",
+      "name": "alarm",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:alphasort",
+      "name": "alphasort",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:alphasort64",
+      "name": "alphasort64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:asin",
+      "name": "asin",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:asprintf",
+      "name": "asprintf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:atan",
+      "name": "atan",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:atan2",
+      "name": "atan2",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:atof",
+      "name": "atof",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:atoi",
+      "name": "atoi",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:backtrace",
+      "name": "backtrace",
+      "quality": "TRANSLATED",
+      "soname": "libc.so.6",
+      "test": "compat/backtrace",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:bind",
+      "name": "bind",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:bind_textdomain_codeset",
+      "name": "bind_textdomain_codeset",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:bsearch",
+      "name": "bsearch",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:btowc",
+      "name": "btowc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:calloc",
+      "name": "calloc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ceil",
+      "name": "ceil",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ceilf",
+      "name": "ceilf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:chdir",
+      "name": "chdir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:chmod",
+      "name": "chmod",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:chown",
+      "name": "chown",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:clearerr",
+      "name": "clearerr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:clock",
+      "name": "clock",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:clock_gettime",
+      "name": "clock_gettime",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.17"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:clock_gettime",
+      "name": "clock_gettime",
+      "quality": "UNSUPPORTED",
+      "soname": "librt.so.1",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:clock_nanosleep",
+      "name": "clock_nanosleep",
+      "quality": "UNSUPPORTED",
+      "soname": "librt.so.1",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:close",
+      "name": "close",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:close",
+      "name": "close",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:closedir",
+      "name": "closedir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:connect",
+      "name": "connect",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:connect",
+      "name": "connect",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:cos",
+      "name": "cos",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:cosf",
+      "name": "cosf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:cosh",
+      "name": "cosh",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dgettext",
+      "name": "dgettext",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dirfd",
+      "name": "dirfd",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dirname",
+      "name": "dirname",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dl_iterate_phdr",
+      "name": "dl_iterate_phdr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:dladdr1",
+      "name": "dladdr1",
+      "quality": "TRANSLATED",
+      "soname": "libdl.so.2",
+      "test": "compat/glibc_api",
+      "version": "GLIBC_2.3.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dlclose",
+      "name": "dlclose",
+      "quality": "UNSUPPORTED",
+      "soname": "libdl.so.2",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dlerror",
+      "name": "dlerror",
+      "quality": "UNSUPPORTED",
+      "soname": "libdl.so.2",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:dlmopen",
+      "name": "dlmopen",
+      "quality": "UNSUPPORTED",
+      "soname": "libdl.so.2",
+      "test": "compat/glibc_api",
+      "version": "GLIBC_2.3.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dlopen",
+      "name": "dlopen",
+      "quality": "UNSUPPORTED",
+      "soname": "libdl.so.2",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dlsym",
+      "name": "dlsym",
+      "quality": "UNSUPPORTED",
+      "soname": "libdl.so.2",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:dlvsym",
+      "name": "dlvsym",
+      "quality": "DEGRADED",
+      "soname": "libdl.so.2",
+      "test": "compat/glibc_api",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dup",
+      "name": "dup",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dup2",
+      "name": "dup2",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:dup3",
+      "name": "dup3",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.9"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:endmntent",
+      "name": "endmntent",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:erf",
+      "name": "erf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:eventfd",
+      "name": "eventfd",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.7"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:execle",
+      "name": "execle",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:execv",
+      "name": "execv",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:execve",
+      "name": "execve",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:execvp",
+      "name": "execvp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:exit",
+      "name": "exit",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:exp",
+      "name": "exp",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:exp2",
+      "name": "exp2",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:expf",
+      "name": "expf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fabs",
+      "name": "fabs",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:faccessat",
+      "name": "faccessat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:fallocate64",
+      "name": "fallocate64",
+      "quality": "EXACT",
+      "soname": "libc.so.6",
+      "test": "compat/fallocate64",
+      "version": "GLIBC_2.10"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fchmod",
+      "name": "fchmod",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fclose",
+      "name": "fclose",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fcntl",
+      "name": "fcntl",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fcntl",
+      "name": "fcntl",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fdopen",
+      "name": "fdopen",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fdopendir",
+      "name": "fdopendir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:feclearexcept",
+      "name": "feclearexcept",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:feof",
+      "name": "feof",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ferror",
+      "name": "ferror",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fetestexcept",
+      "name": "fetestexcept",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fflush",
+      "name": "fflush",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fgetc",
+      "name": "fgetc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fgets",
+      "name": "fgets",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fileno",
+      "name": "fileno",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:finite",
+      "name": "finite",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:floor",
+      "name": "floor",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:floorf",
+      "name": "floorf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fmax",
+      "name": "fmax",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fmod",
+      "name": "fmod",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fmodf",
+      "name": "fmodf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fopen",
+      "name": "fopen",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:fopen64",
+      "name": "fopen64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fork",
+      "name": "fork",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fprintf",
+      "name": "fprintf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fputc",
+      "name": "fputc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fputs",
+      "name": "fputs",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fread",
+      "name": "fread",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:free",
+      "name": "free",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:frexp",
+      "name": "frexp",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fscanf",
+      "name": "fscanf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fseek",
+      "name": "fseek",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fseeko",
+      "name": "fseeko",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:fseeko64",
+      "name": "fseeko64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ftell",
+      "name": "ftell",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ftello",
+      "name": "ftello",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:ftello64",
+      "name": "ftello64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ftruncate",
+      "name": "ftruncate",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ftruncate",
+      "name": "ftruncate64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:fwrite",
+      "name": "fwrite",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:get_nprocs",
+      "name": "get_nprocs",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getc",
+      "name": "getc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getcwd",
+      "name": "getcwd",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getegid",
+      "name": "getegid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getenv",
+      "name": "getenv",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:geteuid",
+      "name": "geteuid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getgid",
+      "name": "getgid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:gethostname",
+      "name": "gethostname",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getlogin_r",
+      "name": "getlogin_r",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getmntent_r",
+      "name": "getmntent_r",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getopt_long",
+      "name": "getopt_long",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getpagesize",
+      "name": "getpagesize",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getpeername",
+      "name": "getpeername",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getpid",
+      "name": "getpid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getppid",
+      "name": "getppid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getpwnam_r",
+      "name": "getpwnam_r",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getpwuid_r",
+      "name": "getpwuid_r",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getrlimit",
+      "name": "getrlimit",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getrusage",
+      "name": "getrusage",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getsockname",
+      "name": "getsockname",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getsockopt",
+      "name": "getsockopt",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:gettimeofday",
+      "name": "gettimeofday",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getuid",
+      "name": "getuid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:getwc",
+      "name": "getwc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:gnu_get_libc_version",
+      "name": "gnu_get_libc_version",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:htonl",
+      "name": "htonl",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:iconv",
+      "name": "iconv",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:iconv_close",
+      "name": "iconv_close",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:iconv_open",
+      "name": "iconv_open",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ioctl",
+      "name": "ioctl",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:iopl",
+      "name": "iopl",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:isalnum",
+      "name": "isalnum",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:isalpha",
+      "name": "isalpha",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:islower",
+      "name": "islower",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:isspace",
+      "name": "isspace",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:isupper",
+      "name": "isupper",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:iswalpha",
+      "name": "iswalpha",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:iswdigit",
+      "name": "iswdigit",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:isxdigit",
+      "name": "isxdigit",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:kill",
+      "name": "kill",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ldexp",
+      "name": "ldexp",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:listen",
+      "name": "listen",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:localtime",
+      "name": "localtime",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:localtime_r",
+      "name": "localtime_r",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:lockf",
+      "name": "lockf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:log",
+      "name": "log",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:log10",
+      "name": "log10",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:log1p",
+      "name": "log1p",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:log2",
+      "name": "log2",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:log2f",
+      "name": "log2f",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:logb",
+      "name": "logb",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:logf",
+      "name": "logf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:longjmp",
+      "name": "longjmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:lround",
+      "name": "lround",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:lseek",
+      "name": "lseek",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:lseek",
+      "name": "lseek",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:lseek64",
+      "name": "lseek64",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:madvise",
+      "name": "madvise",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:mallinfo",
+      "name": "mallinfo",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:malloc",
+      "name": "malloc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:malloc_usable_size",
+      "name": "malloc_usable_size",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mbrtowc",
+      "name": "mbrtowc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mbsnrtowcs",
+      "name": "mbsnrtowcs",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mbsrtowcs",
+      "name": "mbsrtowcs",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:memalign",
+      "name": "memalign",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:memchr",
+      "name": "memchr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:memcmp",
+      "name": "memcmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:memcpy",
+      "name": "memcpy",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.14"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:memcpy",
+      "name": "memcpy",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:memmove",
+      "name": "memmove",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:memset",
+      "name": "memset",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mkdir",
+      "name": "mkdir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mkfifo",
+      "name": "mkfifo",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mkstemp",
+      "name": "mkstemp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mlock",
+      "name": "mlock",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mmap",
+      "name": "mmap",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:mmap64",
+      "name": "mmap64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:modf",
+      "name": "modf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:modff",
+      "name": "modff",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mprotect",
+      "name": "mprotect",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:mremap",
+      "name": "mremap",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:msync",
+      "name": "msync",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:munlock",
+      "name": "munlock",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:munmap",
+      "name": "munmap",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:nanosleep",
+      "name": "nanosleep",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:nanosleep",
+      "name": "nanosleep",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:nftw",
+      "name": "nftw",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ntohl",
+      "name": "ntohl",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:open",
+      "name": "open",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:open",
+      "name": "open",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:open64",
+      "name": "open64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:open64",
+      "name": "open64",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:openat",
+      "name": "openat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:opendir",
+      "name": "opendir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:optarg",
+      "name": "optarg",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:optind",
+      "name": "optind",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pipe",
+      "name": "pipe",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pipe2",
+      "name": "pipe2",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.9"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:poll",
+      "name": "poll",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_fallocate",
+      "name": "posix_fallocate",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_madvise",
+      "name": "posix_madvise",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_memalign",
+      "name": "posix_memalign",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_spawn",
+      "name": "posix_spawn",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_spawn_file_actions_adddup2",
+      "name": "posix_spawn_file_actions_adddup2",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_spawn_file_actions_addopen",
+      "name": "posix_spawn_file_actions_addopen",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_spawn_file_actions_destroy",
+      "name": "posix_spawn_file_actions_destroy",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:posix_spawn_file_actions_init",
+      "name": "posix_spawn_file_actions_init",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pow",
+      "name": "pow",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:powf",
+      "name": "powf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ppoll",
+      "name": "ppoll",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pread",
+      "name": "pread",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pread64",
+      "name": "pread64",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:printf",
+      "name": "printf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:program_invocation_name",
+      "name": "program_invocation_name",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_attr_destroy",
+      "name": "pthread_attr_destroy",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_attr_init",
+      "name": "pthread_attr_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_attr_setstack",
+      "name": "pthread_attr_setstack",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_attr_setstacksize",
+      "name": "pthread_attr_setstacksize",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_cond_broadcast",
+      "name": "pthread_cond_broadcast",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.2"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_cond_destroy",
+      "name": "pthread_cond_destroy",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.2"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_cond_init",
+      "name": "pthread_cond_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.2"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_cond_signal",
+      "name": "pthread_cond_signal",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.2"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_cond_timedwait",
+      "name": "pthread_cond_timedwait",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.2"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_cond_wait",
+      "name": "pthread_cond_wait",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.2"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_condattr_init",
+      "name": "pthread_condattr_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_condattr_setpshared",
+      "name": "pthread_condattr_setpshared",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_create",
+      "name": "pthread_create",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_detach",
+      "name": "pthread_detach",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-libc:pthread_getaffinity_np",
+      "name": "pthread_getaffinity_np",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_getspecific",
+      "name": "pthread_getspecific",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_join",
+      "name": "pthread_join",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_key_create",
+      "name": "pthread_key_create",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_key_delete",
+      "name": "pthread_key_delete",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_kill",
+      "name": "pthread_kill",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutex_destroy",
+      "name": "pthread_mutex_destroy",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutex_init",
+      "name": "pthread_mutex_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutex_lock",
+      "name": "pthread_mutex_lock",
+      "quality": "TRANSLATED",
+      "soname": "libc.so.6",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutex_lock",
+      "name": "pthread_mutex_lock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutex_trylock",
+      "name": "pthread_mutex_trylock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutex_unlock",
+      "name": "pthread_mutex_unlock",
+      "quality": "TRANSLATED",
+      "soname": "libc.so.6",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutex_unlock",
+      "name": "pthread_mutex_unlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutexattr_destroy",
+      "name": "pthread_mutexattr_destroy",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutexattr_init",
+      "name": "pthread_mutexattr_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutexattr_setprotocol",
+      "name": "pthread_mutexattr_setprotocol",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutexattr_setpshared",
+      "name": "pthread_mutexattr_setpshared",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_mutexattr_settype",
+      "name": "pthread_mutexattr_settype",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_once",
+      "name": "pthread_once",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-bsd-core:pthread_once",
+      "name": "pthread_once",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlock_destroy",
+      "name": "pthread_rwlock_destroy",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlock_init",
+      "name": "pthread_rwlock_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlock_rdlock",
+      "name": "pthread_rwlock_rdlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-bsd-core:pthread_rwlock_rdlock",
+      "name": "pthread_rwlock_rdlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlock_tryrdlock",
+      "name": "pthread_rwlock_tryrdlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlock_trywrlock",
+      "name": "pthread_rwlock_trywrlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlock_unlock",
+      "name": "pthread_rwlock_unlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-bsd-core:pthread_rwlock_unlock",
+      "name": "pthread_rwlock_unlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlock_wrlock",
+      "name": "pthread_rwlock_wrlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-bsd-core:pthread_rwlock_wrlock",
+      "name": "pthread_rwlock_wrlock",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlockattr_destroy",
+      "name": "pthread_rwlockattr_destroy",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlockattr_init",
+      "name": "pthread_rwlockattr_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pthread_rwlockattr_setpshared",
+      "name": "pthread_rwlockattr_setpshared",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_self",
+      "name": "pthread_self",
+      "quality": "EXACT",
+      "soname": "libc.so.6",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_self",
+      "name": "pthread_self",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "weak",
+      "implementation": "musl-libc:pthread_setaffinity_np",
+      "name": "pthread_setaffinity_np",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.3.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_setspecific",
+      "name": "pthread_setspecific",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_sigmask",
+      "name": "pthread_sigmask",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_spin_destroy",
+      "name": "pthread_spin_destroy",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_spin_init",
+      "name": "pthread_spin_init",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_spin_lock",
+      "name": "pthread_spin_lock",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_spin_trylock",
+      "name": "pthread_spin_trylock",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pthread_spin_unlock",
+      "name": "pthread_spin_unlock",
+      "quality": "EXACT",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:putc",
+      "name": "putc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:putchar",
+      "name": "putchar",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:puts",
+      "name": "puts",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:putwc",
+      "name": "putwc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:pwrite",
+      "name": "pwrite",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:pwrite64",
+      "name": "pwrite64",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:qsort",
+      "name": "qsort",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:raise",
+      "name": "raise",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:raise",
+      "name": "raise",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:rand",
+      "name": "rand",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:read",
+      "name": "read",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:read",
+      "name": "read",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:readdir",
+      "name": "readdir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:readlink",
+      "name": "readlink",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:readlinkat",
+      "name": "readlinkat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:realloc",
+      "name": "realloc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:realpath",
+      "name": "realpath",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:recv",
+      "name": "recv",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:recv",
+      "name": "recv",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:recvmsg",
+      "name": "recvmsg",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:recvmsg",
+      "name": "recvmsg",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:remove",
+      "name": "remove",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:rewind",
+      "name": "rewind",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:rewinddir",
+      "name": "rewinddir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:rmdir",
+      "name": "rmdir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:round",
+      "name": "round",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:roundf",
+      "name": "roundf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:scandir",
+      "name": "scandir",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:scandir64",
+      "name": "scandir64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sched_get_priority_max",
+      "name": "sched_get_priority_max",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sched_get_priority_min",
+      "name": "sched_get_priority_min",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sched_getaffinity",
+      "name": "sched_getaffinity",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sched_getcpu",
+      "name": "sched_getcpu",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.6"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sched_setaffinity",
+      "name": "sched_setaffinity",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3.4"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sched_yield",
+      "name": "sched_yield",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:select",
+      "name": "select",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:sem_destroy",
+      "name": "sem_destroy",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:sem_init",
+      "name": "sem_init",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:sem_post",
+      "name": "sem_post",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:sem_timedwait",
+      "name": "sem_timedwait",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:sem_trywait",
+      "name": "sem_trywait",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-bsd-core:sem_wait",
+      "name": "sem_wait",
+      "quality": "TRANSLATED",
+      "soname": "libpthread.so.0",
+      "test": "compat/pthread_abi",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:send",
+      "name": "send",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sendmsg",
+      "name": "sendmsg",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sendmsg",
+      "name": "sendmsg",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:setenv",
+      "name": "setenv",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:setmntent",
+      "name": "setmntent",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:setrlimit",
+      "name": "setrlimit",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:setsid",
+      "name": "setsid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:setsockopt",
+      "name": "setsockopt",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:shm_open",
+      "name": "shm_open",
+      "quality": "UNSUPPORTED",
+      "soname": "librt.so.1",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:shm_unlink",
+      "name": "shm_unlink",
+      "quality": "UNSUPPORTED",
+      "soname": "librt.so.1",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:shmat",
+      "name": "shmat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:shmctl",
+      "name": "shmctl",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:shmdt",
+      "name": "shmdt",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:shmget",
+      "name": "shmget",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:shutdown",
+      "name": "shutdown",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sigaction",
+      "name": "sigaction",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sigaddset",
+      "name": "sigaddset",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sigdelset",
+      "name": "sigdelset",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sigemptyset",
+      "name": "sigemptyset",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sigfillset",
+      "name": "sigfillset",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sigismember",
+      "name": "sigismember",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:signal",
+      "name": "signal",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sigprocmask",
+      "name": "sigprocmask",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sin",
+      "name": "sin",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sincos",
+      "name": "sincos",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sincosf",
+      "name": "sincosf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sinf",
+      "name": "sinf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sinh",
+      "name": "sinh",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sleep",
+      "name": "sleep",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:snprintf",
+      "name": "snprintf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:socket",
+      "name": "socket",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:socketpair",
+      "name": "socketpair",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sprintf",
+      "name": "sprintf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sqrt",
+      "name": "sqrt",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sqrtf",
+      "name": "sqrtf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:srand",
+      "name": "srand",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sscanf",
+      "name": "sscanf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:statfs",
+      "name": "statfs",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:statfs",
+      "name": "statfs64",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:stderr",
+      "name": "stderr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:stdin",
+      "name": "stdin",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:stdout",
+      "name": "stdout",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:stpcpy",
+      "name": "stpcpy",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strcasecmp",
+      "name": "strcasecmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strcat",
+      "name": "strcat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strchr",
+      "name": "strchr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strcmp",
+      "name": "strcmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strcoll",
+      "name": "strcoll",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strcpy",
+      "name": "strcpy",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strcspn",
+      "name": "strcspn",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strdup",
+      "name": "strdup",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strerror",
+      "name": "strerror",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strerror_r",
+      "name": "strerror_r",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strftime",
+      "name": "strftime",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strlen",
+      "name": "strlen",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strncasecmp",
+      "name": "strncasecmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strncat",
+      "name": "strncat",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strncmp",
+      "name": "strncmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strncpy",
+      "name": "strncpy",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strnlen",
+      "name": "strnlen",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strpbrk",
+      "name": "strpbrk",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strrchr",
+      "name": "strrchr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strsep",
+      "name": "strsep",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strsignal",
+      "name": "strsignal",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strspn",
+      "name": "strspn",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strstr",
+      "name": "strstr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtod",
+      "name": "strtod",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtof",
+      "name": "strtof",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtok",
+      "name": "strtok",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtok_r",
+      "name": "strtok_r",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtol",
+      "name": "strtol",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtold_l",
+      "name": "strtold_l",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.3"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtoll",
+      "name": "strtoll",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtoul",
+      "name": "strtoul",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:strtoull",
+      "name": "strtoull",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:symlink",
+      "name": "symlink",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:syscall",
+      "name": "syscall",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sysconf",
+      "name": "sysconf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:sysinfo",
+      "name": "sysinfo",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:syslog",
+      "name": "syslog",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:tan",
+      "name": "tan",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:tanf",
+      "name": "tanf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:tanh",
+      "name": "tanh",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:time",
+      "name": "time",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:tolower",
+      "name": "tolower",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:toupper",
+      "name": "toupper",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:trunc",
+      "name": "trunc",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:truncf",
+      "name": "truncf",
+      "quality": "UNSUPPORTED",
+      "soname": "libm.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:umask",
+      "name": "umask",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:uname",
+      "name": "uname",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ungetc",
+      "name": "ungetc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:ungetwc",
+      "name": "ungetwc",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:unlink",
+      "name": "unlink",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:unsetenv",
+      "name": "unsetenv",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:usleep",
+      "name": "usleep",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:vfork",
+      "name": "vfork",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:vfprintf",
+      "name": "vfprintf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:vsnprintf",
+      "name": "vsnprintf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:vsprintf",
+      "name": "vsprintf",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wait",
+      "name": "wait",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wait4",
+      "name": "wait4",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:waitpid",
+      "name": "waitpid",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:waitpid",
+      "name": "waitpid",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:warnx",
+      "name": "warnx",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wcrtomb",
+      "name": "wcrtomb",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wcscmp",
+      "name": "wcscmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wcslen",
+      "name": "wcslen",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wcsncmp",
+      "name": "wcsncmp",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wcsnrtombs",
+      "name": "wcsnrtombs",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wcstoul",
+      "name": "wcstoul",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wctob",
+      "name": "wctob",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wmemchr",
+      "name": "wmemchr",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wmemcpy",
+      "name": "wmemcpy",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wmemmove",
+      "name": "wmemmove",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:wmemset",
+      "name": "wmemset",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:write",
+      "name": "write",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:write",
+      "name": "write",
+      "quality": "UNSUPPORTED",
+      "soname": "libpthread.so.0",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    },
+    {
+      "binding": "global",
+      "implementation": "musl-libc:writev",
+      "name": "writev",
+      "quality": "UNSUPPORTED",
+      "soname": "libc.so.6",
+      "test": "tools/nvidia-scan:provider-analysis",
+      "version": "GLIBC_2.2.5"
+    }
+  ]
+}

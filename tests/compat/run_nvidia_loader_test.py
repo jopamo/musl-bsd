@@ -11,8 +11,18 @@ from nvidia_test_support import (
     fail,
     installed_dso,
     library_directory,
+    verify_constructor_dependencies,
+    versioned_undefined_symbols,
 )
 from run_loader_tests import prepare_fixture, run
+
+
+MALLOC_HOOK_PROBES = {
+    "__free_hook",
+    "__malloc_hook",
+    "__memalign_hook",
+    "__realloc_hook",
+}
 
 
 def exported_symbol(readelf, path, predicate):
@@ -49,6 +59,32 @@ def weak_undefined_symbols(readelf, *paths):
     return sorted(symbols)
 
 
+def verify_optional_malloc_hook_probes(readelf, glcore):
+    undefined = {
+        fields[7].split("@", 1)[0]
+        for fields in dynamic_symbols(readelf, glcore)
+        if len(fields) >= 8 and fields[6] == "UND"
+    }
+    imported = MALLOC_HOOK_PROBES & undefined
+    if imported:
+        fail(
+            f"{glcore}: malloc hooks became ELF requirements: "
+            + ", ".join(sorted(imported))
+        )
+
+    contents = glcore.read_bytes()
+    missing = {
+        name
+        for name in MALLOC_HOOK_PROBES
+        if name.encode("ascii") + b"\0" not in contents
+    }
+    if missing:
+        fail(
+            f"{glcore}: expected malloc-hook probes are absent: "
+            + ", ".join(sorted(missing))
+        )
+
+
 def main():
     if len(sys.argv) != 7:
         fail("invalid runner arguments")
@@ -61,6 +97,10 @@ def main():
     glcore = installed_dso(library_dir, "libnvidia-glcore.so.*")
     gpucomp = installed_dso(library_dir, "libnvidia-gpucomp.so.*")
     nvidia_tls = installed_dso(library_dir, "libnvidia-tls.so.*")
+    verify_optional_malloc_hook_probes(readelf, glcore)
+    verify_constructor_dependencies(
+        readelf, glcore, gpucomp, nvidia_tls
+    )
     glcore_symbol = exported_symbol(
         readelf, glcore, lambda name: name.startswith("_nv") and name.endswith("glcore")
     )
@@ -68,6 +108,11 @@ def main():
         readelf, gpucomp, lambda name: name == "nvGetCompilerInterface"
     )
     weak_symbols = weak_undefined_symbols(readelf, glcore, gpucomp, nvidia_tls)
+    versioned_symbols = versioned_undefined_symbols(
+        readelf, glcore, gpucomp, nvidia_tls
+    )
+    if not versioned_symbols:
+        fail("installed NVIDIA graph has no strong GLIBC-versioned imports")
 
     with tempfile.TemporaryDirectory(
         prefix="musl-bsd NVIDIA loader "

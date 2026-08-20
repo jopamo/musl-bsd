@@ -1,0 +1,6 @@
+GLIBC_2.2.5 {
+	global:
+		loader_versioned_symbol;
+	local:
+		*;
+};

@@ -26,6 +26,14 @@ ABI_EQUALS(pthread_rwlockattr, pthread_rwlockattr_t,
 ABI_EQUALS(pthread_once, pthread_once_t, GLIBC_PTHREAD_ONCE_SIZE,
 	   GLIBC_PTHREAD_ONCE_ALIGN);
 ABI_EQUALS(sem, sem_t, GLIBC_SEM_SIZE, GLIBC_SEM_ALIGN);
+ABI_EQUALS(pthread_t, pthread_t, GLIBC_PTHREAD_T_SIZE,
+	   GLIBC_PTHREAD_T_ALIGN);
+ABI_EQUALS(pthread_key, pthread_key_t, GLIBC_PTHREAD_KEY_SIZE,
+	   GLIBC_PTHREAD_KEY_ALIGN);
+ABI_EQUALS(pthread_spin, pthread_spinlock_t, GLIBC_PTHREAD_SPIN_SIZE,
+	   GLIBC_PTHREAD_SPIN_ALIGN);
+ABI_EQUALS(cpu_set, cpu_set_t, GLIBC_CPU_SET_SIZE, GLIBC_CPU_SET_ALIGN);
+ABI_EQUALS(sigset, sigset_t, GLIBC_SIGSET_SIZE, GLIBC_SIGSET_ALIGN);
 
 typedef char glibc_mutex_kind_offset_matches[
 	(offsetof(pthread_mutex_t, __data.__kind) ==

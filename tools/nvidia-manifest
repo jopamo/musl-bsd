@@ -1,0 +1,441 @@
+#!/usr/bin/env python3
+"""Build and validate the NVIDIA/CUDA symbol compatibility manifest."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import sys
+import tempfile
+from typing import Any
+
+
+SCHEMA_VERSION = 1
+QUALITIES = {"EXACT", "TRANSLATED", "DEGRADED", "STUB", "UNSUPPORTED"}
+SYMBOL_FIELDS = {
+    "name",
+    "version",
+    "soname",
+    "binding",
+    "implementation",
+    "test",
+    "quality",
+}
+
+
+class ManifestError(Exception):
+    """Manifest input is incomplete, malformed, or inconsistent."""
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ManifestError(f"{path}: cannot read JSON: {error}") from error
+    if not isinstance(value, dict):
+        raise ManifestError(f"{path}: top-level JSON value must be an object")
+    return value
+
+
+def _require_string(item: dict[str, Any], field: str, context: str) -> str:
+    value = item.get(field)
+    if not isinstance(value, str) or not value:
+        raise ManifestError(f"{context}: {field} must be a non-empty string")
+    return value
+
+
+def _require_bool(item: dict[str, Any], field: str, context: str) -> bool:
+    value = item.get(field)
+    if not isinstance(value, bool):
+        raise ManifestError(f"{context}: {field} must be a boolean")
+    return value
+
+
+def _inventory_key(item: dict[str, Any], context: str) -> tuple[str, str, str, str]:
+    name = _require_string(item, "name", context)
+    version = _require_string(item, "version", context)
+    library = _require_string(item, "library", context)
+    binding = _require_string(item, "binding", context)
+    _require_bool(item, "hidden", context)
+    if not version.startswith("GLIBC_") or version == "GLIBC_PRIVATE":
+        raise ManifestError(f"{context}: unsupported symbol version {version}")
+    if binding not in {"global", "weak"}:
+        raise ManifestError(f"{context}: unsupported binding {binding}")
+    return name, version, library, binding
+
+
+def _manifest_key(item: dict[str, Any], context: str) -> tuple[str, str, str, str]:
+    return (
+        _require_string(item, "name", context),
+        _require_string(item, "version", context),
+        _require_string(item, "soname", context),
+        _require_string(item, "binding", context),
+    )
+
+
+def _provider_implementation(item: dict[str, Any], context: str) -> str:
+    provided_symbol = _require_string(item, "provided_symbol", context)
+    providers = item.get("providers")
+    if (
+        not isinstance(providers, list)
+        or not providers
+        or any(not isinstance(provider, str) or not provider for provider in providers)
+    ):
+        raise ManifestError(f"{context}: providers must be a non-empty string list")
+    names = {Path(path).name for path in providers}
+    if any(name.startswith("libmusl-bsd-core.so") for name in names):
+        provider = "musl-bsd-core"
+    elif "libc.so" in names:
+        provider = "musl-libc"
+    elif len(names) == 1:
+        provider = f"elf-provider[{next(iter(names))}]"
+    else:
+        raise ManifestError(
+            f"{context}: provider precedence is ambiguous for {sorted(names)}"
+        )
+    return f"{provider}:{provided_symbol}"
+
+
+def _require_list(value: Any, context: str) -> list[Any]:
+    if not isinstance(value, list):
+        raise ManifestError(f"{context} must be an array")
+    return value
+
+
+def _inventory_requirements(
+    inventory: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[tuple[str, str, str, str], str]]:
+    summary = inventory.get("summary")
+    analysis = inventory.get("provider_analysis")
+    if not isinstance(summary, dict) or not isinstance(analysis, dict):
+        raise ManifestError(
+            "inventory must contain summary and provider_analysis objects"
+        )
+    requirements = _require_list(
+        summary.get("required_glibc_symbols"),
+        "summary.required_glibc_symbols",
+    )
+    if analysis.get("matching_policy") != "musl-name-based-runtime-resolution":
+        raise ManifestError("inventory uses an unsupported provider matching policy")
+    if analysis.get("missing_count") != 0:
+        raise ManifestError("inventory has unresolved mandatory provider requirements")
+
+    provided = _require_list(
+        analysis.get("provided"), "provider_analysis.provided"
+    )
+    unresolved_weak = _require_list(
+        analysis.get("unresolved_weak"),
+        "provider_analysis.unresolved_weak",
+    )
+    if analysis.get("provided_count") != len(provided):
+        raise ManifestError("provider_analysis.provided_count is inconsistent")
+    if analysis.get("unresolved_weak_count") != len(unresolved_weak):
+        raise ManifestError(
+            "provider_analysis.unresolved_weak_count is inconsistent"
+        )
+    implementations: dict[tuple[str, str, str, str], str] = {}
+    outcomes = [
+        (
+            item,
+            _provider_implementation(item, f"provider_analysis.provided[{index}]"),
+        )
+        for index, item in enumerate(provided)
+    ]
+    outcomes.extend(
+        (item, "optional-unresolved")
+        for item in unresolved_weak
+    )
+    for index, (item, implementation) in enumerate(outcomes):
+        if not isinstance(item, dict):
+            raise ManifestError(f"provider outcome {index} must be an object")
+        key = _inventory_key(item, f"provider outcome {index}")
+        if key in implementations:
+            raise ManifestError(f"duplicate provider outcome for {key}")
+        implementations[key] = implementation
+
+    normalized: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    for index, item in enumerate(requirements):
+        if not isinstance(item, dict):
+            raise ManifestError(f"requirement {index} must be an object")
+        key = _inventory_key(item, f"requirement {index}")
+        if key in seen:
+            raise ManifestError(f"duplicate inventory requirement for {key}")
+        if key not in implementations:
+            raise ManifestError(f"requirement has no provider outcome: {key}")
+        seen.add(key)
+        normalized.append(item)
+    if seen != set(implementations):
+        raise ManifestError("provider analysis contains non-requirement outcomes")
+    return normalized, implementations
+
+
+def _source_roots(inventory: dict[str, Any]) -> list[dict[str, Any]]:
+    roots = _require_list(inventory.get("roots"), "roots")
+    objects = _require_list(inventory.get("objects"), "objects")
+    by_path = {
+        item.get("path"): item
+        for item in objects
+        if isinstance(item, dict) and isinstance(item.get("path"), str)
+    }
+    result = []
+    for index, root in enumerate(roots):
+        if not isinstance(root, str) or not root:
+            raise ManifestError(f"roots[{index}] must be a non-empty string")
+        report = by_path.get(root)
+        if report is None:
+            raise ManifestError(f"root has no object report: {root}")
+        soname = report.get("soname")
+        if soname is not None and (not isinstance(soname, str) or not soname):
+            raise ManifestError(f"{root}: invalid SONAME")
+        result.append({"file": Path(root).name, "soname": soname})
+    return sorted(result, key=lambda item: (item["file"], item["soname"] or ""))
+
+
+def _missing_dependencies(inventory: dict[str, Any]) -> list[dict[str, str]]:
+    result = []
+    for index, item in enumerate(
+        _require_list(inventory.get("missing_dependencies"), "missing_dependencies")
+    ):
+        if not isinstance(item, dict):
+            raise ManifestError(f"missing dependency {index} must be an object")
+        source = _require_string(item, "from", f"missing dependency {index}")
+        name = _require_string(item, "name", f"missing dependency {index}")
+        result.append({"from": Path(source).name, "name": name})
+    return sorted(result, key=lambda item: (item["from"], item["name"]))
+
+
+def build_manifest(
+    inventory: dict[str, Any],
+    base_manifest: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    requirements, implementations = _inventory_requirements(inventory)
+    policies: dict[tuple[str, str, str, str], tuple[str, str]] = {}
+    if base_manifest is not None:
+        validate_manifest(base_manifest)
+        policies = {
+            _manifest_key(item, "base manifest symbol"): (
+                item["test"],
+                item["quality"],
+            )
+            for item in base_manifest["symbols"]
+        }
+    symbols = []
+    for index, item in enumerate(requirements):
+        key = _inventory_key(item, f"requirement {index}")
+        name, version, soname, binding = key
+        test, quality = policies.get(
+            key,
+            ("tools/nvidia-scan:provider-analysis", "UNSUPPORTED"),
+        )
+        symbols.append(
+            {
+                "name": name,
+                "version": version,
+                "soname": soname,
+                "binding": binding,
+                "implementation": implementations[key],
+                "test": test,
+                "quality": quality,
+            }
+        )
+    symbols.sort(key=lambda item: _manifest_key(item, "generated symbol"))
+    return {
+        "schema": SCHEMA_VERSION,
+        "scope": "observed NVIDIA/CUDA GLIBC-versioned undefined symbols",
+        "matching_policy": "musl-name-based-runtime-resolution",
+        "source_roots": _source_roots(inventory),
+        "missing_dependencies": _missing_dependencies(inventory),
+        "symbols": symbols,
+    }
+
+
+def validate_manifest(manifest: dict[str, Any]) -> None:
+    if set(manifest) != {
+        "schema",
+        "scope",
+        "matching_policy",
+        "source_roots",
+        "missing_dependencies",
+        "symbols",
+    }:
+        raise ManifestError("manifest has missing or unknown top-level fields")
+    if manifest["schema"] != SCHEMA_VERSION:
+        raise ManifestError(f"unsupported manifest schema {manifest['schema']!r}")
+    if manifest["scope"] != "observed NVIDIA/CUDA GLIBC-versioned undefined symbols":
+        raise ManifestError("manifest scope is not NVIDIA/CUDA requirements")
+    if manifest["matching_policy"] != "musl-name-based-runtime-resolution":
+        raise ManifestError("manifest uses an unsupported matching policy")
+
+    roots = _require_list(manifest["source_roots"], "source_roots")
+    normalized_roots = []
+    for index, item in enumerate(roots):
+        if not isinstance(item, dict) or set(item) != {"file", "soname"}:
+            raise ManifestError(f"source_roots[{index}] has invalid fields")
+        file_name = _require_string(item, "file", f"source_roots[{index}]")
+        if Path(file_name).name != file_name:
+            raise ManifestError(f"source_roots[{index}].file is not a basename")
+        soname = item["soname"]
+        if soname is not None and (not isinstance(soname, str) or not soname):
+            raise ManifestError(f"source_roots[{index}].soname is invalid")
+        if isinstance(soname, str) and Path(soname).name != soname:
+            raise ManifestError(f"source_roots[{index}].soname is not a basename")
+        normalized_roots.append((file_name, soname or ""))
+    if normalized_roots != sorted(normalized_roots):
+        raise ManifestError("source_roots are not sorted")
+    if len(normalized_roots) != len(set(normalized_roots)):
+        raise ManifestError("source_roots contain duplicates")
+
+    missing = _require_list(manifest["missing_dependencies"], "missing_dependencies")
+    normalized_missing = []
+    for index, item in enumerate(missing):
+        if not isinstance(item, dict) or set(item) != {"from", "name"}:
+            raise ManifestError(f"missing_dependencies[{index}] has invalid fields")
+        normalized_missing.append(
+            (
+                _require_string(item, "from", f"missing_dependencies[{index}]"),
+                _require_string(item, "name", f"missing_dependencies[{index}]"),
+            )
+        )
+    if normalized_missing != sorted(normalized_missing):
+        raise ManifestError("missing_dependencies are not sorted")
+    if len(normalized_missing) != len(set(normalized_missing)):
+        raise ManifestError("missing_dependencies contain duplicates")
+
+    symbols = _require_list(manifest["symbols"], "symbols")
+    keys = []
+    for index, item in enumerate(symbols):
+        context = f"symbols[{index}]"
+        if not isinstance(item, dict) or set(item) != SYMBOL_FIELDS:
+            raise ManifestError(f"{context} has missing or unknown fields")
+        key = _manifest_key(item, context)
+        name, version, soname, binding = key
+        if "@" in name:
+            raise ManifestError(f"{context}: symbol name contains a version suffix")
+        if not version.startswith("GLIBC_") or version == "GLIBC_PRIVATE":
+            raise ManifestError(f"{context}: unsupported symbol version {version}")
+        if binding not in {"global", "weak"}:
+            raise ManifestError(f"{context}: unsupported binding {binding}")
+        if Path(soname).name != soname:
+            raise ManifestError(f"{context}: SONAME is not a basename")
+        _require_string(item, "implementation", context)
+        _require_string(item, "test", context)
+        if item["quality"] not in QUALITIES:
+            raise ManifestError(f"{context}: invalid quality {item['quality']!r}")
+        keys.append(key)
+    if keys != sorted(keys):
+        raise ManifestError("symbols are not sorted by name/version/SONAME/binding")
+    if len(keys) != len(set(keys)):
+        raise ManifestError("manifest contains duplicate symbol requirements")
+
+
+def check_inventory(manifest: dict[str, Any], inventory: dict[str, Any]) -> None:
+    validate_manifest(manifest)
+    expected = build_manifest(inventory)
+    expected_keys = {
+        _manifest_key(item, "generated symbol") for item in expected["symbols"]
+    }
+    actual_keys = {
+        _manifest_key(item, "manifest symbol") for item in manifest["symbols"]
+    }
+    missing = sorted(expected_keys - actual_keys)
+    extra = sorted(actual_keys - expected_keys)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append(f"missing requirements: {missing}")
+        if extra:
+            details.append(f"irrelevant requirements: {extra}")
+        raise ManifestError("; ".join(details))
+    if manifest["source_roots"] != expected["source_roots"]:
+        raise ManifestError("manifest source roots do not match inventory")
+    if manifest["missing_dependencies"] != expected["missing_dependencies"]:
+        raise ManifestError("manifest missing-dependency record does not match inventory")
+    expected_implementations = {
+        _manifest_key(item, "generated symbol"): item["implementation"]
+        for item in expected["symbols"]
+    }
+    for item in manifest["symbols"]:
+        key = _manifest_key(item, "manifest symbol")
+        if item["implementation"] != expected_implementations[key]:
+            raise ManifestError(f"implementation does not match provider analysis: {key}")
+
+
+def _write_json(path: str, value: dict[str, Any]) -> None:
+    rendered = json.dumps(value, indent=2, sort_keys=True) + "\n"
+    if path == "-":
+        sys.stdout.write(rendered)
+        return
+    destination = Path(path)
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=destination.parent,
+            prefix=f".{destination.name}.",
+            delete=False,
+        ) as stream:
+            stream.write(rendered)
+            temporary = Path(stream.name)
+        os.replace(temporary, destination)
+    except OSError as error:
+        try:
+            temporary.unlink()
+        except (NameError, OSError):
+            pass
+        raise ManifestError(f"{destination}: cannot write manifest: {error}") from error
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="build or validate the NVIDIA/CUDA symbol manifest"
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    generate = subparsers.add_parser("generate")
+    generate.add_argument("inventory", type=Path)
+    generate.add_argument("-o", "--output", default="-")
+    generate.add_argument(
+        "--base",
+        type=Path,
+        help="preserve test and quality policy for unchanged requirements",
+    )
+
+    validate = subparsers.add_parser("validate")
+    validate.add_argument("manifest", type=Path)
+
+    check = subparsers.add_parser("check")
+    check.add_argument("manifest", type=Path)
+    check.add_argument("inventory", type=Path)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
+    try:
+        if args.command == "generate":
+            base_manifest = _load_json(args.base) if args.base else None
+            manifest = build_manifest(
+                _load_json(args.inventory),
+                base_manifest,
+            )
+            validate_manifest(manifest)
+            _write_json(args.output, manifest)
+        elif args.command == "validate":
+            validate_manifest(_load_json(args.manifest))
+        else:
+            check_inventory(
+                _load_json(args.manifest),
+                _load_json(args.inventory),
+            )
+    except ManifestError as error:
+        print(f"nvidia-manifest: {error}", file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
