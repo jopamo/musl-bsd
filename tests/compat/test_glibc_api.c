@@ -30,7 +30,6 @@ extern char* __strtok_r(char* s, const char* delim, char** save_ptr);
 extern int dladdr1(const void* address, Dl_info* info, void** extra_info, int flags);
 extern int backtrace(void** buffer, int size);
 extern int __xstat64(int ver, const char* path, struct stat64* buf);
-extern int __lxstat64(int ver, const char* path, struct stat64* buf);
 extern size_t __strftime_l(char* restrict s,
                            size_t n,
                            const char* restrict format,
@@ -259,8 +258,6 @@ int main(void) {
     CHECK(__xstat64(0, path_a, &st) == 0);
     CHECK(S_ISREG(st.st_mode));
     CHECK(symlink(path_a, path_b) == 0);
-    CHECK(__lxstat64(0, path_b, &st) == 0);
-    CHECK(S_ISLNK(st.st_mode));
 
     fp = fopen64(path_a, "r+");
     CHECK(fp != NULL);

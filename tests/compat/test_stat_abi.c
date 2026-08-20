@@ -14,6 +14,7 @@ extern int __fxstat(int version, int fd, struct stat* status);
 extern int __fxstat64(int version, int fd, struct stat* status);
 extern int __fxstatat(int version, int dirfd, const char* path, struct stat* status, int flags);
 extern int __lxstat(int version, const char* path, struct stat* status);
+extern int __lxstat64(int version, const char* path, struct stat* status);
 
 typedef int (*fxstat_function)(int version, int fd, struct stat* status);
 typedef int (*fxstatat_function)(int version, int dirfd, const char* path, struct stat* status, int flags);
@@ -23,6 +24,17 @@ struct stat_adapter {
     const char* name;
     fxstat_function function;
     int from_compatibility_core;
+};
+
+struct path_stat_adapter {
+    const char* name;
+    path_stat_function function;
+    int from_compatibility_core;
+};
+
+static const struct path_stat_adapter path_stat_adapters[] = {
+    {"__lxstat", __lxstat, 0},
+    {"__lxstat64", __lxstat64, 1},
 };
 
 #if defined(__x86_64__) && __SIZEOF_POINTER__ == 8
@@ -155,6 +167,15 @@ static int verify_path_stat_success(path_stat_function function,
     return 0;
 }
 
+static int verify_path_stat_failure(path_stat_function function, int version, const char* path, int expected_errno) {
+    struct stat status;
+
+    errno = 0;
+    CHECK(function(version, path, &status) == -1);
+    CHECK(errno == expected_errno);
+    return 0;
+}
+
 static int verify_path_stat_functions(void) {
 #define CHECK_PATH(condition)                                               \
     do {                                                                    \
@@ -212,15 +233,24 @@ static int verify_path_stat_functions(void) {
     CHECK_PATH(length > 0);
     CHECK_PATH((size_t)length < sizeof(missing_path));
 
-    for (index = 0; index < sizeof(versions) / sizeof(versions[0]); ++index) {
+    for (index = 0; index < sizeof(versions) / sizeof(versions[0]); ++index)
         CHECK_PATH(verify_fxstatat_success(__fxstatat, versions[index], directory_fd, "target", 0, &expected_target,
                                            EDOM + (int)index) == 0);
-        CHECK_PATH(
-            verify_path_stat_success(__lxstat, versions[index], link_path, &expected_link, ENFILE + (int)index) == 0);
+
+    for (size_t function_index = 0; function_index < sizeof(path_stat_adapters) / sizeof(path_stat_adapters[0]);
+         ++function_index) {
+        for (index = 0; index < sizeof(versions) / sizeof(versions[0]); ++index) {
+            CHECK_PATH(verify_path_stat_success(path_stat_adapters[function_index].function, versions[index], link_path,
+                                                &expected_link, ENFILE + (int)index) == 0);
+        }
+        CHECK_PATH(verify_path_stat_success(path_stat_adapters[function_index].function, 1, target_path,
+                                            &expected_target, EBUSY) == 0);
+        CHECK_PATH(verify_path_stat_success(path_stat_adapters[function_index].function, 1, dangling_path,
+                                            &expected_dangling, ECHILD) == 0);
+        CHECK_PATH(verify_path_stat_failure(path_stat_adapters[function_index].function, 1, nested_path, ENOTDIR) == 0);
+        CHECK_PATH(verify_path_stat_failure(path_stat_adapters[function_index].function, 1, missing_path, ENOENT) == 0);
     }
 
-    CHECK_PATH(verify_path_stat_success(__lxstat, 1, target_path, &expected_target, EBUSY) == 0);
-    CHECK_PATH(verify_path_stat_success(__lxstat, 1, dangling_path, &expected_dangling, ECHILD) == 0);
     CHECK_PATH(
         verify_fxstatat_success(__fxstatat, 1, directory_fd, "link", AT_SYMLINK_NOFOLLOW, &expected_link, ENOSPC) == 0);
     CHECK_PATH(verify_fxstatat_success(__fxstatat, 1, directory_fd, "link", 0, &expected_target, ENOTTY) == 0);
@@ -228,12 +258,6 @@ static int verify_path_stat_functions(void) {
 
     CHECK_PATH(verify_fxstatat_success(__fxstatat, 1, -1, target_path, 0, &expected_target, EBUSY) == 0);
 
-    errno = 0;
-    CHECK_PATH(__lxstat(1, nested_path, &status) == -1);
-    CHECK_PATH(errno == ENOTDIR);
-    errno = 0;
-    CHECK_PATH(__lxstat(1, missing_path, &status) == -1);
-    CHECK_PATH(errno == ENOENT);
     errno = 0;
     CHECK_PATH(__fxstatat(1, directory_fd, "missing", &status, 0) == -1);
     CHECK_PATH(errno == ENOENT);
@@ -289,7 +313,10 @@ int main(void) {
                               adapters[index].from_compatibility_core) == 0);
     }
     CHECK(verify_provider("__fxstatat", (const void*)__fxstatat, 0) == 0);
-    CHECK(verify_provider("__lxstat", (const void*)__lxstat, 0) == 0);
+    for (index = 0; index < sizeof(path_stat_adapters) / sizeof(path_stat_adapters[0]); ++index) {
+        CHECK(verify_provider(path_stat_adapters[index].name, (const void*)path_stat_adapters[index].function,
+                              path_stat_adapters[index].from_compatibility_core) == 0);
+    }
 
     file_fd = mkstemp(path);
     CHECK(file_fd >= 0);
