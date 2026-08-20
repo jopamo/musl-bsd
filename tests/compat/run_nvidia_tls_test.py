@@ -5,20 +5,12 @@ from pathlib import Path
 import subprocess
 import sys
 
-from nvidia_test_support import fail, installed_dso, library_directory
-
-
-def dynamic_symbols(readelf, path):
-    result = subprocess.run(
-        [readelf, "--dyn-syms", "-W", str(path)],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-    )
-    if result.returncode != 0:
-        fail(f"cannot inspect dynamic symbols in {path}", result)
-    return [line.split() for line in result.stdout.splitlines()]
+from nvidia_test_support import (
+    dynamic_symbols,
+    fail,
+    installed_dso,
+    library_directory,
+)
 
 
 def tls_symbol(readelf, path):

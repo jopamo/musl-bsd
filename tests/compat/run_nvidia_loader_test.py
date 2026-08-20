@@ -6,20 +6,51 @@ from pathlib import Path
 import sys
 import tempfile
 
-from nvidia_test_support import fail, installed_dso, library_directory
+from nvidia_test_support import (
+    dynamic_symbols,
+    fail,
+    installed_dso,
+    library_directory,
+)
 from run_loader_tests import prepare_fixture, run
 
 
+def exported_symbol(readelf, path, predicate):
+    symbols = {
+        fields[7].split("@", 1)[0]
+        for fields in dynamic_symbols(readelf, path)
+        if (
+            len(fields) >= 8
+            and fields[3] in {"FUNC", "OBJECT"}
+            and fields[4] == "GLOBAL"
+            and fields[5] == "DEFAULT"
+            and fields[6] != "UND"
+            and predicate(fields[7].split("@", 1)[0])
+        )
+    }
+    if not symbols:
+        fail(f"{path}: no suitable visibility-test export")
+    return sorted(symbols)[0]
+
+
 def main():
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 7:
         fail("invalid runner arguments")
     loader, raw_target, core, facade_dir = (
         Path(value).resolve() for value in sys.argv[1:5]
     )
-    patchelf = sys.argv[5]
+    readelf = sys.argv[5]
+    patchelf = sys.argv[6]
     library_dir = library_directory()
     glcore = installed_dso(library_dir, "libnvidia-glcore.so.*")
+    gpucomp = installed_dso(library_dir, "libnvidia-gpucomp.so.*")
     nvidia_tls = installed_dso(library_dir, "libnvidia-tls.so.*")
+    glcore_symbol = exported_symbol(
+        readelf, glcore, lambda name: name.startswith("_nv") and name.endswith("glcore")
+    )
+    gpucomp_symbol = exported_symbol(
+        readelf, gpucomp, lambda name: name == "nvGetCompilerInterface"
+    )
 
     with tempfile.TemporaryDirectory(
         prefix="musl-bsd NVIDIA loader "
@@ -47,6 +78,20 @@ def main():
         result = run(target, ["nvidia-loader", "load", str(glcore)], env)
         if result.returncode != 0:
             fail("real NVIDIA DSO compatibility-loader chain", result)
+
+        result = run(
+            target,
+            [
+                "nvidia-loader",
+                "global-load",
+                str(glcore),
+                glcore_symbol,
+                gpucomp_symbol,
+            ],
+            env,
+        )
+        if result.returncode != 0:
+            fail("RTLD_GLOBAL publication of NVIDIA dependency graph", result)
 
         result = run(
             target,

@@ -132,11 +132,13 @@ NVIDIA_LIBDIR=/usr/lib \
 
 It verifies that loading `libnvidia-glcore` fails without early NVIDIA TLS and
 succeeds through the complete compatibility-interpreter path when the explicit
-TLS policy is enabled. It also verifies that a discovered pointer-sized
-`_nv*TLS` object has distinct, stable storage in eight concurrent threads and
-remains isolated from the main thread. The same workers exercise NVIDIA's
-observed pthread-key teardown model through the compatibility core and require
-all registered destructors to run.
+TLS policy is enabled. The loader test also proves that glcore and gpucomp
+exports remain private under `RTLD_LOCAL`, then become visible at their original
+addresses after glcore is promoted with `RTLD_GLOBAL`. A separate test verifies
+that a discovered pointer-sized `_nv*TLS` object has distinct, stable storage
+in eight concurrent threads and remains isolated from the main thread. The
+same workers exercise NVIDIA's observed pthread-key teardown model through the
+compatibility core and require all registered destructors to run.
 
 ## API At A Glance
 

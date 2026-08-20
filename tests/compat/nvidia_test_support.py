@@ -3,6 +3,7 @@
 
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 
@@ -43,3 +44,16 @@ def installed_dso(directory, pattern):
             + ", ".join(str(path) for path in matches)
         )
     return matches[0]
+
+
+def dynamic_symbols(readelf, path):
+    result = subprocess.run(
+        [readelf, "--dyn-syms", "-W", str(path)],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        fail(f"cannot inspect dynamic symbols in {path}", result)
+    return [line.split() for line in result.stdout.splitlines()]

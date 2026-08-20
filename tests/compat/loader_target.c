@@ -111,6 +111,89 @@ static int check_load(const char* dso_path) {
     return 0;
 }
 
+static int default_symbol_is_absent(const char* symbol) {
+    const char* error;
+    void* address;
+
+    dlerror();
+    address = dlsym(RTLD_DEFAULT, symbol);
+    error = dlerror();
+    return address == NULL && error != NULL;
+}
+
+static int lookup_symbol(void* handle, const char* symbol, void** address) {
+    const char* error;
+
+    dlerror();
+    *address = dlsym(handle, symbol);
+    error = dlerror();
+    if (*address != NULL && error == NULL)
+        return 0;
+    fprintf(stderr, "dlsym(%s): %s\n", symbol, error == NULL ? "null address" : error);
+    return -1;
+}
+
+static int check_global_load(const char* dso_path, int symbol_count, char** symbols) {
+    void** addresses;
+    void* global_handle;
+    void* local_handle;
+    int result = 0;
+
+    addresses = calloc((size_t)symbol_count, sizeof(*addresses));
+    if (addresses == NULL)
+        return 80;
+    for (int i = 0; i < symbol_count; ++i) {
+        if (!default_symbol_is_absent(symbols[i])) {
+            fprintf(stderr, "%s was globally visible before dlopen\n", symbols[i]);
+            result = 81;
+            goto free_addresses;
+        }
+    }
+    local_handle = dlopen(dso_path, RTLD_NOW | RTLD_LOCAL);
+    if (local_handle == NULL) {
+        fprintf(stderr, "local dlopen: %s\n", dlerror());
+        result = 82;
+        goto free_addresses;
+    }
+    for (int i = 0; i < symbol_count; ++i) {
+        if (lookup_symbol(local_handle, symbols[i], &addresses[i]) != 0) {
+            result = 83;
+            goto close_local;
+        }
+        if (!default_symbol_is_absent(symbols[i])) {
+            fprintf(stderr, "%s escaped RTLD_LOCAL scope\n", symbols[i]);
+            result = 84;
+            goto close_local;
+        }
+    }
+
+    global_handle = dlopen(dso_path, RTLD_NOW | RTLD_GLOBAL);
+    if (global_handle == NULL) {
+        fprintf(stderr, "global dlopen: %s\n", dlerror());
+        result = 85;
+        goto close_local;
+    }
+    for (int i = 0; i < symbol_count; ++i) {
+        void* published;
+
+        if (lookup_symbol(RTLD_DEFAULT, symbols[i], &published) != 0 || published != addresses[i]) {
+            if (published != NULL && published != addresses[i])
+                fprintf(stderr, "%s was published from the wrong object\n", symbols[i]);
+            result = 86;
+            break;
+        }
+    }
+    if (dlclose(global_handle) != 0 && result == 0)
+        result = 87;
+
+close_local:
+    if (dlclose(local_handle) != 0 && result == 0)
+        result = 88;
+free_addresses:
+    free(addresses);
+    return result;
+}
+
 static int check_preload_order(void) {
     struct preload_order order = {
         .core = "libmusl-bsd-core.so",
@@ -148,6 +231,8 @@ int main(int argc, char** argv) {
         return check_lifecycle(argv[2]);
     if (strcmp(argv[1], "load") == 0 && argc == 3)
         return check_load(argv[2]);
+    if (strcmp(argv[1], "global-load") == 0 && argc >= 4)
+        return check_global_load(argv[2], argc - 3, argv + 3);
     if (strcmp(argv[1], "exit") == 0 && argc == 3)
         return atoi(argv[2]);
     if (strcmp(argv[1], "signal") == 0) {

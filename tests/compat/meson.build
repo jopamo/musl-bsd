@@ -174,6 +174,7 @@ if glibc_runtime_enabled
       compat_loader_test.full_path(),
       libcompat.full_path(),
       meson.project_build_root(),
+      readelf.full_path(),
       patchelf.full_path(),
     ],
     depends: [

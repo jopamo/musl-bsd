@@ -56,8 +56,10 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 When `NVIDIA_LIBDIR` is set, the `nvidia` suite also exercises the real local
 `libnvidia-glcore` dependency graph through the compatibility interpreter. It
 proves fail-closed behavior without early NVIDIA TLS and successful loading
-with `MUSL_BSD_NVIDIA_TLS_PATH`; proprietary binaries are never copied into the
-repository. A second local test discovers an exported `_nv*TLS` object and
-checks per-thread address and value isolation across eight concurrent threads.
-It also gates on the installed NVIDIA graph's destructor ABI and verifies
-pthread-key destructor delivery through the compatibility core.
+with `MUSL_BSD_NVIDIA_TLS_PATH`. It also verifies `RTLD_LOCAL` isolation and
+`RTLD_GLOBAL` publication for exports from glcore and its gpucomp dependency;
+proprietary binaries are never copied into the repository. A second local test
+discovers an exported `_nv*TLS` object and checks per-thread address and value
+isolation across eight concurrent threads. It also gates on the installed
+NVIDIA graph's destructor ABI and verifies pthread-key destructor delivery
+through the compatibility core.
