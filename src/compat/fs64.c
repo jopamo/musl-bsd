@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <unistd.h>
 
 #include <stdarg.h>
@@ -21,6 +22,14 @@
 
 #ifdef fstatat64
 #undef fstatat64
+#endif
+
+#ifdef ftruncate64
+#undef ftruncate64
+#endif
+
+#ifdef statfs64
+#undef statfs64
 #endif
 
 int open64(const char* path, int oflag, ...) {
@@ -91,6 +100,14 @@ int fstat64(int fd, struct stat* buf) {
 
 int fstatat64(int dfd, const char* path, struct stat* buf, int flags) {
     return fstatat(dfd, path, buf, flags);
+}
+
+int ftruncate64(int fd, off64_t length) {
+    return ftruncate(fd, length);
+}
+
+int statfs64(const char* path, struct statfs* buf) {
+    return statfs(path, buf);
 }
 
 int fallocate64(int fd, int mode, off64_t offset, off64_t length) {

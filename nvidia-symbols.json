@@ -1409,11 +1409,11 @@
     },
     {
       "binding": "global",
-      "implementation": "musl-libc:ftruncate",
+      "implementation": "musl-bsd-core:ftruncate64",
       "name": "ftruncate64",
-      "quality": "UNSUPPORTED",
+      "quality": "EXACT",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/fs64_abi",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3686,11 +3686,11 @@
     },
     {
       "binding": "global",
-      "implementation": "musl-libc:statfs",
+      "implementation": "musl-bsd-core:statfs64",
       "name": "statfs64",
-      "quality": "UNSUPPORTED",
+      "quality": "EXACT",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/fs64_abi",
       "version": "GLIBC_2.2.5"
     },
     {

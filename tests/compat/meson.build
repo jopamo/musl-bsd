@@ -628,6 +628,16 @@ if glibc_runtime_enabled
   )
   test('compat/stat_abi', stat_abi_test, suite: 'compat')
 
+  fs64_abi_test = executable(
+    'test_compat_fs64_abi',
+    'test_fs64_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/fs64_abi', fs64_abi_test, suite: 'compat')
+
   getdelim_test = executable(
     'test_compat_getdelim',
     'test_getdelim.c',

@@ -36,6 +36,7 @@ MUSL_BSD_COMPAT_1.0 {
 		fstat64;
 		fstatat64;
 		fallocate64;
+		ftruncate64;
 		ftello64;
 		fsconfig;
 		fsopen;
@@ -63,6 +64,7 @@ MUSL_BSD_COMPAT_1.0 {
 		register_atfork;
 		scandir64;
 		stat64;
+		statfs64;
 		strlcat;
 		strlcpy;
 	local:

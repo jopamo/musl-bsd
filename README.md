@@ -186,6 +186,12 @@ adapter delegates directly to musl `fallocate` and is classified `EXACT`.
 Regression coverage includes offsets above 4 GiB, size changes, hole contents,
 return values, and `errno`.
 
+The qualified runtime also requires `ftruncate64@GLIBC_2.2.5` and
+`statfs64@GLIBC_2.2.5`, which musl exposes as header aliases rather than
+dynamic symbols. The compatibility core now provides exact LP64 adapters for
+both names; `compat/fs64_abi` verifies large-file truncation, filesystem
+metadata, failures, `errno`, and provider ownership.
+
 Glcore calls `backtrace@GLIBC_2.2.5` from 47 diagnostic paths, each with room
 for sixteen frames. The compatibility core uses the toolchain's standard
 Itanium unwinder, omits its own frame, bounds writes to the caller's capacity,

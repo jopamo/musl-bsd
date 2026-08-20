@@ -66,6 +66,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   `errno`, and guarded-page behavior;
 - exact `fallocate64` LP64 offsets, allocation, hole punching, file-size,
   return-value, and `errno` behavior;
+- exact compatibility-core `ftruncate64` and `statfs64` LP64 filesystem ABIs,
+  large-file truncation, filesystem metadata, failures, `errno`, and provider
+  ownership through `compat/fs64_abi`;
 - translated `backtrace` frame ordering, caller identity, capacity bounds,
   non-positive sizes, return values, and `errno` preservation;
 - fail-closed exclusion of obsolete malloc-hook state, including runtime
