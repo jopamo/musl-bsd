@@ -407,6 +407,15 @@ LIBC_POLICIES = [
         "test": "compat/strftime_abi",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__wcsxfrm_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__wcsxfrm_l",
+        "test": "compat/locale_ownership",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

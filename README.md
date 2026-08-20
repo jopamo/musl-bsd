@@ -380,6 +380,15 @@ C.UTF-8 handles. It is `DEGRADED` because locale-specific collation is not
 reproduced; `compat/locale_ownership` now verifies provider and public-alias
 identity.
 
+The NVIDIA compiler stack imports `__wcsxfrm_l@GLIBC_2.2.5` for wide-string
+locale-facet transformation keys. Musl's internal symbol is the canonical
+public `wcsxfrm_l` provider and returns Unicode code-point transformation
+lengths, full copies, zero-size sizing results, the musl truncation boundary,
+and the observed `errno` behavior for C and C.UTF-8 handles. It is `DEGRADED`
+because locale-specific collation and glibc's transformed-output policy are not
+reproduced; `compat/locale_ownership` verifies the wide transformation ABI,
+provider ownership, and public-alias identity.
+
 NVIDIA's present and NVML DSOs import `__progname_full@GLIBC_2.2.5` as a global
 object requirement. Musl's object is the authoritative storage aliased by
 `program_invocation_name`; startup preserves the exact `argv[0]` pointer and

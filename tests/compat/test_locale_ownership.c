@@ -10,6 +10,7 @@
 extern int __strcoll_l(const char* left, const char* right, locale_t locale);
 extern size_t __strxfrm_l(char* destination, const char* source, size_t size, locale_t locale);
 extern int __wcscoll_l(const wchar_t* left, const wchar_t* right, locale_t locale);
+extern size_t __wcsxfrm_l(wchar_t* destination, const wchar_t* source, size_t size, locale_t locale);
 extern locale_t __newlocale(int mask, const char* name, locale_t locale);
 extern char* __nl_langinfo_l(nl_item item, locale_t locale);
 extern locale_t __duplocale(locale_t locale);
@@ -19,6 +20,7 @@ extern locale_t __uselocale(locale_t locale);
 typedef int (*strcoll_l_function)(const char* left, const char* right, locale_t locale);
 typedef size_t (*strxfrm_l_function)(char* destination, const char* source, size_t size, locale_t locale);
 typedef int (*wcscoll_l_function)(const wchar_t* left, const wchar_t* right, locale_t locale);
+typedef size_t (*wcsxfrm_l_function)(wchar_t* destination, const wchar_t* source, size_t size, locale_t locale);
 
 #define CHECK(condition)                                                            \
     do {                                                                            \
@@ -99,6 +101,40 @@ static int verify_wide_collation(wcscoll_l_function function, locale_t locale) {
     return 0;
 }
 
+static int verify_wide_transformation(wcsxfrm_l_function function, locale_t locale) {
+    static const wchar_t source[] = L"alpha\u00E4\0ignored";
+    wchar_t output[16];
+    wchar_t truncated[4];
+    wchar_t untouched[16];
+
+    errno = EDOM;
+    wmemset(output, 0, sizeof(output) / sizeof(output[0]));
+    CHECK(function(output, source, sizeof(output) / sizeof(output[0]), locale) == 6);
+    CHECK(wmemcmp(output, source, 7) == 0);
+    CHECK(errno == EDOM);
+
+    errno = ERANGE;
+    wmemset(truncated, 0xA5, sizeof(truncated) / sizeof(truncated[0]));
+    CHECK(function(truncated, source, sizeof(truncated) / sizeof(truncated[0]), locale) == 6);
+    CHECK(wmemcmp(truncated, L"alp", 3) == 0);
+    CHECK(truncated[3] == L'\0');
+    CHECK(errno == ERANGE);
+
+    errno = E2BIG;
+    wmemset(output, 0xA5, sizeof(output) / sizeof(output[0]));
+    wmemset(untouched, 0xA5, sizeof(untouched) / sizeof(untouched[0]));
+    CHECK(function(output, source, 0, locale) == 6);
+    CHECK(wmemcmp(output, untouched, sizeof(output) / sizeof(output[0])) == 0);
+    CHECK(errno == E2BIG);
+
+    errno = ENOTTY;
+    wmemset(output, 0xA5, sizeof(output) / sizeof(output[0]));
+    CHECK(function(output, L"", sizeof(output) / sizeof(output[0]), locale) == 0);
+    CHECK(output[0] == L'\0');
+    CHECK(errno == ENOTTY);
+    return 0;
+}
+
 int main(void) {
     static const nl_item gpucomp_items[] = {
         0x40000, 0x40002, 0x40003, 0x40004, 0x40005, 0x40006, 0x40015,
@@ -106,6 +142,7 @@ int main(void) {
     strcoll_l_function compare_locale = __strcoll_l;
     strxfrm_l_function transform_locale = __strxfrm_l;
     wcscoll_l_function wide_compare_locale = __wcscoll_l;
+    wcsxfrm_l_function wide_transform_locale = __wcsxfrm_l;
     char* (*query_langinfo)(nl_item, locale_t) = __nl_langinfo_l;
     char* result;
     locale_t (*create_locale)(int, const char*, locale_t) = __newlocale;
@@ -142,6 +179,12 @@ int main(void) {
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__wcscoll_l") == (void*)wide_compare_locale);
     CHECK(dlsym(RTLD_DEFAULT, "wcscoll_l") == (void*)wide_compare_locale);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)wide_transform_locale, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__wcsxfrm_l") == (void*)wide_transform_locale);
+    CHECK(dlsym(RTLD_DEFAULT, "wcsxfrm_l") == (void*)wide_transform_locale);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)query_langinfo, &info) != 0);
     CHECK(info.dli_fname != NULL);
@@ -201,6 +244,8 @@ int main(void) {
     CHECK(verify_transformation(transform_locale, utf8_locale) == 0);
     CHECK(verify_wide_collation(wide_compare_locale, c_locale) == 0);
     CHECK(verify_wide_collation(wide_compare_locale, utf8_locale) == 0);
+    CHECK(verify_wide_transformation(wide_transform_locale, c_locale) == 0);
+    CHECK(verify_wide_transformation(wide_transform_locale, utf8_locale) == 0);
 
     for (index = 0; index < sizeof(gpucomp_items) / sizeof(gpucomp_items[0]); ++index) {
         errno = EDOM;

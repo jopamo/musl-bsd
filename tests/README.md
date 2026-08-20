@@ -99,6 +99,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - degraded musl `__wcscoll_l`/`wcscoll_l` wide-string collation ABI, ASCII and
   non-ASCII ordering, C/C.UTF-8 handles, `errno`, provider ownership, and
   public-alias identity through `compat/locale_ownership`;
+- degraded musl `__wcsxfrm_l`/`wcsxfrm_l` wide-string transformation ABI,
+  Unicode code-point keys, full copies, sizing, truncation, `errno`, provider
+  ownership, and public-alias identity through `compat/locale_ownership`;
 - degraded musl `__strcoll_l`/`__strxfrm_l` and public `strcoll_l`/`strxfrm_l`
   locale-comparison and transformation ABIs, C and C.UTF-8 bytewise ordering,
   transformed lengths, truncation, embedded-NUL handling, `errno`, provider
