@@ -1,5 +1,6 @@
 GLIBC_2.2.5 {
 	global:
+		optional_symbol;
 		required_symbol;
 	local:
 		*;

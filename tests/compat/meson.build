@@ -137,6 +137,20 @@ if glibc_runtime_enabled
     install: false,
   )
 
+  loader_weak_consumer = shared_library(
+    'loader-weak-consumer',
+    'loader_weak_consumer.c',
+    c_args: c_flags,
+    install: false,
+  )
+
+  loader_weak_provider = shared_library(
+    'loader-weak-provider',
+    'loader_weak_provider.c',
+    c_args: c_flags,
+    install: false,
+  )
+
   patchelf = find_program('patchelf')
   loader_runner = files('run_loader_tests.py')
   test(
@@ -150,6 +164,8 @@ if glibc_runtime_enabled
       meson.project_build_root(),
       loader_plugin.full_path(),
       loader_user_preload.full_path(),
+      loader_weak_consumer.full_path(),
+      loader_weak_provider.full_path(),
       musl_linker_path,
       patchelf.full_path(),
     ],
@@ -159,6 +175,8 @@ if glibc_runtime_enabled
       compat_loader_test,
       loader_plugin,
       loader_user_preload,
+      loader_weak_consumer,
+      loader_weak_provider,
     ] + glibc_facades,
     suite: 'compat',
     timeout: 60,

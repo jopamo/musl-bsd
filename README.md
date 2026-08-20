@@ -102,10 +102,10 @@ NVIDIA_LIBDIR=/usr/lib \
   tools/nvidia-scan --format json --output nvidia-inventory.json
 ```
 
-The report records SONAMEs, versioned undefined symbols, TLS relocations,
-IFUNC/IRELATIVE use, relocation types, and a consolidated compatibility
-requirement list. Pass explicit DSO paths to avoid automatic NVIDIA filename
-discovery.
+The report records SONAMEs, undefined-symbol binding and versions, TLS
+relocations, IFUNC/IRELATIVE use, relocation types, and a consolidated
+compatibility requirement list. Pass explicit DSO paths to avoid automatic
+NVIDIA filename discovery.
 
 Provider analysis compares those requirements with explicit runtime ELFs:
 
@@ -120,8 +120,9 @@ tools/nvidia-scan --format json \
 Aliases are accepted only when the configured providers export the target
 symbol. The report labels this as musl's name-based runtime resolution; it does
 not claim glibc version-quality equivalence. `--strict` makes unresolved
-`DT_NEEDED` entries or provider-backed symbol requirements a command failure.
-Malformed, unsupported, or ambiguous input always fails.
+`DT_NEEDED` entries or mandatory provider-backed symbol requirements a command
+failure. Unresolved weak imports are reported separately as optional. Malformed,
+unsupported, or ambiguous input always fails.
 
 The local proprietary-driver loader check is opt-in:
 
@@ -136,11 +137,13 @@ TLS policy is enabled. The loader test also proves that glcore and gpucomp
 exports remain private under `RTLD_LOCAL`, then become visible at their original
 addresses after glcore is promoted with `RTLD_GLOBAL`. It runs 32 local and 32
 global open/close cycles with overlapping handles, verifying that closing one
-reference cannot invalidate the other or corrupt symbol scope. A separate test
-verifies that a discovered pointer-sized `_nv*TLS` object has distinct, stable
-storage in eight concurrent threads and remains isolated from the main thread.
-The same workers exercise NVIDIA's observed pthread-key teardown model through
-the compatibility core and require all registered destructors to run.
+reference cannot invalidate the other or corrupt symbol scope. Weak NVIDIA
+imports are classified by ELF binding; the suite verifies both absent optional
+probes and weak imports supplied by the runtime. A separate test verifies that
+a discovered pointer-sized `_nv*TLS` object has distinct, stable storage in
+eight concurrent threads and remains isolated from the main thread. The same
+workers exercise NVIDIA's observed pthread-key teardown model through the
+compatibility core and require all registered destructors to run.
 
 ## API At A Glance
 

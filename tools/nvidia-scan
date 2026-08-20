@@ -61,6 +61,8 @@ DT_RUNPATH = 29
 
 SHN_UNDEF = 0
 STB_LOCAL = 0
+STB_GLOBAL = 1
+STB_WEAK = 2
 STT_TLS = 6
 STT_GNU_IFUNC = 10
 STV_INTERNAL = 1
@@ -132,6 +134,17 @@ GLIBC_SONAMES = {
     "librt.so.1",
     "libutil.so.1",
 }
+
+BINDING_NAMES = {
+    STB_LOCAL: "local",
+    STB_GLOBAL: "global",
+    STB_WEAK: "weak",
+}
+
+
+def _metadata_sort_key(values: tuple[Any, ...]) -> tuple[Any, ...]:
+    return tuple("" if value is None else value for value in values)
+
 
 DEFAULT_LIBRARY_PATHS = (
     "/lib",
@@ -624,7 +637,9 @@ class ELFFile:
             if DT_SONAME in self.dynamic
             else None
         )
-        undefined: set[tuple[str, str | None, str | None, bool]] = set()
+        undefined: set[
+            tuple[str, str | None, str | None, int, bool]
+        ] = set()
         ifuncs: set[tuple[str, str | None, bool]] = set()
         for symbol in symbols:
             version = symbol["version"]
@@ -636,6 +651,7 @@ class ELFFile:
                         symbol["name"],
                         version_name,
                         version_library,
+                        symbol["bind"],
                         symbol["hidden"],
                     )
                 )
@@ -649,13 +665,18 @@ class ELFFile:
                 "name": name,
                 "version": version,
                 "library": library,
+                "binding": BINDING_NAMES.get(binding, f"binding-{binding}"),
                 "hidden": hidden,
             }
-            for name, version, library, hidden in sorted(undefined)
+            for name, version, library, binding, hidden in sorted(
+                undefined, key=_metadata_sort_key
+            )
         ]
         ifunc_records = [
             {"name": name, "version": version, "defined": defined}
-            for name, version, defined in sorted(ifuncs)
+            for name, version, defined in sorted(
+                ifuncs, key=_metadata_sort_key
+            )
         ]
         glibc_versions = sorted(
             {
@@ -860,7 +881,12 @@ def scan(roots: list[Path], library_paths: list[Path], recursive: bool) -> dict[
 def _summary(
     reports: list[dict[str, Any]], missing: list[dict[str, str]]
 ) -> dict[str, Any]:
-    undefined: set[tuple[str, str | None, str | None, bool]] = set()
+    undefined: set[
+        tuple[str, str | None, str | None, str, bool]
+    ] = set()
+    weak_undefined: set[
+        tuple[str, str | None, str | None, bool]
+    ] = set()
     versions: set[str] = set()
     sonames: set[str] = set()
     relocation_types: dict[str, int] = {}
@@ -875,10 +901,21 @@ def _summary(
                 item["name"],
                 item["version"],
                 item["library"],
+                item["binding"],
                 item["hidden"],
             )
             for item in report["undefined_symbols"]
             if item["version"] and item["version"].startswith("GLIBC_")
+        )
+        weak_undefined.update(
+            (
+                item["name"],
+                item["version"],
+                item["library"],
+                item["hidden"],
+            )
+            for item in report["undefined_symbols"]
+            if item["binding"] == "weak"
         )
         versions.update(report["glibc_versions"])
         ifuncs.update(
@@ -898,9 +935,24 @@ def _summary(
             "name": name,
             "version": version,
             "library": library,
+            "binding": binding,
             "hidden": hidden,
         }
-        for name, version, library, hidden in sorted(undefined)
+        for name, version, library, binding, hidden in sorted(
+            undefined, key=_metadata_sort_key
+        )
+    ]
+    weak_symbols = [
+        {
+            "name": name,
+            "version": version,
+            "library": library,
+            "binding": "weak",
+            "hidden": hidden,
+        }
+        for name, version, library, hidden in sorted(
+            weak_undefined, key=_metadata_sort_key
+        )
     ]
     return {
         "object_count": len(reports),
@@ -908,6 +960,7 @@ def _summary(
         "required_glibc_sonames": sorted(sonames),
         "required_glibc_versions": sorted(versions),
         "required_glibc_symbols": glibc_symbols,
+        "weak_undefined_symbols": weak_symbols,
         "relocation_types": dict(sorted(relocation_types.items())),
         "tls_relocation_types": dict(sorted(tls_types.items())),
         "tls_relocation_count": tls_count,
@@ -917,10 +970,13 @@ def _summary(
             "glibc_sonames": sorted(sonames),
             "glibc_versions": sorted(versions),
             "glibc_symbols": glibc_symbols,
+            "weak_undefined_symbols": weak_symbols,
             "tls_relocation_types": dict(sorted(tls_types.items())),
             "ifunc_symbols": [
                 {"name": name, "version": version, "defined": defined}
-                for name, version, defined in sorted(ifuncs)
+                for name, version, defined in sorted(
+                    ifuncs, key=_metadata_sort_key
+                )
             ],
             "irelative_relocation_count": irelative_count,
             "all_relocation_types": dict(sorted(relocation_types.items())),
@@ -988,6 +1044,7 @@ def _provider_analysis(
 
     provided_requirements: list[dict[str, Any]] = []
     missing_requirements: list[dict[str, Any]] = []
+    unresolved_weak: list[dict[str, Any]] = []
     required_names = {item["name"] for item in requirements}
     unknown_aliases = sorted(set(aliases) - required_names)
     if unknown_aliases:
@@ -1001,7 +1058,10 @@ def _provider_analysis(
         provided = aliases.get(required, required)
         provider_names = sorted(symbol_providers.get(provided, ()))
         if not provider_names:
-            missing_requirements.append(requirement)
+            if requirement["binding"] == "weak":
+                unresolved_weak.append(requirement)
+            else:
+                missing_requirements.append(requirement)
             continue
         resolved = dict(requirement)
         resolved["resolution"] = (
@@ -1020,8 +1080,10 @@ def _provider_analysis(
         ],
         "provided_count": len(provided_requirements),
         "missing_count": len(missing_requirements),
+        "unresolved_weak_count": len(unresolved_weak),
         "provided": provided_requirements,
         "missing": missing_requirements,
+        "unresolved_weak": unresolved_weak,
     }
 
 
@@ -1060,7 +1122,10 @@ def text_report(report: dict[str, Any]) -> str:
                 f"@{symbol['version']}" if symbol["version"] else ""
             )
             library = f" [{symbol['library']}]" if symbol["library"] else ""
-            lines.append(f"    {symbol['name']}{suffix}{library}")
+            lines.append(
+                f"    {symbol['name']}{suffix}{library} "
+                f"({symbol['binding']})"
+            )
         lines.append(
             f"  TLS: {'present' if item['tls']['program_header'] else 'absent'}; "
             f"relocations={len(item['tls']['relocations'])}"
@@ -1103,6 +1168,8 @@ def text_report(report: dict[str, Any]) -> str:
             f"{', '.join(summary['required_glibc_versions']) or '(none)'}",
             f"  required versioned undefined symbols: "
             f"{len(summary['required_glibc_symbols'])}",
+            f"  weak undefined symbols: "
+            f"{len(summary['weak_undefined_symbols'])}",
             f"  TLS relocation types: "
             f"{', '.join(summary['tls_relocation_types']) or '(none)'}",
             f"  IFUNC symbols: {summary['ifunc_symbol_count']}",
@@ -1115,8 +1182,17 @@ def text_report(report: dict[str, Any]) -> str:
         for symbol in summary["required_glibc_symbols"]:
             lines.append(
                 f"  {symbol['name']}@{symbol['version']} "
-                f"[{symbol['library'] or 'unknown'}]"
+                f"[{symbol['library'] or 'unknown'}] "
+                f"({symbol['binding']})"
             )
+        lines.append("")
+    if summary["weak_undefined_symbols"]:
+        lines.append("Weak undefined symbols:")
+        for symbol in summary["weak_undefined_symbols"]:
+            suffix = (
+                f"@{symbol['version']}" if symbol["version"] else ""
+            )
+            lines.append(f"  {symbol['name']}{suffix}")
         lines.append("")
     if report["missing_dependencies"]:
         lines.append("Missing dependencies:")
@@ -1134,12 +1210,19 @@ def text_report(report: dict[str, Any]) -> str:
                 f"  providers: {len(analysis['providers'])}",
                 f"  provided requirements: {analysis['provided_count']}",
                 f"  missing requirements: {analysis['missing_count']}",
+                f"  unresolved optional weak symbols: "
+                f"{analysis['unresolved_weak_count']}",
             ]
         )
         for missing in analysis["missing"]:
             lines.append(
                 f"    MISSING {missing['name']}@{missing['version']} "
                 f"[{missing['library'] or 'unknown'}]"
+            )
+        for weak in analysis["unresolved_weak"]:
+            lines.append(
+                f"    OPTIONAL {weak['name']}@{weak['version']} "
+                f"[{weak['library'] or 'unknown'}]"
             )
     return "\n".join(lines) + "\n"
 

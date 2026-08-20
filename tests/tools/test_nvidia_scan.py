@@ -72,12 +72,12 @@ def main():
         "required_glibc_sonames",
         "required_glibc_versions",
         "required_glibc_symbols",
+        "weak_undefined_symbols",
         "tls_relocation_types",
         "compatibility_requirements",
     ):
         if key not in report["summary"]:
             fail(f"missing summary field: {key}")
-
     with tempfile.TemporaryDirectory(prefix="musl-bsd-nvidia-scan-") as name:
         bad = Path(name) / "not-an-elf"
         bad.write_bytes(b"not an ELF file\n")
@@ -107,6 +107,29 @@ def main():
         "--no-recursive",
         "--format",
         "json",
+        str(consumer),
+        str(provider),
+    )
+    if result.returncode != 0:
+        fail("mixed versioned/unversioned weak symbols were rejected", result)
+    mixed_weak = [
+        symbol
+        for symbol in json.loads(result.stdout)["summary"][
+            "weak_undefined_symbols"
+        ]
+        if symbol["name"] == "optional_symbol"
+    ]
+    if {symbol["version"] for symbol in mixed_weak} != {
+        None,
+        "GLIBC_2.2.5",
+    }:
+        fail(f"mixed weak-symbol metadata was lost: {mixed_weak!r}")
+
+    result = run(
+        scanner,
+        "--no-recursive",
+        "--format",
+        "json",
         "--provider",
         str(provider),
         "--provider-alias",
@@ -115,11 +138,31 @@ def main():
     )
     if result.returncode != 0:
         fail("explicit provider alias was rejected", result)
-    analysis = json.loads(result.stdout)["provider_analysis"]
+    report = json.loads(result.stdout)
+    undefined = {
+        symbol["name"]: symbol
+        for symbol in report["objects"][0]["undefined_symbols"]
+    }
+    if undefined["required_symbol"]["binding"] != "global":
+        fail(f"mandatory symbol binding was lost: {undefined!r}")
+    if undefined["optional_symbol"]["binding"] != "weak":
+        fail(f"weak symbol binding was lost: {undefined!r}")
+    weak_names = [
+        symbol["name"]
+        for symbol in report["summary"]["weak_undefined_symbols"]
+    ]
+    if (
+        "optional_symbol" not in weak_names
+        or len(weak_names) != len(set(weak_names))
+    ):
+        fail(f"weak symbol summary was not consolidated: {report!r}")
+    analysis = report["provider_analysis"]
     if (
         analysis["matching_policy"] != "musl-name-based-runtime-resolution"
         or analysis["provided_count"] != 1
         or analysis["missing_count"] != 0
+        or analysis["unresolved_weak_count"] != 1
+        or analysis["unresolved_weak"][0]["name"] != "optional_symbol"
         or analysis["provided"][0]["resolution"] != "alias"
     ):
         fail(f"unexpected provider analysis: {analysis!r}")

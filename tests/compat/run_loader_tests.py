@@ -66,14 +66,24 @@ def prepare_fixture(patchelf, source, destination, loader):
 
 
 def main():
-    if len(sys.argv) != 9:
+    if len(sys.argv) != 11:
         fail("invalid runner arguments")
 
-    loader, raw_target, core, facade_dir, plugin, user_preload, musl_linker, patchelf = (
-        Path(value).resolve() if index < 7 else value
-        for index, value in enumerate(sys.argv[1:])
+    (
+        loader,
+        raw_target,
+        core,
+        facade_dir,
+        plugin,
+        user_preload,
+        weak_consumer,
+        weak_provider,
+        musl_linker,
+    ) = (
+        Path(value).resolve()
+        for value in sys.argv[1:10]
     )
-    patchelf = sys.argv[8]
+    patchelf = sys.argv[10]
 
     with tempfile.TemporaryDirectory(prefix="musl-bsd loader ") as temp_name:
         temp = Path(temp_name)
@@ -85,6 +95,24 @@ def main():
         env["MUSL_BSD_LIBRARY_PATH"] = f"{facade_dir}:/usr/lib"
         env.pop("LD_PRELOAD", None)
         env.pop("MUSL_BSD_LOADER_STAGE", None)
+
+        result = run(
+            target,
+            ["weak-absent", "weak", str(weak_consumer), "41"],
+            env,
+        )
+        if result.returncode != 0:
+            fail("absent weak symbol fallback", result)
+
+        weak_env = env.copy()
+        weak_env["LD_PRELOAD"] = str(weak_provider)
+        result = run(
+            target,
+            ["weak-provided", "weak", str(weak_consumer), "73"],
+            weak_env,
+        )
+        if result.returncode != 0:
+            fail("provided weak symbol binding", result)
 
         for argv0, executable, cwd in (
             ("ordinary-program", target, None),

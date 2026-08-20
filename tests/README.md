@@ -51,6 +51,7 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   loader;
 - argument, constructor, destructor, `dlopen`, preload-order, recursion,
   missing-target, missing-library, exit-status, and signal tests;
+- absent and provider-backed weak symbol relocation;
 - facade SONAME, dependency, export, and symbol-version inspection.
 
 When `NVIDIA_LIBDIR` is set, the `nvidia` suite also exercises the real local
@@ -59,8 +60,10 @@ proves fail-closed behavior without early NVIDIA TLS and successful loading
 with `MUSL_BSD_NVIDIA_TLS_PATH`. It also verifies `RTLD_LOCAL` isolation and
 `RTLD_GLOBAL` publication for exports from glcore and its gpucomp dependency;
 32 repeated cycles per scope exercise overlapping handle ownership and
-close-order safety. Proprietary binaries are never copied into the repository.
-A second local test discovers an exported `_nv*TLS` object and checks per-thread
-address and value isolation across eight concurrent threads. It also gates on
-the installed NVIDIA graph's destructor ABI and verifies pthread-key destructor
-delivery through the compatibility core.
+close-order safety. The same real-binary test inventories weak imports and
+requires both unresolved optional probes and runtime-provided weak symbols to
+relocate successfully. Proprietary binaries are never copied into the
+repository. A second local test discovers an exported `_nv*TLS` object and
+checks per-thread address and value isolation across eight concurrent threads.
+It also gates on the installed NVIDIA graph's destructor ABI and verifies
+pthread-key destructor delivery through the compatibility core.

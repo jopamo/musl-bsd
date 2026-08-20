@@ -33,6 +33,22 @@ def exported_symbol(readelf, path, predicate):
     return sorted(symbols)[0]
 
 
+def weak_undefined_symbols(readelf, *paths):
+    symbols = {
+        fields[7].split("@", 1)[0]
+        for path in paths
+        for fields in dynamic_symbols(readelf, path)
+        if (
+            len(fields) >= 8
+            and fields[4] == "WEAK"
+            and fields[6] == "UND"
+        )
+    }
+    if not symbols:
+        fail("installed NVIDIA graph has no weak undefined symbols")
+    return sorted(symbols)
+
+
 def main():
     if len(sys.argv) != 7:
         fail("invalid runner arguments")
@@ -51,6 +67,7 @@ def main():
     gpucomp_symbol = exported_symbol(
         readelf, gpucomp, lambda name: name == "nvGetCompilerInterface"
     )
+    weak_symbols = weak_undefined_symbols(readelf, glcore, gpucomp, nvidia_tls)
 
     with tempfile.TemporaryDirectory(
         prefix="musl-bsd NVIDIA loader "
@@ -78,6 +95,19 @@ def main():
         result = run(target, ["nvidia-loader", "load", str(glcore)], env)
         if result.returncode != 0:
             fail("real NVIDIA DSO compatibility-loader chain", result)
+
+        result = run(
+            target,
+            [
+                "nvidia-loader",
+                "nvidia-weak",
+                str(glcore),
+                *weak_symbols,
+            ],
+            env,
+        )
+        if result.returncode != 0:
+            fail("weak NVIDIA symbol relocation", result)
 
         result = run(
             target,

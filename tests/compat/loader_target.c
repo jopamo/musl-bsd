@@ -111,6 +111,62 @@ static int check_load(const char* dso_path) {
     return 0;
 }
 
+static int check_weak(const char* dso_path, int expected) {
+    int (*value)(void);
+    void* handle;
+    int result = 0;
+
+    handle = dlopen(dso_path, RTLD_NOW | RTLD_LOCAL);
+    if (handle == NULL) {
+        fprintf(stderr, "weak consumer dlopen: %s\n", dlerror());
+        return 72;
+    }
+    value = (int (*)(void))dlsym(handle, "loader_weak_value");
+    if (value == NULL || value() != expected)
+        result = 73;
+    if (dlclose(handle) != 0 && result == 0)
+        result = 74;
+    return result;
+}
+
+static int check_nvidia_weak(const char* dso_path, int symbol_count, char** symbols) {
+    int absent = 0;
+    int provided = 0;
+    void* handle;
+
+    for (int i = 0; i < symbol_count; ++i) {
+        const char* error;
+        void* address;
+
+        dlerror();
+        address = dlsym(RTLD_DEFAULT, symbols[i]);
+        error = dlerror();
+        if (address != NULL && error == NULL)
+            provided++;
+        else if (address == NULL && error != NULL)
+            absent++;
+        else {
+            fprintf(stderr, "ambiguous weak symbol state: %s\n", symbols[i]);
+            return 75;
+        }
+    }
+    if (absent == 0 || provided == 0) {
+        fprintf(stderr,
+                "weak NVIDIA symbols do not cover both outcomes: "
+                "absent=%d provided=%d\n",
+                absent, provided);
+        return 76;
+    }
+    handle = dlopen(dso_path, RTLD_NOW | RTLD_LOCAL);
+    if (handle == NULL) {
+        fprintf(stderr, "weak NVIDIA dlopen: %s\n", dlerror());
+        return 77;
+    }
+    if (dlclose(handle) != 0)
+        return 78;
+    return 0;
+}
+
 static int default_symbol_is_absent(const char* symbol) {
     const char* error;
     void* address;
@@ -341,6 +397,10 @@ int main(int argc, char** argv) {
         return check_lifecycle(argv[2]);
     if (strcmp(argv[1], "load") == 0 && argc == 3)
         return check_load(argv[2]);
+    if (strcmp(argv[1], "weak") == 0 && argc == 4)
+        return check_weak(argv[2], atoi(argv[3]));
+    if (strcmp(argv[1], "nvidia-weak") == 0 && argc >= 4)
+        return check_nvidia_weak(argv[2], argc - 3, argv + 3);
     if (strcmp(argv[1], "global-load") == 0 && argc >= 4)
         return check_global_load(argv[2], argc - 3, argv + 3);
     if (strcmp(argv[1], "repeat-load") == 0 && argc >= 5)
