@@ -313,6 +313,14 @@ glibc DSO handle for unload-time removal; the qualified NVIDIA loader keeps
 these DSOs resident. `compat/atfork` verifies ordering in both processes,
 return values, `errno`, provider ownership, and the adapter boundary.
 
+NVML imports `__sched_cpualloc@GLIBC_2.7` for dynamically sized CPU sets used
+around affinity queries, including counts crossing 64-bit-word boundaries.
+The compatibility-core implementation delegates to musl's zeroed `CPU_ALLOC`
+storage and is `EXACT` on the qualified x86_64 ABI. `compat/sched_abi`
+verifies allocation size and alignment, zero initialization, boundary-bit
+operations, successful `errno` preservation, and provider ownership; cleanup
+uses only the public `CPU_FREE` macro.
+
 The seven qualified NVIDIA/CUDA objects that perform ordinary system work
 import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
 legacy libpthread SONAME requirements. Musl’s unified libc returns the address

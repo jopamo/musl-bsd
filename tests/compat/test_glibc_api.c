@@ -5,7 +5,6 @@
 #include <locale.h>
 #include <link.h>
 #include <malloc.h>
-#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,8 +20,6 @@
 #include <stdint.h>
 
 extern int __pthread_key_create(pthread_key_t* key, void (*destructor)(void*));
-extern cpu_set_t* __sched_cpualloc(size_t count);
-extern void __sched_cpufree(cpu_set_t* set);
 extern char* __realpath_chk(const char* path, char* resolved_path, size_t resolved_len);
 extern char* __strdup(const char* string);
 extern char* __strtok_r(char* s, const char* delim, char** save_ptr);
@@ -277,14 +274,6 @@ int main(void) {
     free(entries);
 
     entries = NULL;
-
-#ifdef CPU_ALLOC
-    {
-        cpu_set_t* set = __sched_cpualloc(256);
-        CHECK(set != NULL);
-        __sched_cpufree(set);
-    }
-#endif
 
     CHECK(unlink(path_a) == 0);
     CHECK(unlink(path_b) == 0);

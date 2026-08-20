@@ -62,6 +62,15 @@ CORE_POLICIES = [
         "test": "compat/atfork",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__sched_cpualloc",
+        "version": "GLIBC_2.7",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-bsd-core:__sched_cpualloc",
+        "test": "compat/sched_abi",
+        "quality": "EXACT",
+    },
 ]
 
 LIBC_POLICIES = [

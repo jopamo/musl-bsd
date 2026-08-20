@@ -454,6 +454,16 @@ if glibc_runtime_enabled
   )
   test('compat/atfork', atfork_test, suite: 'compat')
 
+  sched_abi_test = executable(
+    'test_compat_sched_abi',
+    'test_sched_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    link_with: libcompat,
+    c_args: c_flags,
+    install: false,
+  )
+  test('compat/sched_abi', sched_abi_test, suite: 'compat')
+
   locale_ownership_test = executable(
     'test_compat_locale_ownership',
     'test_locale_ownership.c',
