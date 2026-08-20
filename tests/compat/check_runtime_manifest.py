@@ -156,6 +156,15 @@ LIBC_POLICIES = [
         "quality": "DEGRADED",
     },
     {
+        "name": "acosf",
+        "version": "GLIBC_2.2.5",
+        "soname": "libm.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:acosf",
+        "test": "compat/acos_abi",
+        "quality": "DEGRADED",
+    },
+    {
         "name": "_IO_getc",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",

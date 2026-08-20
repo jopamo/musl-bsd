@@ -520,9 +520,9 @@
       "binding": "global",
       "implementation": "musl-libc:acosf",
       "name": "acosf",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/acos_abi",
       "version": "GLIBC_2.2.5"
     },
     {
