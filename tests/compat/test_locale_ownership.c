@@ -6,10 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+extern int __strcoll_l(const char* left, const char* right, locale_t locale);
 extern locale_t __newlocale(int mask, const char* name, locale_t locale);
 extern char* __nl_langinfo_l(nl_item item, locale_t locale);
 extern locale_t __duplocale(locale_t locale);
 extern void __freelocale(locale_t locale);
+
+typedef int (*strcoll_l_function)(const char* left, const char* right, locale_t locale);
 
 #define CHECK(condition)                                                            \
     do {                                                                            \
@@ -19,10 +22,33 @@ extern void __freelocale(locale_t locale);
         }                                                                           \
     } while (0)
 
+static int sign_of(int value) {
+    return (value > 0) - (value < 0);
+}
+
+static int verify_collation(strcoll_l_function function, locale_t locale) {
+    static const struct {
+        const char* left;
+        const char* right;
+        int expected_sign;
+    } cases[] = {
+        {"", "", 0}, {"a", "a", 0}, {"a", "b", -1}, {"b", "a", 1}, {"aa", "b", -1}, {"b", "aa", 1}, {"a\0z", "a\0a", 0},
+    };
+    size_t index;
+
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); ++index) {
+        errno = EDOM;
+        CHECK(sign_of(function(cases[index].left, cases[index].right, locale)) == cases[index].expected_sign);
+        CHECK(errno == EDOM);
+    }
+    return 0;
+}
+
 int main(void) {
     static const nl_item gpucomp_items[] = {
         0x40000, 0x40002, 0x40003, 0x40004, 0x40005, 0x40006, 0x40015,
     };
+    strcoll_l_function compare_locale = __strcoll_l;
     char* (*query_langinfo)(nl_item, locale_t) = __nl_langinfo_l;
     char* result;
     locale_t (*create_locale)(int, const char*, locale_t) = __newlocale;
@@ -40,6 +66,12 @@ int main(void) {
     Dl_info info;
     size_t index;
 
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)compare_locale, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "__strcoll_l") == (void*)compare_locale);
+    CHECK(dlsym(RTLD_DEFAULT, "strcoll_l") == (void*)compare_locale);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)query_langinfo, &info) != 0);
     CHECK(info.dli_fname != NULL);
@@ -76,6 +108,9 @@ int main(void) {
     CHECK(utf8_locale != (locale_t)0);
     CHECK(errno == ERANGE);
     CHECK(uselocale((locale_t)0) == active_before);
+
+    CHECK(verify_collation(compare_locale, c_locale) == 0);
+    CHECK(verify_collation(compare_locale, utf8_locale) == 0);
 
     for (index = 0; index < sizeof(gpucomp_items) / sizeof(gpucomp_items[0]); ++index) {
         errno = EDOM;

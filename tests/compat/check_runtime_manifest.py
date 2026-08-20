@@ -299,6 +299,15 @@ LIBC_POLICIES = [
         "test": "compat/sched_abi",
         "quality": "EXACT",
     },
+    {
+        "name": "__strcoll_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__strcoll_l",
+        "test": "compat/locale_ownership",
+        "quality": "DEGRADED",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

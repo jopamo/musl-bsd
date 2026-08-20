@@ -297,6 +297,14 @@ are narrower than glibc's outside this observed matrix. The shared locale
 regression owns the item matrix, return and pointer ABI, alias identity, and
 provider check.
 
+Gpucomp imports `__strcoll_l@GLIBC_2.2.5` for locale-facet string comparisons.
+Musl's internal symbol is the canonical public `strcoll_l` implementation and
+preserves the bytewise ordering, embedded-NUL behavior, return ABI, and
+successful-call `errno` contract covered by the observed C and C.UTF-8 paths.
+It is `DEGRADED` because musl intentionally ignores locale-specific collation.
+The shared `compat/locale_ownership` regression verifies both locale handles,
+provider ownership, and public-alias identity.
+
 NVIDIA's present and NVML DSOs import `__progname_full@GLIBC_2.2.5` as a global
 object requirement. Musl's object is the authoritative storage aliased by
 `program_invocation_name`; startup preserves the exact `argv[0]` pointer and
