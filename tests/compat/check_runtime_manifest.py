@@ -281,6 +281,15 @@ LIBC_POLICIES = [
         "test": "compat/program_name",
         "quality": "EXACT",
     },
+    {
+        "name": "__sched_cpucount",
+        "version": "GLIBC_2.6",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__sched_cpucount",
+        "test": "compat/sched_abi",
+        "quality": "EXACT",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

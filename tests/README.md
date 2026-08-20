@@ -106,6 +106,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - exact compatibility-core `__sched_cpualloc` allocation ABI, dynamic
   word-boundary sizing, zero initialization, boundary-bit operations,
   `errno`, provider ownership, and public `CPU_FREE` cleanup;
+- exact musl `__sched_cpucount` byte-range count ABI, zero-size/null handling,
+  byte and word boundaries, observed 128-byte sizing, `errno`, and provider
+  ownership;
 - exact musl `__errno_location` pointer ABI, stable address, macro and direct
   mutation visibility, syscall updates, simultaneous thread isolation,
   provider identity, and libc/libpthread manifest requirements;

@@ -321,6 +321,13 @@ verifies allocation size and alignment, zero initialization, boundary-bit
 operations, successful `errno` preservation, and provider ownership; cleanup
 uses only the public `CPU_FREE` macro.
 
+Gpucomp and tileiras import `__sched_cpucount@GLIBC_2.6` with the observed
+128-byte CPU-set size after affinity queries. Musl's direct provider counts
+every bit in the supplied byte range, including partial word boundaries, and
+preserves `errno`; this is `EXACT` on the qualified x86_64 ABI.
+`compat/sched_abi` verifies zero-size/null handling, counts across byte and
+word boundaries, the observed 128-byte size, and provider ownership.
+
 The seven qualified NVIDIA/CUDA objects that perform ordinary system work
 import `__errno_location@GLIBC_2.2.5`; the inventory contains both libc and
 legacy libpthread SONAME requirements. Musl’s unified libc returns the address
