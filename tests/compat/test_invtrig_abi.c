@@ -5,6 +5,7 @@
 #include <string.h>
 
 typedef double (*inverse_function)(double value);
+typedef double (*inverse_binary_function)(double y, double x);
 typedef float (*inverse_float_function)(float value);
 
 #define CHECK(condition)                                                                     \
@@ -22,6 +23,13 @@ static int close_to(double actual, double expected) {
 static int verify_value(inverse_function function, double input, double expected) {
     errno = EDOM;
     CHECK(close_to(function(input), expected));
+    CHECK(errno == EDOM);
+    return 0;
+}
+
+static int verify_binary_value(inverse_binary_function function, double y, double x, double expected) {
+    errno = EDOM;
+    CHECK(close_to(function(y, x), expected));
     CHECK(errno == EDOM);
     return 0;
 }
@@ -45,6 +53,7 @@ int main(void) {
     inverse_function asin_function = asin;
     inverse_float_function asinf_function = asinf;
     inverse_function atan_function = atan;
+    inverse_binary_function atan2_function = atan2;
     double result;
     float float_result;
     Dl_info info;
@@ -74,6 +83,11 @@ int main(void) {
     CHECK(info.dli_fname != NULL);
     CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "atan") == (void*)atan_function);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)atan2_function, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "atan2") == (void*)atan2_function);
 
     CHECK(verify_value(acos_function, 1.0, 0.0) == 0);
     CHECK(verify_value(acos_function, -1.0, pi) == 0);
@@ -109,6 +123,19 @@ int main(void) {
     CHECK(verify_value(atan_function, 0.5, 0.4636476090008061162) == 0);
     CHECK(verify_value(atan_function, INFINITY, pi / 2.0) == 0);
     CHECK(verify_value(atan_function, -INFINITY, -pi / 2.0) == 0);
+    CHECK(verify_binary_value(atan2_function, 0.0, 1.0, 0.0) == 0);
+    CHECK(verify_binary_value(atan2_function, -0.0, 1.0, -0.0) == 0);
+    CHECK(signbit(atan2_function(-0.0, 1.0)) != 0);
+    CHECK(verify_binary_value(atan2_function, 0.0, -1.0, pi) == 0);
+    CHECK(verify_binary_value(atan2_function, -0.0, -1.0, -pi) == 0);
+    CHECK(verify_binary_value(atan2_function, 1.0, 0.0, pi / 2.0) == 0);
+    CHECK(verify_binary_value(atan2_function, -1.0, 0.0, -pi / 2.0) == 0);
+    CHECK(verify_binary_value(atan2_function, 1.0, 1.0, pi / 4.0) == 0);
+    CHECK(verify_binary_value(atan2_function, -1.0, 1.0, -pi / 4.0) == 0);
+    CHECK(verify_binary_value(atan2_function, 1.0, -1.0, 3.0 * pi / 4.0) == 0);
+    CHECK(verify_binary_value(atan2_function, -1.0, -1.0, -3.0 * pi / 4.0) == 0);
+    CHECK(verify_binary_value(atan2_function, INFINITY, INFINITY, pi / 4.0) == 0);
+    CHECK(verify_binary_value(atan2_function, -INFINITY, INFINITY, -pi / 4.0) == 0);
 
     errno = ERANGE;
     result = acos_function(nextafter(1.0, 0.0));
@@ -161,6 +188,14 @@ int main(void) {
     CHECK(errno == ENOTTY);
     errno = ENOTTY;
     result = atan_function(NAN);
+    CHECK(isnan(result));
+    CHECK(errno == ENOTTY);
+    errno = ENOTTY;
+    result = atan2_function(NAN, 1.0);
+    CHECK(isnan(result));
+    CHECK(errno == ENOTTY);
+    errno = ENOTTY;
+    result = atan2_function(1.0, NAN);
     CHECK(isnan(result));
     CHECK(errno == ENOTTY);
 

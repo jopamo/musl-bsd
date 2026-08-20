@@ -583,9 +583,9 @@
       "binding": "global",
       "implementation": "musl-libc:atan2",
       "name": "atan2",
-      "quality": "UNSUPPORTED",
+      "quality": "EXACT",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/invtrig_abi",
       "version": "GLIBC_2.2.5"
     },
     {
