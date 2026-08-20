@@ -134,11 +134,13 @@ It verifies that loading `libnvidia-glcore` fails without early NVIDIA TLS and
 succeeds through the complete compatibility-interpreter path when the explicit
 TLS policy is enabled. The loader test also proves that glcore and gpucomp
 exports remain private under `RTLD_LOCAL`, then become visible at their original
-addresses after glcore is promoted with `RTLD_GLOBAL`. A separate test verifies
-that a discovered pointer-sized `_nv*TLS` object has distinct, stable storage
-in eight concurrent threads and remains isolated from the main thread. The
-same workers exercise NVIDIA's observed pthread-key teardown model through the
-compatibility core and require all registered destructors to run.
+addresses after glcore is promoted with `RTLD_GLOBAL`. It runs 32 local and 32
+global open/close cycles with overlapping handles, verifying that closing one
+reference cannot invalidate the other or corrupt symbol scope. A separate test
+verifies that a discovered pointer-sized `_nv*TLS` object has distinct, stable
+storage in eight concurrent threads and remains isolated from the main thread.
+The same workers exercise NVIDIA's observed pthread-key teardown model through
+the compatibility core and require all registered destructors to run.
 
 ## API At A Glance
 

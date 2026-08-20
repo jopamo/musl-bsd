@@ -133,6 +133,51 @@ static int lookup_symbol(void* handle, const char* symbol, void** address) {
     return -1;
 }
 
+static int check_default_symbol(const char* symbol, void* expected) {
+    void* published;
+
+    if (expected == NULL) {
+        if (default_symbol_is_absent(symbol))
+            return 0;
+        fprintf(stderr, "%s escaped local scope\n", symbol);
+        return -1;
+    }
+    if (lookup_symbol(RTLD_DEFAULT, symbol, &published) != 0)
+        return -1;
+    if (published == expected)
+        return 0;
+    fprintf(stderr, "%s was published from the wrong object\n", symbol);
+    return -1;
+}
+
+static int capture_symbols(void* handle, int count, char** symbols, void** addresses) {
+    for (int i = 0; i < count; ++i)
+        if (lookup_symbol(handle, symbols[i], &addresses[i]) != 0)
+            return -1;
+    return 0;
+}
+
+static int check_symbols(void* handle, int count, char** symbols, void** expected) {
+    for (int i = 0; i < count; ++i) {
+        void* address;
+
+        if (lookup_symbol(handle, symbols[i], &address) != 0)
+            return -1;
+        if (address != expected[i]) {
+            fprintf(stderr, "%s resolved from the wrong object\n", symbols[i]);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+static int check_default_symbols(int count, char** symbols, void** addresses, int published) {
+    for (int i = 0; i < count; ++i)
+        if (check_default_symbol(symbols[i], published ? addresses[i] : NULL) != 0)
+            return -1;
+    return 0;
+}
+
 static int check_global_load(const char* dso_path, int symbol_count, char** symbols) {
     void** addresses;
     void* global_handle;
@@ -155,16 +200,13 @@ static int check_global_load(const char* dso_path, int symbol_count, char** symb
         result = 82;
         goto free_addresses;
     }
-    for (int i = 0; i < symbol_count; ++i) {
-        if (lookup_symbol(local_handle, symbols[i], &addresses[i]) != 0) {
-            result = 83;
-            goto close_local;
-        }
-        if (!default_symbol_is_absent(symbols[i])) {
-            fprintf(stderr, "%s escaped RTLD_LOCAL scope\n", symbols[i]);
-            result = 84;
-            goto close_local;
-        }
+    if (capture_symbols(local_handle, symbol_count, symbols, addresses) != 0) {
+        result = 83;
+        goto close_local;
+    }
+    if (check_default_symbols(symbol_count, symbols, addresses, 0) != 0) {
+        result = 84;
+        goto close_local;
     }
 
     global_handle = dlopen(dso_path, RTLD_NOW | RTLD_GLOBAL);
@@ -173,16 +215,8 @@ static int check_global_load(const char* dso_path, int symbol_count, char** symb
         result = 85;
         goto close_local;
     }
-    for (int i = 0; i < symbol_count; ++i) {
-        void* published;
-
-        if (lookup_symbol(RTLD_DEFAULT, symbols[i], &published) != 0 || published != addresses[i]) {
-            if (published != NULL && published != addresses[i])
-                fprintf(stderr, "%s was published from the wrong object\n", symbols[i]);
-            result = 86;
-            break;
-        }
-    }
+    if (check_default_symbols(symbol_count, symbols, addresses, 1) != 0)
+        result = 86;
     if (dlclose(global_handle) != 0 && result == 0)
         result = 87;
 
@@ -190,6 +224,82 @@ close_local:
     if (dlclose(local_handle) != 0 && result == 0)
         result = 88;
 free_addresses:
+    free(addresses);
+    return result;
+}
+
+static int check_repeated_load(const char* scope, const char* dso_path, int symbol_count, char** symbols) {
+    enum { REPEAT_COUNT = 32 };
+    void** addresses;
+    void* first = NULL;
+    void* second = NULL;
+    int flags;
+    int result = 0;
+
+    if (strcmp(scope, "local") == 0)
+        flags = RTLD_NOW | RTLD_LOCAL;
+    else if (strcmp(scope, "global") == 0)
+        flags = RTLD_NOW | RTLD_GLOBAL;
+    else
+        return 90;
+    addresses = calloc((size_t)symbol_count, sizeof(*addresses));
+    if (addresses == NULL)
+        return 91;
+
+    for (int cycle = 0; cycle < REPEAT_COUNT; ++cycle) {
+        first = dlopen(dso_path, flags);
+        if (first == NULL) {
+            fprintf(stderr, "%s dlopen cycle %d: %s\n", scope, cycle, dlerror());
+            result = 92;
+            break;
+        }
+        if (capture_symbols(first, symbol_count, symbols, addresses) != 0 ||
+            check_default_symbols(symbol_count, symbols, addresses, flags & RTLD_GLOBAL) != 0) {
+            result = 93;
+            goto cleanup;
+        }
+
+        second = dlopen(dso_path, flags);
+        if (second == NULL) {
+            fprintf(stderr, "overlapping %s dlopen cycle %d: %s\n", scope, cycle, dlerror());
+            result = 94;
+            goto cleanup;
+        }
+        if (check_symbols(second, symbol_count, symbols, addresses) != 0) {
+            result = 95;
+            goto cleanup;
+        }
+
+        if (dlclose(first) != 0) {
+            fprintf(stderr, "first %s dlclose cycle %d: %s\n", scope, cycle, dlerror());
+            result = 96;
+            first = NULL;
+            goto cleanup;
+        }
+        first = NULL;
+        if (check_symbols(second, symbol_count, symbols, addresses) != 0 ||
+            check_default_symbols(symbol_count, symbols, addresses, flags & RTLD_GLOBAL) != 0) {
+            result = 97;
+            goto cleanup;
+        }
+        if (dlclose(second) != 0) {
+            fprintf(stderr, "final %s dlclose cycle %d: %s\n", scope, cycle, dlerror());
+            result = 98;
+            second = NULL;
+            goto cleanup;
+        }
+        second = NULL;
+        if (!(flags & RTLD_GLOBAL) && check_default_symbols(symbol_count, symbols, addresses, 0) != 0) {
+            result = 99;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    if (second != NULL && dlclose(second) != 0 && result == 0)
+        result = 100;
+    if (first != NULL && dlclose(first) != 0 && result == 0)
+        result = 101;
     free(addresses);
     return result;
 }
@@ -233,6 +343,8 @@ int main(int argc, char** argv) {
         return check_load(argv[2]);
     if (strcmp(argv[1], "global-load") == 0 && argc >= 4)
         return check_global_load(argv[2], argc - 3, argv + 3);
+    if (strcmp(argv[1], "repeat-load") == 0 && argc >= 5)
+        return check_repeated_load(argv[2], argv[3], argc - 4, argv + 4);
     if (strcmp(argv[1], "exit") == 0 && argc == 3)
         return atoi(argv[2]);
     if (strcmp(argv[1], "signal") == 0) {

@@ -93,6 +93,22 @@ def main():
         if result.returncode != 0:
             fail("RTLD_GLOBAL publication of NVIDIA dependency graph", result)
 
+        for scope in ("local", "global"):
+            result = run(
+                target,
+                [
+                    "nvidia-loader",
+                    "repeat-load",
+                    scope,
+                    str(glcore),
+                    glcore_symbol,
+                    gpucomp_symbol,
+                ],
+                env,
+            )
+            if result.returncode != 0:
+                fail(f"repeated RTLD_{scope.upper()} NVIDIA loading", result)
+
         result = run(
             target,
             ["nvidia-loader", "recurse-load", str(glcore)],
