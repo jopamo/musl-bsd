@@ -107,6 +107,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   floating-point conversion ABIs, decimal and hexadecimal input, end pointers,
   special values, range errors, invalid input, `errno`, provider ownership,
   and public-alias identity through `compat/strto_l`;
+- exact musl `__tls_get_addr` loader/TLS ABI, shared general-dynamic TLS
+  relocation, provider ownership, per-thread storage isolation, and `errno`
+  through `compat/tls_abi`;
 - degraded musl `__newlocale`/`__nl_langinfo_l` construction and query ABIs,
   observed monetary items, C and C.UTF-8 handles, inactive construction,
   in-place category replacement, `errno`, and internal/public provider

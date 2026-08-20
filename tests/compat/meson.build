@@ -415,6 +415,27 @@ if glibc_runtime_enabled
   )
   test('compat/strto_l', strto_l_test, suite: 'compat')
 
+  tls_abi_dso = shared_library(
+    'tls-abi',
+    'tls_abi.c',
+    c_args: c_flags,
+    install: false,
+  )
+  tls_abi_test = executable(
+    'test_compat_tls_abi',
+    'test_tls_abi.c',
+    include_directories: [overlay_inc, compat_test_inc],
+    c_args: c_flags,
+    install: false,
+  )
+  test(
+    'compat/tls_abi',
+    tls_abi_test,
+    args: tls_abi_dso.full_path(),
+    depends: tls_abi_dso,
+    suite: 'compat',
+  )
+
   ctype_b_loc_test = executable(
     'test_compat_ctype_b_loc',
     'test_ctype_b_loc.c',

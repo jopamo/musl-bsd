@@ -353,6 +353,15 @@ LIBC_POLICIES = [
         "test": "compat/locale_ownership",
         "quality": "DEGRADED",
     },
+    {
+        "name": "__tls_get_addr",
+        "version": "GLIBC_2.3",
+        "soname": "ld-linux-x86-64.so.2",
+        "binding": "global",
+        "implementation": "musl-libc:__tls_get_addr",
+        "test": "compat/tls_abi",
+        "quality": "EXACT",
+    },
 ]
 
 CORE_EXCLUDED_SYMBOLS = {

@@ -330,6 +330,13 @@ explicit locale and its locale-aware conversion model is narrower; the
 consolidated `compat/strto_l` regression verifies both provider and public-alias
 identities.
 
+The NVIDIA/CUDA graph imports `__tls_get_addr@GLIBC_2.3` from the glibc loader
+SONAME. Musl unifies the loader and libc implementation, exporting the same
+x86_64 two-word TLS module/offset ABI from its runtime libc. The policy is
+`EXACT`; `compat/tls_abi` verifies provider ownership and resolves a
+general-dynamic TLS DSO across multiple threads while preserving the main
+thread's storage and `errno`.
+
 Gpucomp and the NVIDIA compiler stack import `__strxfrm_l@GLIBC_2.2.5` for
 locale-facet collation keys. Musl's internal symbol is the canonical public
 `strxfrm_l` provider and returns identity/code-point transformation lengths,

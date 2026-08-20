@@ -376,9 +376,9 @@
       "binding": "global",
       "implementation": "musl-libc:__tls_get_addr",
       "name": "__tls_get_addr",
-      "quality": "UNSUPPORTED",
+      "quality": "EXACT",
       "soname": "ld-linux-x86-64.so.2",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/tls_abi",
       "version": "GLIBC_2.3"
     },
     {
