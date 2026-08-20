@@ -228,6 +228,12 @@ invariant failures. Musl preserves the essential non-returning diagnostic and
 classified `DEGRADED` because musl uses a signed line parameter and a different
 diagnostic format without glibc’s abort-message metadata.
 
+The NVIDIA compiler stack also imports `abort@GLIBC_2.2.5` for unconditional
+failure termination. Musl's canonical provider preserves the non-returning
+`SIGABRT` contract and forces the default action even when the signal is
+ignored. It is `EXACT`; the shared `compat/assert_fail` regression verifies
+provider ownership and this fail-closed termination path.
+
 NVML imports `__ctype_b_loc@GLIBC_2.3` at three whitespace checks. Each call
 indexes the returned table with a sign-extended byte and tests glibc’s
 `_ISspace` mask (`0x2000`). Musl supplies the required pointer-to-pointer ABI,

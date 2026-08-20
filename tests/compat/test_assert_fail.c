@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -36,8 +37,27 @@ static ssize_t read_diagnostic(int fd, char* buffer, size_t capacity) {
     return (ssize_t)length;
 }
 
+static int verify_abort(void (*function)(void)) {
+    int status;
+    pid_t child;
+
+    child = fork();
+    CHECK(child >= 0);
+    if (child == 0) {
+        if (signal(SIGABRT, SIG_IGN) == SIG_ERR)
+            _exit(120);
+        function();
+        _exit(121);
+    }
+    CHECK(waitpid(child, &status, 0) == child);
+    CHECK(WIFSIGNALED(status));
+    CHECK(WTERMSIG(status) == SIGABRT);
+    return 0;
+}
+
 int main(void) {
     void (*assert_fail)(const char*, const char*, unsigned int, const char*) = __assert_fail;
+    void (*abort_function)(void) = abort;
     char diagnostic[512];
     int pipe_fds[2];
     int status;
@@ -72,5 +92,11 @@ int main(void) {
     CHECK(strstr(diagnostic, "nvidia-test.c") != NULL);
     CHECK(strstr(diagnostic, "load_gpu") != NULL);
     CHECK(strstr(diagnostic, "321") != NULL);
+    memset(&info, 0, sizeof(info));
+    CHECK(dladdr((const void*)abort_function, &info) != 0);
+    CHECK(info.dli_fname != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(dlsym(RTLD_DEFAULT, "abort") == (void*)abort_function);
+    CHECK(verify_abort(abort_function) == 0);
     return 0;
 }

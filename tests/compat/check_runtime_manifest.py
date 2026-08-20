@@ -129,6 +129,15 @@ LIBC_POLICIES = [
         "quality": "EXACT",
     },
     {
+        "name": "abort",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:abort",
+        "test": "compat/assert_fail",
+        "quality": "EXACT",
+    },
+    {
         "name": "_IO_getc",
         "version": "GLIBC_2.2.5",
         "soname": "libc.so.6",

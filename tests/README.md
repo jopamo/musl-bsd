@@ -77,7 +77,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - degraded musl `_IO_putc` byte conversion, persisted output, stream-error,
   `errno`, and provider-identity behavior;
 - degraded musl `__assert_fail` provider identity, argument diagnostics,
-  non-returning behavior, and `SIGABRT` termination;
+  non-returning behavior, and `SIGABRT` termination; exact musl `abort`
+  provider identity and forced `SIGABRT` termination when the signal is
+  ignored, through `compat/assert_fail`;
 - degraded musl `__ctype_b_loc` pointer ABI, glibc mask encoding, signed-byte
   indexing range, C/C.UTF-8 classification, `errno`, and provider identity;
 - degraded musl `__ctype_get_mb_cur_max` return ABI, C and C.UTF-8 widths,
