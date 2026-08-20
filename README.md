@@ -254,6 +254,13 @@ canonical libm implementations. Their finite, signed-zero, infinity, NaN, and
 `errno` behavior is `EXACT`; `compat/invtrig_abi` covers the shared providers
 and scalar ABIs.
 
+The NVIDIA compiler stack imports `atof@GLIBC_2.2.5` for floating-point
+conversion. Musl's canonical provider preserves decimal and hexadecimal input,
+special values, and signed zero, but preserves incoming `errno` on invalid and
+range input where glibc publishes `EINVAL` or `ERANGE`. It is `DEGRADED`;
+`compat/atof_abi` verifies the conversion, distinct error behavior, and
+provider ownership.
+
 The NVIDIA compiler stack imports `alarm@GLIBC_2.2.5` for process timer
 management. Musl's canonical provider preserves cancellation return values,
 `SIGALRM` delivery, and successful-call `errno`; it is `EXACT`.
