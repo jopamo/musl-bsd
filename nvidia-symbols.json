@@ -351,16 +351,16 @@
       "name": "__strtod_l",
       "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "compat/strtod_l",
+      "test": "compat/strto_l",
       "version": "GLIBC_2.2.5"
     },
     {
       "binding": "global",
       "implementation": "musl-libc:__strtof_l",
       "name": "__strtof_l",
-      "quality": "UNSUPPORTED",
+      "quality": "DEGRADED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "compat/strto_l",
       "version": "GLIBC_2.2.5"
     },
     {

@@ -332,7 +332,16 @@ LIBC_POLICIES = [
         "soname": "libc.so.6",
         "binding": "global",
         "implementation": "musl-libc:__strtod_l",
-        "test": "compat/strtod_l",
+        "test": "compat/strto_l",
+        "quality": "DEGRADED",
+    },
+    {
+        "name": "__strtof_l",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-libc:__strtof_l",
+        "test": "compat/strto_l",
         "quality": "DEGRADED",
     },
 ]

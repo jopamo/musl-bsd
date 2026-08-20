@@ -406,14 +406,14 @@ if glibc_runtime_enabled
   )
   test('compat/strftime_abi', strftime_abi_test, suite: 'compat')
 
-  strtod_l_test = executable(
-    'test_compat_strtod_l',
-    'test_strtod_l.c',
+  strto_l_test = executable(
+    'test_compat_strto_l',
+    'test_strto_l.c',
     include_directories: [overlay_inc, compat_test_inc],
     c_args: c_flags,
     install: false,
   )
-  test('compat/strtod_l', strtod_l_test, suite: 'compat')
+  test('compat/strto_l', strto_l_test, suite: 'compat')
 
   ctype_b_loc_test = executable(
     'test_compat_ctype_b_loc',

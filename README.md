@@ -320,13 +320,15 @@ successful-call `errno`. It is `DEGRADED` because musl's locale database and
 formatting extensions are narrower than glibc's; `compat/strftime_abi` covers
 the qualified C and C.UTF-8 paths and provider ownership.
 
-The NVIDIA stack imports `__strtod_l@GLIBC_2.2.5` for locale-facet floating-point
-parsing. Musl's internal symbol is the canonical public `strtod_l` provider and
-preserves decimal and hexadecimal conversion, end pointers, special values,
+The NVIDIA stack imports `__strtof_l@GLIBC_2.2.5` and
+`__strtod_l@GLIBC_2.2.5` for locale-facet floating-point parsing. Musl's
+internal symbols are the canonical public `strtof_l`/`strtod_l` providers and
+preserve decimal and hexadecimal conversion, end pointers, special values,
 range errors, invalid-input handling, and successful-call `errno` for the
-observed C and C.UTF-8 paths. It is `DEGRADED` because musl ignores the
-explicit locale and its locale-aware conversion model is narrower; the focused
-`compat/strtod_l` regression verifies provider and public-alias identity.
+observed C and C.UTF-8 paths. They are `DEGRADED` because musl ignores the
+explicit locale and its locale-aware conversion model is narrower; the
+consolidated `compat/strto_l` regression verifies both provider and public-alias
+identities.
 
 NVIDIA's present and NVML DSOs import `__progname_full@GLIBC_2.2.5` as a global
 object requirement. Musl's object is the authoritative storage aliased by
