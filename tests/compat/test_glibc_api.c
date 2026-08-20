@@ -21,7 +21,6 @@
 
 extern int __pthread_key_create(pthread_key_t* key, void (*destructor)(void*));
 extern char* __realpath_chk(const char* path, char* resolved_path, size_t resolved_len);
-extern char* __strdup(const char* string);
 extern char* __strtok_r(char* s, const char* delim, char** save_ptr);
 extern int dladdr1(const void* address, Dl_info* info, void** extra_info, int flags);
 extern int backtrace(void** buffer, int size);
@@ -180,7 +179,6 @@ int main(void) {
     char path_a[PATH_MAX];
     char path_b[PATH_MAX];
     char* tmpdir;
-    char* dup;
     char* tok_state = NULL;
     char toks[] = "a:b";
     char datebuf[64];
@@ -217,11 +215,6 @@ int main(void) {
     CHECK(secure_getenv("MUSL_BSD_TEST_ENV") != NULL);
 
     CHECK(__realpath_chk(".", buf, sizeof(buf)) != NULL);
-
-    dup = __strdup("alpha");
-    CHECK(dup != NULL);
-    CHECK(strcmp(dup, "alpha") == 0);
-    free(dup);
 
     CHECK(strcmp(__strtok_r(toks, ":", &tok_state), "a") == 0);
     CHECK(strcmp(__strtok_r(NULL, ":", &tok_state), "b") == 0);

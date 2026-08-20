@@ -305,6 +305,13 @@ It is `DEGRADED` because musl intentionally ignores locale-specific collation.
 The shared `compat/locale_ownership` regression verifies both locale handles,
 provider ownership, and public-alias identity.
 
+The NVIDIA stack imports `__strdup@GLIBC_2.2.5` through several compatibility
+paths. The compatibility-core symbol delegates to musl's canonical `strdup`
+allocator, preserving allocation ownership, NUL-terminated copying, empty
+strings, successful-call `errno`, and the return ABI. It is `EXACT` on the
+qualified x86_64 ABI; `compat/strdup_abi` verifies independent allocations and
+direct provider ownership.
+
 NVIDIA's present and NVML DSOs import `__progname_full@GLIBC_2.2.5` as a global
 object requirement. Musl's object is the authoritative storage aliased by
 `program_invocation_name`; startup preserves the exact `argv[0]` pointer and

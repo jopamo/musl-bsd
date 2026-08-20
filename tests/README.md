@@ -96,6 +96,9 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - degraded musl `__strcoll_l`/`strcoll_l` locale-comparison ABI, C and C.UTF-8
   bytewise ordering, embedded-NUL handling, `errno`, provider ownership, and
   public-alias identity;
+- exact compatibility-core `__strdup` allocation ABI, embedded-NUL and empty
+  strings, copy independence, `errno`, and provider ownership through
+  `compat/strdup_abi`;
 - degraded musl `__newlocale`/`__nl_langinfo_l` construction and query ABIs,
   observed monetary items, C and C.UTF-8 handles, inactive construction,
   in-place category replacement, `errno`, and internal/public provider

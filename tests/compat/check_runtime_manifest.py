@@ -80,6 +80,15 @@ CORE_POLICIES = [
         "test": "compat/sched_abi",
         "quality": "EXACT",
     },
+    {
+        "name": "__strdup",
+        "version": "GLIBC_2.2.5",
+        "soname": "libc.so.6",
+        "binding": "global",
+        "implementation": "musl-bsd-core:__strdup",
+        "test": "compat/strdup_abi",
+        "quality": "EXACT",
+    },
 ]
 
 LIBC_POLICIES = [
