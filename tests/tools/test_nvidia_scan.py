@@ -25,9 +25,13 @@ def fail(message, result=None):
 
 
 def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: test_nvidia_scan.py SCANNER")
+    if len(sys.argv) != 4:
+        raise SystemExit(
+            "usage: test_nvidia_scan.py SCANNER CONSUMER PROVIDER"
+        )
     scanner = Path(sys.argv[1]).resolve()
+    consumer = Path(sys.argv[2]).resolve()
+    provider = Path(sys.argv[3]).resolve()
 
     result = run(
         scanner,
@@ -97,6 +101,47 @@ def main():
         report = json.loads(result.stdout)
         if report["roots"] != [str(discovered.resolve())]:
             fail(f"unexpected discovered root: {report['roots']!r}")
+
+    result = run(
+        scanner,
+        "--no-recursive",
+        "--format",
+        "json",
+        "--provider",
+        str(provider),
+        "--provider-alias",
+        "required_symbol=provided_symbol",
+        str(consumer),
+    )
+    if result.returncode != 0:
+        fail("explicit provider alias was rejected", result)
+    analysis = json.loads(result.stdout)["provider_analysis"]
+    if (
+        analysis["matching_policy"] != "musl-name-based-runtime-resolution"
+        or analysis["provided_count"] != 1
+        or analysis["missing_count"] != 0
+        or analysis["provided"][0]["resolution"] != "alias"
+    ):
+        fail(f"unexpected provider analysis: {analysis!r}")
+
+    result = run(
+        scanner,
+        "--no-recursive",
+        "--strict",
+        "--format",
+        "json",
+        "--provider",
+        str(provider),
+        str(consumer),
+    )
+    if result.returncode != 2:
+        fail("strict provider analysis did not reject a missing symbol", result)
+    analysis = json.loads(result.stdout)["provider_analysis"]
+    if (
+        analysis["missing_count"] != 1
+        or analysis["missing"][0]["name"] != "required_symbol"
+    ):
+        fail(f"missing provider requirement was not reported: {analysis!r}")
 
 
 if __name__ == "__main__":

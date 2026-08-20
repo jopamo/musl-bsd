@@ -94,8 +94,23 @@ NVIDIA_LIBDIR=/usr/lib \
 The report records SONAMEs, versioned undefined symbols, TLS relocations,
 IFUNC/IRELATIVE use, relocation types, and a consolidated compatibility
 requirement list. Pass explicit DSO paths to avoid automatic NVIDIA filename
-discovery. `--strict` makes unresolved `DT_NEEDED` entries a command failure;
-malformed or unsupported ELF inputs always fail.
+discovery.
+
+Provider analysis compares those requirements with explicit runtime ELFs:
+
+```sh
+tools/nvidia-scan --format json \
+  --provider /lib/libc.so \
+  --provider build/libmusl-bsd-core.so.2.0.0 \
+  --provider-alias ftruncate64=ftruncate \
+  --provider-alias statfs64=statfs
+```
+
+Aliases are accepted only when the configured providers export the target
+symbol. The report labels this as musl's name-based runtime resolution; it does
+not claim glibc version-quality equivalence. `--strict` makes unresolved
+`DT_NEEDED` entries or provider-backed symbol requirements a command failure.
+Malformed, unsupported, or ambiguous input always fails.
 
 ## API At A Glance
 

@@ -60,7 +60,11 @@ DT_HASH = 4
 DT_RUNPATH = 29
 
 SHN_UNDEF = 0
+STB_LOCAL = 0
+STT_TLS = 6
 STT_GNU_IFUNC = 10
+STV_INTERNAL = 1
+STV_HIDDEN = 2
 
 R_X86_64_NAMES = {
     0: "R_X86_64_NONE",
@@ -695,6 +699,20 @@ class ELFFile:
             },
         }
 
+    def exported_symbol_names(self) -> set[str]:
+        exported: set[str] = set()
+        for symbol in self._symbols():
+            visibility = symbol["other"] & 0x3
+            if (
+                symbol["name"]
+                and symbol["shndx"] != SHN_UNDEF
+                and symbol["bind"] != STB_LOCAL
+                and visibility not in (STV_INTERNAL, STV_HIDDEN)
+                and (symbol["value"] != 0 or symbol["type"] == STT_TLS)
+            ):
+                exported.add(symbol["name"])
+        return exported
+
 
 def _split_paths(values: Iterable[str]) -> list[Path]:
     paths: list[Path] = []
@@ -910,6 +928,103 @@ def _summary(
     }
 
 
+def _provider_aliases(values: Iterable[str]) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    for value in values:
+        if value.count("=") != 1:
+            raise ScanError(
+                f"invalid provider alias {value!r}; expected REQUIRED=PROVIDED"
+            )
+        required, provided = value.split("=", 1)
+        if (
+            not required
+            or not provided
+            or required.strip() != required
+            or provided.strip() != provided
+        ):
+            raise ScanError(
+                f"invalid provider alias {value!r}; names must be non-empty "
+                "and contain no surrounding whitespace"
+            )
+        if required in aliases:
+            raise ScanError(f"duplicate provider alias for {required}")
+        aliases[required] = provided
+    return aliases
+
+
+def _provider_analysis(
+    requirements: list[dict[str, Any]],
+    provider_paths: list[Path],
+    aliases: dict[str, str],
+) -> dict[str, Any]:
+    providers: list[dict[str, Any]] = []
+    symbol_providers: dict[str, set[str]] = {}
+    canonical_paths: list[Path] = []
+    seen_paths: set[Path] = set()
+    for path in provider_paths:
+        try:
+            canonical = path.resolve(strict=True)
+        except OSError as error:
+            raise ScanError(f"{path}: cannot resolve provider: {error}") from error
+        if canonical not in seen_paths:
+            seen_paths.add(canonical)
+            canonical_paths.append(canonical)
+
+    for path in canonical_paths:
+        symbols = ELFFile(path).exported_symbol_names()
+        if not symbols:
+            raise ScanError(f"{path}: provider exports no usable dynamic symbols")
+        provider = str(path)
+        providers.append({"path": provider, "exported_symbol_count": len(symbols)})
+        for symbol in symbols:
+            symbol_providers.setdefault(symbol, set()).add(provider)
+
+    for required, provided in aliases.items():
+        if provided not in symbol_providers:
+            raise ScanError(
+                f"provider alias {required}={provided} names a symbol that "
+                "none of the providers exports"
+            )
+
+    provided_requirements: list[dict[str, Any]] = []
+    missing_requirements: list[dict[str, Any]] = []
+    required_names = {item["name"] for item in requirements}
+    unknown_aliases = sorted(set(aliases) - required_names)
+    if unknown_aliases:
+        raise ScanError(
+            "provider aliases do not match a required GLIBC symbol: "
+            + ", ".join(unknown_aliases)
+        )
+
+    for requirement in requirements:
+        required = requirement["name"]
+        provided = aliases.get(required, required)
+        provider_names = sorted(symbol_providers.get(provided, ()))
+        if not provider_names:
+            missing_requirements.append(requirement)
+            continue
+        resolved = dict(requirement)
+        resolved["resolution"] = (
+            "alias" if required in aliases else "direct"
+        )
+        resolved["provided_symbol"] = provided
+        resolved["providers"] = provider_names
+        provided_requirements.append(resolved)
+
+    return {
+        "matching_policy": "musl-name-based-runtime-resolution",
+        "providers": providers,
+        "aliases": [
+            {"required": required, "provided": provided}
+            for required, provided in sorted(aliases.items())
+        ],
+        "provided_count": len(provided_requirements),
+        "missing_count": len(missing_requirements),
+        "provided": provided_requirements,
+        "missing": missing_requirements,
+    }
+
+
 def _hex(value: int) -> str:
     return f"0x{value:x}"
 
@@ -1009,6 +1124,23 @@ def text_report(report: dict[str, Any]) -> str:
             lines.append(f"  {missing['from']}: {missing['name']}")
     else:
         lines.append("Missing dependencies: none")
+    if "provider_analysis" in report:
+        analysis = report["provider_analysis"]
+        lines.extend(
+            [
+                "",
+                "Runtime provider analysis",
+                f"  matching policy: {analysis['matching_policy']}",
+                f"  providers: {len(analysis['providers'])}",
+                f"  provided requirements: {analysis['provided_count']}",
+                f"  missing requirements: {analysis['missing_count']}",
+            ]
+        )
+        for missing in analysis["missing"]:
+            lines.append(
+                f"    MISSING {missing['name']}@{missing['version']} "
+                f"[{missing['library'] or 'unknown'}]"
+            )
     return "\n".join(lines) + "\n"
 
 
@@ -1050,7 +1182,30 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="return failure when any DT_NEEDED dependency cannot be resolved",
+        help=(
+            "return failure when a DT_NEEDED dependency or provider-backed "
+            "symbol requirement cannot be resolved"
+        ),
+    )
+    parser.add_argument(
+        "--provider",
+        action="append",
+        default=[],
+        metavar="ELF",
+        help=(
+            "ELF runtime provider whose exported symbols satisfy requirements "
+            "(repeatable)"
+        ),
+    )
+    parser.add_argument(
+        "--provider-alias",
+        action="append",
+        default=[],
+        metavar="REQUIRED=PROVIDED",
+        help=(
+            "explicit musl runtime alias; PROVIDED must be exported by a "
+            "configured provider (repeatable)"
+        ),
     )
     return parser
 
@@ -1071,6 +1226,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         roots = discover_targets(args.paths, library_paths)
         report = scan(roots, library_paths, not args.no_recursive)
+        aliases = _provider_aliases(args.provider_alias)
+        if aliases and not args.provider:
+            raise ScanError("--provider-alias requires at least one --provider")
+        if args.provider:
+            report["provider_analysis"] = _provider_analysis(
+                report["summary"]["required_glibc_symbols"],
+                [Path(path) for path in args.provider],
+                aliases,
+            )
         rendered = (
             json.dumps(report, indent=2, sort_keys=True) + "\n"
             if args.format == "json"
@@ -1083,7 +1247,14 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ScanError) as error:
         print(f"nvidia-scan: {error}", file=sys.stderr)
         return 2
-    return 2 if args.strict and report["missing_dependencies"] else 0
+    provider_missing = (
+        report.get("provider_analysis", {}).get("missing_count", 0)
+    )
+    return (
+        2
+        if args.strict and (report["missing_dependencies"] or provider_missing)
+        else 0
+    )
 
 
 if __name__ == "__main__":
