@@ -1,0 +1,7 @@
+prefix=@PREFIX@
+libdir=${prefix}/@LIBDIR@
+
+Name: musl-bsd-glibc-host
+Description: Qualified x86_64 LP64 host runtime for loading glibc-targeted DSOs on musl
+Version: @VERSION@
+Libs: -L${libdir} -Wl,--push-state,--no-as-needed -l:libmusl-bsd-glibc-host.so.2 -Wl,--pop-state

@@ -118,7 +118,7 @@ int main(void) {
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)ctype_b_loc, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__ctype_b_loc") == (void*)ctype_b_loc);
     return 0;
 }

@@ -37,17 +37,17 @@ int main(void) {
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)allocate_cpu_set, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") != NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__sched_cpualloc") == (void*)allocate_cpu_set);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)count_cpu_set, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__sched_cpucount") == (void*)count_cpu_set);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)free_cpu_set, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") != NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") != NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__sched_cpufree") == (void*)free_cpu_set);
 
     for (index = 0; index < sizeof(counts) / sizeof(counts[0]); ++index) {

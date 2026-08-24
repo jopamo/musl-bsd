@@ -1,0 +1,8 @@
+prefix=@PREFIX@
+libdir=${prefix}/@LIBDIR@
+overlayincludedir=${libdir}/musl-bsd/overlay/include
+
+Name: musl-bsd-headers
+Description: Header-only BSD and glibc source compatibility overlays for musl
+Version: @VERSION@
+Cflags: -I${overlayincludedir}

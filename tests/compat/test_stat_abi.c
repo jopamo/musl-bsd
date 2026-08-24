@@ -111,7 +111,7 @@ static int verify_provider(const char* name, const void* function, int expected_
     memset(&info, 0, sizeof(info));
     CHECK(dladdr(function, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    from_compatibility_core = strstr(info.dli_fname, "libmusl-bsd-core") != NULL;
+    from_compatibility_core = strstr(info.dli_fname, "libmusl-bsd-glibc-host") != NULL;
     CHECK(from_compatibility_core == expected_from_compatibility_core);
     CHECK(dlsym(RTLD_DEFAULT, name) == function);
     return 0;

@@ -67,7 +67,7 @@ int main(void) {
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)assert_fail, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "__assert_fail") == (void*)assert_fail);
 
     CHECK(pipe(pipe_fds) == 0);
@@ -95,7 +95,7 @@ int main(void) {
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)abort_function, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") == NULL);
     CHECK(dlsym(RTLD_DEFAULT, "abort") == (void*)abort_function);
     CHECK(verify_abort(abort_function) == 0);
     return 0;

@@ -85,7 +85,7 @@ def _provider_implementation(item: dict[str, Any], context: str) -> str:
     ):
         raise ManifestError(f"{context}: providers must be a non-empty string list")
     names = {Path(path).name for path in providers}
-    if any(name.startswith("libmusl-bsd-core.so") for name in names):
+    if any(name.startswith("libmusl-bsd-glibc-host.so") for name in names):
         provider = "musl-bsd-core"
     elif "libc.so" in names:
         provider = "musl-libc"

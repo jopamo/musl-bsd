@@ -80,12 +80,14 @@ if unwind_backtrace_supported
   c_flags += '-DMUSL_BSD_HAVE_UNWIND=1'
 endif
 
-# This distro is usrmerge-only.  The interpreter alias is in /usr/lib, while
-# all project payload and glibc facade DSOs live under a private project tree.
-compat_runtime_install_dir = '/usr/lib/musl-bsd'
+# This distro is usrmerge-only.  Keep source-compatibility payload private,
+# but install the qualified host DSO in the normal ABI library directory so
+# musl can resolve its SONAME without an executable-specific RUNPATH.
+abi_library_install_dir = get_option('prefix') / get_option('libdir')
+compat_runtime_install_dir = abi_library_install_dir / 'musl-bsd'
 compat_glibc_install_dir = compat_runtime_install_dir + '/glibc'
 compat_loader_payload_install_dir = compat_runtime_install_dir + '/loader'
-glibc_loader_install_dir = '/usr/lib'
+glibc_loader_install_dir = abi_library_install_dir
 glibc_loader_name = get_option('glibc_loader_name')
 musl_linker_path = get_option('musl_linker_path')
 default_glibc_loader_name = ''
@@ -110,8 +112,8 @@ if glibc_runtime_enabled and (
   error('Qualified glibc runtime requires a loader name and musl linker path')
 endif
 
-compat_runtime_preload_path = compat_runtime_install_dir + '/libmusl-bsd-core.so.2'
-compat_runtime_library_path = compat_glibc_install_dir + ':/usr/lib'
+compat_runtime_preload_path = abi_library_install_dir + '/libmusl-bsd-glibc-host.so.2'
+compat_runtime_library_path = compat_glibc_install_dir + ':' + abi_library_install_dir
 compat_runtime_c_args = c_flags
 if glibc_runtime_enabled
   compat_runtime_c_args += [
@@ -295,18 +297,6 @@ elif glibc_runtime_enabled
   warning('glibc pthread ABI bridge is disabled: no verified fixture for ' + cpu_family)
 endif
 
-libcompat = shared_library(
-  'musl-bsd-core',
-  compat_common_sources + compat_interpose_sources,
-  include_directories: [overlay_inc],
-  install: true,
-  install_dir: compat_runtime_install_dir,
-  version: '2.0.0',
-  c_args: compat_runtime_c_args,
-  link_args: compat_link_args,
-  link_depends: compat_link_deps
-)
-
 libcompat_static = static_library(
   'musl-bsd-core',
   # Keep libc interposition shims out of the static archive: they depend on
@@ -315,11 +305,34 @@ libcompat_static = static_library(
   include_directories: [overlay_inc],
   install: true,
   install_dir: compat_runtime_install_dir,
-  c_args: c_flags
+  c_args: c_flags + ['-fvisibility=hidden'],
+  pic: true
 )
 
 glibc_facades = []
 if glibc_runtime_enabled
+  # This DSO is a qualified foreign-DSO host, not the dynamic counterpart of
+  # libmusl-bsd-core.a.  Its distinct basename prevents ordinary
+  # -lmusl-bsd-core links from silently selecting runtime-hosting semantics.
+  libcompat = shared_library(
+    'musl-bsd-glibc-host',
+    compat_common_sources + compat_interpose_sources,
+    include_directories: [overlay_inc],
+    install: true,
+    install_dir: abi_library_install_dir,
+    version: '2.0.0',
+    c_args: compat_runtime_c_args,
+    link_args: compat_link_args,
+    link_depends: compat_link_deps
+  )
+
+  # The versioned SONAME is selected only through musl-bsd-glibc-host.pc.
+  # Do not publish an ordinary unversioned linker name.
+  meson.add_install_script(
+    'tools/remove-unversioned-host-link.sh',
+    get_option('libdir') / 'libmusl-bsd-glibc-host.so',
+  )
+
   facade_map = meson.current_source_dir() / 'src/compat/libmusl-bsd-facade.map'
   probe_facade_map = meson.current_source_dir() / 'src/compat/libmusl-bsd-probe-facade.map'
   foreach facade : [
@@ -393,6 +406,38 @@ install_subdir(
   'overlay/include',
   install_dir: get_option('libdir') / 'musl-bsd/overlay'
 )
+
+interface_pc_data = configuration_data()
+interface_pc_data.set('PREFIX', get_option('prefix'))
+interface_pc_data.set('LIBDIR', get_option('libdir'))
+interface_pc_data.set('VERSION', meson.project_version())
+interface_pc_install_dir = get_option('libdir') / 'pkgconfig'
+
+configure_file(
+  input: 'musl-bsd-headers.pc.in',
+  output: 'musl-bsd-headers.pc',
+  configuration: interface_pc_data,
+  install: true,
+  install_dir: interface_pc_install_dir,
+)
+
+configure_file(
+  input: 'musl-bsd-source.pc.in',
+  output: 'musl-bsd-source.pc',
+  configuration: interface_pc_data,
+  install: true,
+  install_dir: interface_pc_install_dir,
+)
+
+if glibc_runtime_enabled
+  configure_file(
+    input: 'musl-bsd-glibc-host.pc.in',
+    output: 'musl-bsd-glibc-host.pc',
+    configuration: interface_pc_data,
+    install: true,
+    install_dir: interface_pc_install_dir,
+  )
+endif
 
 pkg = import('pkgconfig')
 pkg.generate(libargp,

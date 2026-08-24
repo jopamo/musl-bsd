@@ -362,7 +362,7 @@ cleanup:
 
 static int check_preload_order(void) {
     struct preload_order order = {
-        .core = "libmusl-bsd-core.so",
+        .core = "libmusl-bsd-glibc-host.so",
         .user = "libloader-user-preload.so",
         .core_index = -1,
         .user_index = -1,

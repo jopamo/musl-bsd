@@ -26,7 +26,7 @@ def main():
     }
 
     core_dynamic = output(readelf, "-dW", str(core))
-    if "Library soname: [libmusl-bsd-core.so.2]" not in core_dynamic:
+    if "Library soname: [libmusl-bsd-glibc-host.so.2]" not in core_dynamic:
         raise SystemExit("core has wrong SONAME")
 
     for soname, path in expected.items():
@@ -35,7 +35,7 @@ def main():
         versions = output(readelf, "-VW", str(path))
         if f"Library soname: [{soname}]" not in dynamic:
             raise SystemExit(f"{path}: wrong SONAME")
-        if "Shared library: [libmusl-bsd-core.so.2]" not in dynamic:
+        if "Shared library: [libmusl-bsd-glibc-host.so.2]" not in dynamic:
             raise SystemExit(f"{path}: no dependency on project core")
         if "GLIBC_2.2.5" not in versions:
             raise SystemExit(f"{path}: no glibc version definition")

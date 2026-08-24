@@ -27,7 +27,7 @@ The source-compatibility layer remains portable independently of the optional gl
 
 The runtime bridge provides:
 
-- a private compatibility core
+- a qualified compatibility host DSO in the standard ABI library directory
 - glibc-named facade DSOs
 - a glibc-named interpreter alias
 - explicit runtime qualification metadata
@@ -79,31 +79,53 @@ The generated runtime qualification report is installed as:
 
 It records the architecture, ABI, qualification result, interpreter name, and musl linker path.
 
+### Explicit build interfaces
+
+Consumers opt into exactly one compatibility contract through pkg-config:
+
+| Module | Contract |
+|---|---|
+| `musl-bsd-headers` | Overlay headers only |
+| `musl-bsd-source` | Overlay headers plus the PIC, hidden-visibility `libmusl-bsd-core.a` |
+| `musl-bsd-glibc-host` | Force the qualified host DSO into `DT_NEEDED`; installed only for a qualified ABI |
+
+`musl-bsd-source` names the archive exactly and cannot fall back to a shared
+object. `musl-bsd-glibc-host` names the versioned host DSO exactly, scopes
+`--no-as-needed` with linker push/pop state, and cannot fall back to the source
+archive.
+
 ---
 
 ## Runtime Layout
 
-The binary-runtime payload is kept private under `/usr/lib/musl-bsd`:
+Source compatibility and glibc facade payload remain private. The qualified
+host DSO is installed in the normal ABI library directory so musl can resolve
+its SONAME without a consumer RUNPATH:
 
 ```text
-/usr/lib/musl-bsd/
-├── compat-runtime.json
-├── glibc/
-│   ├── libc.so.6
-│   ├── libdl.so.2
-│   ├── libm.so.6
-│   ├── libpthread.so.0
-│   ├── libresolv.so.2
-│   ├── librt.so.1
-│   └── libutil.so.1
-├── libmusl-bsd-core.so.2
-└── loader/
-    └── ld-linux-x86-64.so.2
+/usr/lib/
+├── libmusl-bsd-glibc-host.so.2
+└── musl-bsd/
+    ├── compat-runtime.json
+    ├── libmusl-bsd-core.a
+    ├── overlay/include/
+    ├── glibc/
+    │   ├── libc.so.6
+    │   ├── libdl.so.2
+    │   ├── libm.so.6
+    │   ├── libpthread.so.0
+    │   ├── libresolv.so.2
+    │   ├── librt.so.1
+    │   └── libutil.so.1
+    └── loader/
+        └── ld-linux-x86-64.so.2
 ```
+
+There is no unversioned `libmusl-bsd-glibc-host.so` linker name.
 
 The glibc-named interpreter alias points into `loader/`. It launches musl's loader with:
 
-- the trusted `musl-bsd` core preloaded
+- the trusted `musl-bsd` glibc-host DSO preloaded
 - the private compatibility library path
 - the original target `argv[0]`
 - the original arguments
@@ -157,7 +179,7 @@ The loader does **not**:
 Preload order is fixed:
 
 ```text
-musl-bsd core → NVIDIA TLS → user LD_PRELOAD
+musl-bsd glibc host → NVIDIA TLS → user LD_PRELOAD
 ```
 
 ### Scan installed NVIDIA libraries
@@ -193,7 +215,7 @@ Requirements can be checked against explicit runtime ELF providers:
 ```sh
 tools/nvidia-scan --format json \
   --provider /lib/libc.so \
-  --provider build/libmusl-bsd-core.so.2.0.0 \
+  --provider build/libmusl-bsd-glibc-host.so.2.0.0 \
   --provider-alias ftruncate64=ftruncate \
   --provider-alias statfs64=statfs
 ```

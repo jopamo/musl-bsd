@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)&__progname_full, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") == NULL);
 
     full_symbol = dlsym(RTLD_DEFAULT, "__progname_full");
     invocation_symbol = dlsym(RTLD_DEFAULT, "program_invocation_name");

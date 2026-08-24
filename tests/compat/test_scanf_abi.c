@@ -27,7 +27,7 @@ static int verify_provider(const char* internal_name, const char* public_name, c
     memset(&info, 0, sizeof(info));
     CHECK(dladdr(function, &info) != 0);
     CHECK(info.dli_fname != NULL);
-    CHECK(strstr(info.dli_fname, "libmusl-bsd-core") == NULL);
+    CHECK(strstr(info.dli_fname, "libmusl-bsd-glibc-host") == NULL);
     return 0;
 }
 

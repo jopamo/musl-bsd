@@ -1,0 +1,8 @@
+prefix=@PREFIX@
+libdir=${prefix}/@LIBDIR@
+
+Name: musl-bsd-source
+Description: PIC static BSD and glibc source compatibility implementation for musl
+Version: @VERSION@
+Requires: musl-bsd-headers
+Libs: -L${libdir}/musl-bsd -l:libmusl-bsd-core.a
