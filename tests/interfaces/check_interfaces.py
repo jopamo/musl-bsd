@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 from pathlib import Path
+import re
 import shlex
 import subprocess
 import sys
@@ -121,6 +122,55 @@ def compile_host_contract(env, cc, readelf, build_root, libs):
             raise SystemExit("host interface did not force its qualified DT_NEEDED")
 
 
+def compile_startup_contract(env, cc, readelf, build_root, libdir, libs):
+    facade_names = (
+        "libc.so.6",
+        "libdl.so.2",
+        "libm.so.6",
+        "libpthread.so.0",
+        "libresolv.so.2",
+        "librt.so.1",
+        "libutil.so.1",
+    )
+    installed_host = str(libdir / "libmusl-bsd-glibc-host.so.2")
+    installed_facades = {
+        str(libdir / "musl-bsd/glibc" / name): str(build_root / name)
+        for name in facade_names
+    }
+    installed_rpath = f"-Wl,-rpath,{libdir}/musl-bsd/glibc"
+    build_libs = []
+    for flag in libs:
+        if flag == installed_host:
+            build_libs.append(str(build_root / "libmusl-bsd-glibc-host.so.2"))
+        elif flag in installed_facades:
+            build_libs.append(installed_facades[flag])
+        elif flag == installed_rpath:
+            build_libs.append(f"-Wl,-rpath,{build_root}")
+        else:
+            build_libs.append(flag)
+
+    with tempfile.TemporaryDirectory(prefix="musl-bsd-startup-interface-") as temp:
+        temp = Path(temp)
+        source = temp / "startup.c"
+        source.write_text("int main(void) { return 0; }\n")
+        executable = temp / "startup-consumer"
+        subprocess.run(
+            [cc, str(source), "-o", str(executable), *build_libs],
+            check=True,
+            env=env,
+        )
+        dynamic = output(env, readelf, "-dW", str(executable))
+        needed = re.findall(r"Shared library: \[([^\]]+)\]", dynamic)
+        expected = ["libmusl-bsd-glibc-host.so.2", *facade_names]
+        if needed[: len(expected)] != expected:
+            raise SystemExit(
+                "startup interface DT_NEEDED order mismatch: "
+                f"expected prefix {expected!r}, got {needed!r}"
+            )
+        if f"Library runpath: [{build_root}]" not in dynamic:
+            raise SystemExit("startup interface did not retain its facade RUNPATH")
+
+
 def main():
     if len(sys.argv) != 9:
         raise SystemExit(
@@ -213,6 +263,18 @@ def main():
         raise SystemExit(
             "host interface availability does not match runtime qualification"
         )
+    startup_exists = (
+        subprocess.run(
+            [pkg_config, "--exists", "musl-bsd-glibc-startup"],
+            env=env,
+            check=False,
+        ).returncode
+        == 0
+    )
+    if startup_exists != runtime_enabled:
+        raise SystemExit(
+            "startup interface availability does not match runtime qualification"
+        )
 
     if runtime_enabled:
         host_libs = shlex.split(
@@ -231,6 +293,39 @@ def main():
         if any("libmusl-bsd-core" in flag for flag in host_libs):
             raise SystemExit("host interface can fall back to the source archive")
         compile_host_contract(env, cc, readelf, build_root, host_libs)
+
+        facade_names = (
+            "libc.so.6",
+            "libdl.so.2",
+            "libm.so.6",
+            "libpthread.so.0",
+            "libresolv.so.2",
+            "librt.so.1",
+            "libutil.so.1",
+        )
+        facade_dir = libdir / "musl-bsd/glibc"
+        startup_libs = shlex.split(
+            output(env, pkg_config, "--libs", "musl-bsd-glibc-startup")
+        )
+        require_equal(
+            startup_libs,
+            [
+                "-Wl,--push-state,--no-as-needed",
+                str(libdir / "libmusl-bsd-glibc-host.so.2"),
+                *(str(facade_dir / name) for name in facade_names),
+                "-Wl,--pop-state",
+                f"-Wl,-rpath,{facade_dir}",
+            ],
+            "startup Libs",
+        )
+        compile_startup_contract(
+            env,
+            cc,
+            readelf,
+            build_root,
+            libdir,
+            startup_libs,
+        )
 
 
 if __name__ == "__main__":

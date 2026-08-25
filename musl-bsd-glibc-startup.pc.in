@@ -1,0 +1,8 @@
+prefix=@PREFIX@
+libdir=${prefix}/@LIBDIR@
+facadelibdir=${libdir}/musl-bsd/glibc
+
+Name: musl-bsd-glibc-startup
+Description: Fail-closed startup closure for musl executables that host glibc-targeted DSOs
+Version: @VERSION@
+Libs: -Wl,--push-state,--no-as-needed ${libdir}/libmusl-bsd-glibc-host.so.2 ${facadelibdir}/libc.so.6 ${facadelibdir}/libdl.so.2 ${facadelibdir}/libm.so.6 ${facadelibdir}/libpthread.so.0 ${facadelibdir}/libresolv.so.2 ${facadelibdir}/librt.so.1 ${facadelibdir}/libutil.so.1 -Wl,--pop-state -Wl,-rpath,${facadelibdir}

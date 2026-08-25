@@ -88,11 +88,14 @@ Consumers opt into exactly one compatibility contract through pkg-config:
 | `musl-bsd-headers` | Overlay headers only |
 | `musl-bsd-source` | Overlay headers plus the PIC, hidden-visibility `libmusl-bsd-core.a` |
 | `musl-bsd-glibc-host` | Force the qualified host DSO into `DT_NEEDED`; installed only for a qualified ABI |
+| `musl-bsd-glibc-startup` | Force the host DSO and every private glibc facade into the initial dependency graph; installed only for a qualified ABI |
 
 `musl-bsd-source` names the archive exactly and cannot fall back to a shared
 object. `musl-bsd-glibc-host` names the versioned host DSO exactly, scopes
 `--no-as-needed` with linker push/pop state, and cannot fall back to the source
-archive.
+archive. `musl-bsd-glibc-startup` uses exact DSO paths, publishes no ambient
+library search path, and records only the private facade directory in the
+consumer RUNPATH.
 
 ---
 
@@ -181,6 +184,12 @@ Preload order is fixed:
 ```text
 musl-bsd glibc host → NVIDIA TLS → user LD_PRELOAD
 ```
+
+Musl-native processes that later load NVIDIA DSOs cannot use that interpreter
+path. They must link `musl-bsd-glibc-startup` into the initial executable and
+carry the NVIDIA TLS DSO into the initial dependency graph through a
+vendor-owned startup DSO. Loading either component from `main()`, a
+constructor, or a plugin loader is too late for NVIDIA's initial-exec TLS.
 
 ### Scan installed NVIDIA libraries
 

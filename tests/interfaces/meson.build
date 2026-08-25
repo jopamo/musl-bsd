@@ -18,7 +18,7 @@ test(
   'interfaces/contracts',
   python,
   args: interface_checker_args,
-  depends: glibc_runtime_enabled ? [libcompat_static, libcompat] : libcompat_static,
+  depends: glibc_runtime_enabled ? [libcompat_static, libcompat, glibc_facades] : libcompat_static,
   suite: 'interfaces',
   timeout: 60,
 )

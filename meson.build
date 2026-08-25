@@ -437,6 +437,14 @@ if glibc_runtime_enabled
     install: true,
     install_dir: interface_pc_install_dir,
   )
+
+  configure_file(
+    input: 'musl-bsd-glibc-startup.pc.in',
+    output: 'musl-bsd-glibc-startup.pc',
+    configuration: interface_pc_data,
+    install: true,
+    install_dir: interface_pc_install_dir,
+  )
 endif
 
 pkg = import('pkgconfig')
