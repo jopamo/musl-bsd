@@ -14,3 +14,12 @@ foreach test_name : header_tests
   )
   test('headers/' + test_name, test_exe, suite: 'headers')
 endforeach
+
+shared_module(
+  'test_headers_source_fs64_aliases',
+  'test_source_fs64_aliases.c',
+  include_directories: overlay_inc,
+  c_args: c_flags,
+  link_args: ['-Wl,-z,defs'],
+  install: false,
+)

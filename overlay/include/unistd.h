@@ -17,16 +17,16 @@
     }))
 #endif
 
-#ifdef __cplusplus
-extern "C" {
+#ifndef lseek64
+#define lseek64 lseek
 #endif
 
-off64_t lseek64(int fd, off64_t offset, int whence);
-ssize_t pread64(int fd, void* buf, size_t count, off64_t offset);
-ssize_t pwrite64(int fd, const void* buf, size_t count, off64_t offset);
+#ifndef pread64
+#define pread64 pread
+#endif
 
-#ifdef __cplusplus
-}
+#ifndef pwrite64
+#define pwrite64 pwrite
 #endif
 
 #endif

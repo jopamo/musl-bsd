@@ -18,6 +18,51 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef open64
+#undef open64
+#endif
+#ifdef fopen64
+#undef fopen64
+#endif
+#ifdef fseeko64
+#undef fseeko64
+#endif
+#ifdef ftello64
+#undef ftello64
+#endif
+#ifdef lseek64
+#undef lseek64
+#endif
+#ifdef mmap64
+#undef mmap64
+#endif
+#ifdef pread64
+#undef pread64
+#endif
+#ifdef pwrite64
+#undef pwrite64
+#endif
+#ifdef alphasort64
+#undef alphasort64
+#endif
+#ifdef scandir64
+#undef scandir64
+#endif
+
+extern int open64(const char* path, int oflag, ...);
+extern FILE* fopen64(const char* path, const char* mode);
+extern int fseeko64(FILE* stream, off64_t offset, int whence);
+extern off64_t ftello64(FILE* stream);
+extern off64_t lseek64(int fd, off64_t offset, int whence);
+extern void* mmap64(void* addr, size_t length, int prot, int flags, int fd, off64_t offset);
+extern ssize_t pread64(int fd, void* buf, size_t count, off64_t offset);
+extern ssize_t pwrite64(int fd, const void* buf, size_t count, off64_t offset);
+extern int alphasort64(const struct dirent** a, const struct dirent** b);
+extern int scandir64(const char* path,
+                     struct dirent*** namelist,
+                     int (*filter)(const struct dirent*),
+                     int (*compar)(const struct dirent**, const struct dirent**));
+
 extern int __pthread_key_create(pthread_key_t* key, void (*destructor)(void*));
 extern char* __realpath_chk(const char* path, char* resolved_path, size_t resolved_len);
 extern char* __strtok_r(char* s, const char* delim, char** save_ptr);

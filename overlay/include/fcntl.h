@@ -3,14 +3,8 @@
 
 #define MUSL_BSD_OVERLAY_FCNTL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int open64(const char* path, int oflag, ...);
-
-#ifdef __cplusplus
-}
+#ifndef open64
+#define open64 open
 #endif
 
 #endif

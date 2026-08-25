@@ -5,16 +5,16 @@
 
 #include <sys/types.h>
 
-#ifdef __cplusplus
-extern "C" {
+#ifndef fopen64
+#define fopen64 fopen
 #endif
 
-FILE* fopen64(const char* path, const char* mode);
-int fseeko64(FILE* stream, off64_t offset, int whence);
-off64_t ftello64(FILE* stream);
+#ifndef fseeko64
+#define fseeko64 fseeko
+#endif
 
-#ifdef __cplusplus
-}
+#ifndef ftello64
+#define ftello64 ftello
 #endif
 
 #endif

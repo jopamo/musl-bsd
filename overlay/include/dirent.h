@@ -7,18 +7,12 @@
 #define dirent64 dirent
 #endif
 
-#ifdef __cplusplus
-extern "C" {
+#ifndef alphasort64
+#define alphasort64 alphasort
 #endif
 
-int alphasort64(const struct dirent** a, const struct dirent** b);
-int scandir64(const char* path,
-              struct dirent*** namelist,
-              int (*filter)(const struct dirent*),
-              int (*compar)(const struct dirent**, const struct dirent**));
-
-#ifdef __cplusplus
-}
+#ifndef scandir64
+#define scandir64 scandir
 #endif
 
 #endif

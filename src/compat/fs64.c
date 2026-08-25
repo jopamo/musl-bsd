@@ -24,6 +24,46 @@
 #undef fstatat64
 #endif
 
+#ifdef open64
+#undef open64
+#endif
+
+#ifdef fopen64
+#undef fopen64
+#endif
+
+#ifdef fseeko64
+#undef fseeko64
+#endif
+
+#ifdef ftello64
+#undef ftello64
+#endif
+
+#ifdef lseek64
+#undef lseek64
+#endif
+
+#ifdef mmap64
+#undef mmap64
+#endif
+
+#ifdef pread64
+#undef pread64
+#endif
+
+#ifdef pwrite64
+#undef pwrite64
+#endif
+
+#ifdef alphasort64
+#undef alphasort64
+#endif
+
+#ifdef scandir64
+#undef scandir64
+#endif
+
 #ifdef ftruncate64
 #undef ftruncate64
 #endif

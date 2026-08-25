@@ -5,14 +5,8 @@
 
 #include <sys/types.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void* mmap64(void* addr, size_t length, int prot, int flags, int fd, off64_t offset);
-
-#ifdef __cplusplus
-}
+#ifndef mmap64
+#define mmap64 mmap
 #endif
 
 #endif

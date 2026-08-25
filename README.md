@@ -97,6 +97,11 @@ archive. `musl-bsd-glibc-startup` uses exact DSO paths, publishes no ambient
 library search path, and records only the private facade directory in the
 consumer RUNPATH.
 
+The source overlay maps ABI-identical glibc large-file names such as
+`pread64`, `pwrite64`, and `open64` onto musl's native 64-bit interfaces.
+Musl-native shared libraries must therefore retain native libc imports; real
+glibc `*64` ABI symbols are exported only by the qualified foreign-DSO host.
+
 ---
 
 ## Runtime Layout
