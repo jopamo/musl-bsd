@@ -1,6 +1,7 @@
 header_tests = [
   'glibc_overlay',
   'linux_mount_overlay',
+  'pidfd_overlay',
   'runtime_fs64_declarations',
 ]
 

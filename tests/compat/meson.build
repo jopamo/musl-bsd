@@ -714,7 +714,9 @@ compat_tests = [
   'runtime',
   'fallocate64',
   'glibc_api',
+  'mb_reader',
   'mount_link',
+  'pidfd',
   'rawmemchr',
 ]
 

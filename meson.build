@@ -281,6 +281,11 @@ compat_common_sources = [
   'src/compat/version.c',
 ]
 
+compat_source_sources = [
+  'src/source/mb-reader.c',
+  'src/source/pidfd.c',
+]
+
 compat_interpose_sources = []
 if glibc_runtime_enabled
   compat_interpose_sources += [
@@ -301,7 +306,7 @@ libcompat_static = static_library(
   'musl-bsd-core',
   # Keep libc interposition shims out of the static archive: they depend on
   # RTLD_NEXT and collide with libc.a during static links.
-  compat_common_sources,
+  compat_common_sources + compat_source_sources,
   include_directories: [overlay_inc],
   install: true,
   install_dir: compat_runtime_install_dir,

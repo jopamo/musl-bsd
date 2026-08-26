@@ -21,6 +21,8 @@ The project has two distinct roles:
 - **libobstack** — GNU obstack allocation APIs
 - **libargp** — GNU `argp` command-line parsing APIs
 - **BSD compatibility headers** — including `sys/queue.h`, `sys/tree.h`, and `sys/cdefs.h`
+- **Linux libc wrappers** — including the file-descriptor mount and pidfd APIs
+- **Byte-preserving multibyte input** — for consumers that cannot rely on glibc stdio recovery semantics
 
 The source-compatibility layer remains portable independently of the optional glibc binary runtime.
 
