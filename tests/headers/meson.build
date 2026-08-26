@@ -1,6 +1,7 @@
 header_tests = [
   'glibc_overlay',
   'linux_mount_overlay',
+  'runtime_fs64_declarations',
 ]
 
 foreach test_name : header_tests
