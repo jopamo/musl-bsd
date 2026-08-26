@@ -11,19 +11,21 @@
 extern "C" {
 #endif
 
-#ifndef alphasort64
+#ifdef alphasort64
+#undef alphasort64
+#endif
 int alphasort64(const struct dirent64 **left,
 		const struct dirent64 **right);
 #define alphasort64 alphasort
-#endif
 
-#ifndef scandir64
+#ifdef scandir64
+#undef scandir64
+#endif
 int scandir64(const char *path, struct dirent64 ***namelist,
 	      int (*filter)(const struct dirent64 *entry),
 	      int (*compare)(const struct dirent64 **left,
 			     const struct dirent64 **right));
 #define scandir64 scandir
-#endif
 
 #ifdef __cplusplus
 }
