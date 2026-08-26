@@ -26,10 +26,10 @@
 
 static char* preload_list(void) {
     const char* core = musl_bsd_compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
-    const char* nvidia_tls = getenv("MUSL_BSD_NVIDIA_TLS_PATH");
+    const char* early = getenv("MUSL_BSD_EARLY_PRELOAD_PATH");
     const char* user = getenv("LD_PRELOAD");
 
-    return musl_bsd_preload_list(core, nvidia_tls, user);
+    return musl_bsd_preload_list(core, early, user);
 }
 
 static int (*real_execve)(const char* pathname, char* const argv[], char* const envp[]);

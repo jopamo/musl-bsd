@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Black-box tests for the NVIDIA/CUDA symbol manifest tool."""
+"""Black-box tests for the symbol compatibility manifest tool."""
 
 import json
 from pathlib import Path
@@ -27,7 +27,7 @@ def fail(message, result=None):
 def main():
     if len(sys.argv) != 6:
         raise SystemExit(
-            "usage: test_nvidia_manifest.py TOOL SCANNER CONSUMER "
+            "usage: test_compatibility_manifest.py TOOL SCANNER CONSUMER "
             "PROVIDER COMMITTED_MANIFEST"
         )
     tool, scanner, consumer, provider, committed = (
@@ -36,10 +36,10 @@ def main():
 
     result = run(tool, "validate", committed)
     if result.returncode != 0:
-        fail("committed NVIDIA manifest is invalid", result)
+        fail("committed compatibility manifest is invalid", result)
 
     with tempfile.TemporaryDirectory(
-        prefix="musl-bsd-nvidia-manifest-"
+        prefix="musl-bsd-compatibility-manifest-"
     ) as name:
         directory = Path(name)
         inventory = directory / "inventory.json"

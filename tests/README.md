@@ -53,7 +53,7 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   missing-library, exit-status, and signal tests;
 - constructor dependency ordering and reverse-order teardown with readiness
   assertions at every phase;
-- all NVIDIA/CUDA-required pthread and semaphore bridge calls, direct scalar
+- all manifest-required pthread and semaphore bridge calls, direct scalar
   ABIs, compatibility-core export versions, return behavior, and error
   contracts;
 - `dladdr1` public ABI and `RTLD_DL_LINKMAP` identity, including explicit
@@ -61,7 +61,7 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - bounded name-based `dlvsym` compatibility, including all observed versions,
   unknown-version rejection, `GLIBC_PRIVATE`, `dlerror`, and `errno`;
 - exact `dlmopen(LM_ID_BASE)` adaptation and fail-closed rejection of
-  libcudart's unsupported `LM_ID_NEWLM` namespace request;
+  unsupported `LM_ID_NEWLM` namespace requests;
 - exact `__rawmemchr` byte conversion, first-match, alignment, return-address,
   `errno`, and guarded-page behavior;
 - exact `fallocate64` LP64 offsets, allocation, hole punching, file-size,
@@ -72,7 +72,7 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - translated `backtrace` frame ordering, caller identity, capacity bounds,
   non-positive sizes, return values, and `errno` preservation;
 - fail-closed exclusion of obsolete malloc-hook state, including runtime
-  lookup failure, normal allocator behavior, and real-glcore probe discovery;
+  lookup failure, normal allocator behavior, and optional-probe discovery;
 - canonical musl `secure_getenv` ownership, lookup identity, environment and
   `errno` behavior, internal-alias exclusion, and compatibility-version use;
 - degraded musl `_IO_getc` byte conversion, EOF, stream-error, pushback,
@@ -183,7 +183,7 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
   unterminated records, EOF and stream errors, invalid arguments, `errno`, and
   provider identity;
 - degraded musl `__isoc99_fscanf`/`__isoc99_sscanf` variadic ABIs and
-  public-alias identities, all NVIDIA-observed formatted stream/string
+  public-alias identities, all covered formatted stream/string
   conversions, C99 hexadecimal floating input, widths, length modifiers,
   suppression, assignment counts, stream position, matching/input failures,
   write-only stream errors, `errno`, and provider identities;
@@ -204,24 +204,13 @@ The `compat` suite has no loader exclusion on a qualified ABI. It includes:
 - fail-closed and provider-backed name resolution for a `GLIBC_*` undefined
   symbol;
 - schema, normalization, provider consistency, and fail-closed coverage for
-  the checked NVIDIA/CUDA symbol manifest;
+  the checked compatibility symbol manifest;
 - facade SONAME, dependency, export, and symbol-version inspection.
 
-When `NVIDIA_LIBDIR` is set, the `nvidia` suite also exercises the real local
-`libnvidia-glcore` dependency graph through the compatibility interpreter. It
-proves fail-closed behavior without early NVIDIA TLS and successful loading
-with `MUSL_BSD_NVIDIA_TLS_PATH`. It also verifies `RTLD_LOCAL` isolation and
-`RTLD_GLOBAL` publication for exports from glcore and its gpucomp dependency;
-32 repeated cycles per scope exercise overlapping handle ownership and
-close-order safety. The same real-binary test inventories weak imports and
-requires both unresolved optional probes and runtime-provided weak symbols to
-relocate successfully. It also requires strong `GLIBC_*` imports in the
-installed graph before the `RTLD_NOW` load, proving that the load exercises
-NVIDIA's actual versioned undefined symbols. The runner also verifies that
-glcore and its gpucomp and TLS dependencies all carry initializers and that
-the corresponding `DT_NEEDED` edges exist before loading the graph.
-Proprietary binaries are never copied into the repository. A second local test
-discovers an exported `_nv*TLS` object and checks per-thread address and value
-isolation across eight concurrent threads. It also gates on the installed
-NVIDIA graph's destructor ABI and verifies pthread-key destructor delivery
-through the compatibility core.
+When `MUSL_BSD_TEST_DSO` is set, the `external` suite exercises that DSO
+through the compatibility interpreter and across `/proc/self/exe` re-exec.
+`MUSL_BSD_TEST_EARLY_PRELOAD_PATH` supplies an optional early dependency, and
+`MUSL_BSD_TEST_TLS_DSO` enables the generic multithreaded TLS-storage probe.
+`MUSL_BSD_TEST_EXPORTS` and `MUSL_BSD_TEST_WEAK_SYMBOLS` optionally select
+comma-separated symbols for scope, repeated-load, and weak-relocation checks.
+External binaries are never copied into the repository.

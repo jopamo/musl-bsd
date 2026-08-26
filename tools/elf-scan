@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Inventory the ELF requirements of locally installed NVIDIA libraries.
+"""Inventory the compatibility requirements of ELF files.
 
 The scanner deliberately has no package-manager or network integration.  It
-only reads the files named on the command line (or NVIDIA-shaped files found
-in the standard local library directories) and follows their DT_NEEDED edges.
+only reads files named on the command line (or ELF files in explicitly named
+directories) and follows their DT_NEEDED edges.
 The JSON output is intended to be checked into a local qualification report,
 not to become a new compatibility manifest by itself.
 """
@@ -155,17 +155,6 @@ DEFAULT_LIBRARY_PATHS = (
     "/usr/lib/x86_64-linux-gnu",
 )
 
-TARGET_PATTERNS = (
-    "nvidia_drv.so",
-    "libGLX_nvidia.so.*",
-    "libnvidia-glcore.so.*",
-    "libnvidia-tls.so.*",
-    "libnvidia-ml.so.*",
-    "libcuda.so.*",
-    "libcudart.so.*",
-)
-
-
 class ScanError(Exception):
     """An input cannot be inspected without guessing."""
 
@@ -218,10 +207,10 @@ def _file_bytes(path: Path) -> bytes:
 class ELFFile:
     """The small ELF64 reader needed by the inventory contract.
 
-    NVIDIA's current x86_64 stack is the supported input.  Rejecting another
-    class, byte order, or machine is intentional: reporting partial metadata
-    for a different ABI would make the resulting qualification report unsafe
-    to act on.
+    The optional compatibility runtime currently supports x86_64 ELF64.
+    Rejecting another class, byte order, or machine is intentional: reporting
+    partial metadata for a different ABI would make a qualification report
+    unsafe to act on.
     """
 
     def __init__(self, path: Path):
@@ -758,39 +747,38 @@ def _unique_paths(paths: Iterable[Path]) -> list[Path]:
     return result
 
 
-def discover_targets(paths: list[str], library_paths: list[Path]) -> list[Path]:
-    if paths:
-        result: list[Path] = []
-        for value in paths:
-            path = Path(value)
-            if any(character in value for character in "*?["):
-                matches = [Path(match) for match in sorted(glob.glob(value))]
-                if not matches:
-                    raise ScanError(f"{value}: no files matched")
-                result.extend(matches)
-            elif path.is_dir():
-                for pattern in TARGET_PATTERNS:
-                    result.extend(path.glob(pattern))
-                result.extend(path.rglob("nvidia_drv.so"))
-            elif path.is_file():
-                result.append(path)
-            else:
-                raise ScanError(f"{path}: file or directory does not exist")
-        result = _unique_paths(result)
-    else:
-        result = []
-        for directory in library_paths:
-            if not directory.is_dir():
-                continue
-            for pattern in TARGET_PATTERNS:
-                result.extend(directory.glob(pattern))
-            result.extend(directory.rglob("nvidia_drv.so"))
-        result = _unique_paths(result)
+def _is_elf(path: Path) -> bool:
+    try:
+        with path.open("rb") as stream:
+            return stream.read(4) == b"\x7fELF"
+    except OSError:
+        return False
+
+
+def discover_targets(paths: list[str]) -> list[Path]:
+    result: list[Path] = []
+    for value in paths:
+        path = Path(value)
+        if any(character in value for character in "*?["):
+            matches = [Path(match) for match in sorted(glob.glob(value))]
+            if not matches:
+                raise ScanError(f"{value}: no files matched")
+            result.extend(matches)
+        elif path.is_dir():
+            try:
+                candidates = sorted(path.iterdir())
+            except OSError as error:
+                raise ScanError(f"{path}: cannot list directory: {error}") from error
+            for candidate in candidates:
+                if candidate.is_file() and _is_elf(candidate):
+                    result.append(candidate)
+        elif path.is_file():
+            result.append(path)
+        else:
+            raise ScanError(f"{path}: file or directory does not exist")
+    result = _unique_paths(result)
     if not result:
-        raise ScanError(
-            "no NVIDIA libraries found; pass explicit files or "
-            "--library-path pointing at the installed driver"
-        )
+        raise ScanError("no ELF files found; pass an ELF file, directory, or glob")
     return result
 
 
@@ -1093,7 +1081,7 @@ def _hex(value: int) -> str:
 
 def text_report(report: dict[str, Any]) -> str:
     lines = [
-        "NVIDIA ELF inventory",
+        "ELF compatibility inventory",
         f"format: {report['format']}",
         f"roots: {len(report['roots'])}",
         "",
@@ -1230,14 +1218,13 @@ def text_report(report: dict[str, Any]) -> str:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "scan locally installed NVIDIA ELF files and their DT_NEEDED "
-            "dependency graph"
+            "scan ELF files and their DT_NEEDED dependency graph"
         )
     )
     parser.add_argument(
         "paths",
         nargs="*",
-        help="NVIDIA DSO files, directories, or shell-style globs",
+        help="ELF files, directories, or shell-style globs",
     )
     parser.add_argument(
         "--library-path",
@@ -1297,17 +1284,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
     configured_paths = _split_paths(args.library_path)
-    if not configured_paths:
-        configured_paths = _split_paths(
-            [os.environ["NVIDIA_LIBDIR"]]
-            if os.environ.get("NVIDIA_LIBDIR")
-            else []
-        )
+    if not configured_paths and os.environ.get("ELF_LIBRARY_PATH"):
+        configured_paths = _split_paths([os.environ["ELF_LIBRARY_PATH"]])
+    input_paths = args.paths
+    if not input_paths and os.environ.get("ELF_SCAN_PATHS"):
+        input_paths = [
+            str(path) for path in _split_paths([os.environ["ELF_SCAN_PATHS"]])
+        ]
     library_paths = _unique_paths(
         configured_paths + [Path(path) for path in DEFAULT_LIBRARY_PATHS]
     )
     try:
-        roots = discover_targets(args.paths, library_paths)
+        roots = discover_targets(input_paths)
         report = scan(roots, library_paths, not args.no_recursive)
         aliases = _provider_aliases(args.provider_alias)
         if aliases and not args.provider:
@@ -1328,7 +1316,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             sys.stdout.write(rendered)
     except (OSError, ScanError) as error:
-        print(f"nvidia-scan: {error}", file=sys.stderr)
+        print(f"elf-scan: {error}", file=sys.stderr)
         return 2
     provider_missing = (
         report.get("provider_analysis", {}).get("missing_count", 0)

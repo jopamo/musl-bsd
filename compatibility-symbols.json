@@ -1,43 +1,9 @@
 {
   "matching_policy": "musl-name-based-runtime-resolution",
-  "missing_dependencies": [
-    {
-      "from": "libcudart.so.13.3.29",
-      "name": "libstdc++.so.6"
-    }
-  ],
+  "missing_dependencies": [],
   "schema": 1,
-  "scope": "observed NVIDIA/CUDA GLIBC-versioned undefined symbols",
-  "source_roots": [
-    {
-      "file": "libGLX_nvidia.so.610.43.02",
-      "soname": "libGLX_nvidia.so.0"
-    },
-    {
-      "file": "libcuda.so.610.43.02",
-      "soname": "libcuda.so.1"
-    },
-    {
-      "file": "libcudart.so.13.3.29",
-      "soname": "libcudart.so.13"
-    },
-    {
-      "file": "libnvidia-glcore.so.610.43.02",
-      "soname": "libnvidia-glcore.so.610.43.02"
-    },
-    {
-      "file": "libnvidia-ml.so.610.43.02",
-      "soname": "libnvidia-ml.so.1"
-    },
-    {
-      "file": "libnvidia-tls.so.610.43.02",
-      "soname": "libnvidia-tls.so.610.43.02"
-    },
-    {
-      "file": "nvidia_drv.so",
-      "soname": null
-    }
-  ],
+  "scope": "audited GLIBC-versioned compatibility symbols",
+  "source_roots": [],
   "symbols": [
     {
       "binding": "global",
@@ -621,7 +587,7 @@
       "name": "bind",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -630,7 +596,7 @@
       "name": "bind_textdomain_codeset",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -639,7 +605,7 @@
       "name": "bsearch",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -648,7 +614,7 @@
       "name": "btowc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -657,7 +623,7 @@
       "name": "calloc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -666,7 +632,7 @@
       "name": "ceil",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -675,7 +641,7 @@
       "name": "ceilf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -684,7 +650,7 @@
       "name": "chdir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -693,7 +659,7 @@
       "name": "chmod",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -702,7 +668,7 @@
       "name": "chown",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -711,7 +677,7 @@
       "name": "clearerr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -720,7 +686,7 @@
       "name": "clock",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -729,7 +695,7 @@
       "name": "clock_gettime",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.17"
     },
     {
@@ -738,7 +704,7 @@
       "name": "clock_gettime",
       "quality": "UNSUPPORTED",
       "soname": "librt.so.1",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -747,7 +713,7 @@
       "name": "clock_nanosleep",
       "quality": "UNSUPPORTED",
       "soname": "librt.so.1",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -756,7 +722,7 @@
       "name": "close",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -765,7 +731,7 @@
       "name": "close",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -774,7 +740,7 @@
       "name": "closedir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -783,7 +749,7 @@
       "name": "connect",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -792,7 +758,7 @@
       "name": "connect",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -801,7 +767,7 @@
       "name": "cos",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -810,7 +776,7 @@
       "name": "cosf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -819,7 +785,7 @@
       "name": "cosh",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -828,7 +794,7 @@
       "name": "dgettext",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -837,7 +803,7 @@
       "name": "dirfd",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -846,7 +812,7 @@
       "name": "dirname",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -855,7 +821,7 @@
       "name": "dl_iterate_phdr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -873,7 +839,7 @@
       "name": "dlclose",
       "quality": "UNSUPPORTED",
       "soname": "libdl.so.2",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -882,7 +848,7 @@
       "name": "dlerror",
       "quality": "UNSUPPORTED",
       "soname": "libdl.so.2",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -900,7 +866,7 @@
       "name": "dlopen",
       "quality": "UNSUPPORTED",
       "soname": "libdl.so.2",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -909,7 +875,7 @@
       "name": "dlsym",
       "quality": "UNSUPPORTED",
       "soname": "libdl.so.2",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -927,7 +893,7 @@
       "name": "dup",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -936,7 +902,7 @@
       "name": "dup2",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -945,7 +911,7 @@
       "name": "dup3",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.9"
     },
     {
@@ -954,7 +920,7 @@
       "name": "endmntent",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -963,7 +929,7 @@
       "name": "erf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -972,7 +938,7 @@
       "name": "eventfd",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.7"
     },
     {
@@ -981,7 +947,7 @@
       "name": "execle",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -990,7 +956,7 @@
       "name": "execv",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -999,7 +965,7 @@
       "name": "execve",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1008,7 +974,7 @@
       "name": "execvp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1017,7 +983,7 @@
       "name": "exit",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1026,7 +992,7 @@
       "name": "exp",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1035,7 +1001,7 @@
       "name": "exp2",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1044,7 +1010,7 @@
       "name": "expf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1053,7 +1019,7 @@
       "name": "fabs",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1062,7 +1028,7 @@
       "name": "faccessat",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.4"
     },
     {
@@ -1080,7 +1046,7 @@
       "name": "fchmod",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1089,7 +1055,7 @@
       "name": "fclose",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1098,7 +1064,7 @@
       "name": "fcntl",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1107,7 +1073,7 @@
       "name": "fcntl",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1116,7 +1082,7 @@
       "name": "fdopen",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1125,7 +1091,7 @@
       "name": "fdopendir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.4"
     },
     {
@@ -1134,7 +1100,7 @@
       "name": "feclearexcept",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1143,7 +1109,7 @@
       "name": "feof",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1152,7 +1118,7 @@
       "name": "ferror",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1161,7 +1127,7 @@
       "name": "fetestexcept",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1170,7 +1136,7 @@
       "name": "fflush",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1179,7 +1145,7 @@
       "name": "fgetc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1188,7 +1154,7 @@
       "name": "fgets",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1197,7 +1163,7 @@
       "name": "fileno",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1206,7 +1172,7 @@
       "name": "finite",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1215,7 +1181,7 @@
       "name": "floor",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1224,7 +1190,7 @@
       "name": "floorf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1233,7 +1199,7 @@
       "name": "fmax",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1242,7 +1208,7 @@
       "name": "fmod",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1251,7 +1217,7 @@
       "name": "fmodf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1260,7 +1226,7 @@
       "name": "fopen",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1269,7 +1235,7 @@
       "name": "fopen64",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1278,7 +1244,7 @@
       "name": "fork",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1287,7 +1253,7 @@
       "name": "fprintf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1296,7 +1262,7 @@
       "name": "fputc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1305,7 +1271,7 @@
       "name": "fputs",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1314,7 +1280,7 @@
       "name": "fread",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1323,7 +1289,7 @@
       "name": "free",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1332,7 +1298,7 @@
       "name": "frexp",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1341,7 +1307,7 @@
       "name": "fscanf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1350,7 +1316,7 @@
       "name": "fseek",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1359,7 +1325,7 @@
       "name": "fseeko",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1368,7 +1334,7 @@
       "name": "fseeko64",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1377,7 +1343,7 @@
       "name": "ftell",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1386,7 +1352,7 @@
       "name": "ftello",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1395,7 +1361,7 @@
       "name": "ftello64",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1404,7 +1370,7 @@
       "name": "ftruncate",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1422,7 +1388,7 @@
       "name": "fwrite",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1431,7 +1397,7 @@
       "name": "get_nprocs",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1440,7 +1406,7 @@
       "name": "getc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1449,7 +1415,7 @@
       "name": "getcwd",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1458,7 +1424,7 @@
       "name": "getegid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1467,7 +1433,7 @@
       "name": "getenv",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1476,7 +1442,7 @@
       "name": "geteuid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1485,7 +1451,7 @@
       "name": "getgid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1494,7 +1460,7 @@
       "name": "gethostname",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1503,7 +1469,7 @@
       "name": "getlogin_r",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1512,7 +1478,7 @@
       "name": "getmntent_r",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1521,7 +1487,7 @@
       "name": "getopt_long",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1530,7 +1496,7 @@
       "name": "getpagesize",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1539,7 +1505,7 @@
       "name": "getpeername",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1548,7 +1514,7 @@
       "name": "getpid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1557,7 +1523,7 @@
       "name": "getppid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1566,7 +1532,7 @@
       "name": "getpwnam_r",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1575,7 +1541,7 @@
       "name": "getpwuid_r",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1584,7 +1550,7 @@
       "name": "getrlimit",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1593,7 +1559,7 @@
       "name": "getrusage",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1602,7 +1568,7 @@
       "name": "getsockname",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1611,7 +1577,7 @@
       "name": "getsockopt",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1620,7 +1586,7 @@
       "name": "gettimeofday",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1629,7 +1595,7 @@
       "name": "getuid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1638,7 +1604,7 @@
       "name": "getwc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1647,7 +1613,7 @@
       "name": "gnu_get_libc_version",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1656,7 +1622,7 @@
       "name": "htonl",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1665,7 +1631,7 @@
       "name": "iconv",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1674,7 +1640,7 @@
       "name": "iconv_close",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1683,7 +1649,7 @@
       "name": "iconv_open",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1692,7 +1658,7 @@
       "name": "ioctl",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1701,7 +1667,7 @@
       "name": "iopl",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1710,7 +1676,7 @@
       "name": "isalnum",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1719,7 +1685,7 @@
       "name": "isalpha",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1728,7 +1694,7 @@
       "name": "islower",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1737,7 +1703,7 @@
       "name": "isspace",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1746,7 +1712,7 @@
       "name": "isupper",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1755,7 +1721,7 @@
       "name": "iswalpha",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1764,7 +1730,7 @@
       "name": "iswdigit",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1773,7 +1739,7 @@
       "name": "isxdigit",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1782,7 +1748,7 @@
       "name": "kill",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1791,7 +1757,7 @@
       "name": "ldexp",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1800,7 +1766,7 @@
       "name": "listen",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1809,7 +1775,7 @@
       "name": "localtime",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1818,7 +1784,7 @@
       "name": "localtime_r",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1827,7 +1793,7 @@
       "name": "lockf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1836,7 +1802,7 @@
       "name": "log",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1845,7 +1811,7 @@
       "name": "log10",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1854,7 +1820,7 @@
       "name": "log1p",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1863,7 +1829,7 @@
       "name": "log2",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1872,7 +1838,7 @@
       "name": "log2f",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1881,7 +1847,7 @@
       "name": "logb",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1890,7 +1856,7 @@
       "name": "logf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1899,7 +1865,7 @@
       "name": "longjmp",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1908,7 +1874,7 @@
       "name": "lround",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1917,7 +1883,7 @@
       "name": "lseek",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1926,7 +1892,7 @@
       "name": "lseek",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1935,7 +1901,7 @@
       "name": "lseek64",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1944,7 +1910,7 @@
       "name": "madvise",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1953,7 +1919,7 @@
       "name": "mallinfo",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1962,7 +1928,7 @@
       "name": "malloc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1971,7 +1937,7 @@
       "name": "malloc_usable_size",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1980,7 +1946,7 @@
       "name": "mbrtowc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1989,7 +1955,7 @@
       "name": "mbsnrtowcs",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -1998,7 +1964,7 @@
       "name": "mbsrtowcs",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2007,7 +1973,7 @@
       "name": "memalign",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2016,7 +1982,7 @@
       "name": "memchr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2025,7 +1991,7 @@
       "name": "memcmp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2034,7 +2000,7 @@
       "name": "memcpy",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.14"
     },
     {
@@ -2043,7 +2009,7 @@
       "name": "memcpy",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2052,7 +2018,7 @@
       "name": "memmove",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2061,7 +2027,7 @@
       "name": "memset",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2070,7 +2036,7 @@
       "name": "mkdir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2079,7 +2045,7 @@
       "name": "mkfifo",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2088,7 +2054,7 @@
       "name": "mkstemp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2097,7 +2063,7 @@
       "name": "mlock",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2106,7 +2072,7 @@
       "name": "mmap",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2115,7 +2081,7 @@
       "name": "mmap64",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2124,7 +2090,7 @@
       "name": "modf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2133,7 +2099,7 @@
       "name": "modff",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2142,7 +2108,7 @@
       "name": "mprotect",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2151,7 +2117,7 @@
       "name": "mremap",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2160,7 +2126,7 @@
       "name": "msync",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2169,7 +2135,7 @@
       "name": "munlock",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2178,7 +2144,7 @@
       "name": "munmap",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2187,7 +2153,7 @@
       "name": "nanosleep",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2196,7 +2162,7 @@
       "name": "nanosleep",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2205,7 +2171,7 @@
       "name": "nftw",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.3.3"
     },
     {
@@ -2214,7 +2180,7 @@
       "name": "ntohl",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2223,7 +2189,7 @@
       "name": "open",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2232,7 +2198,7 @@
       "name": "open",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2241,7 +2207,7 @@
       "name": "open64",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2250,7 +2216,7 @@
       "name": "open64",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2259,7 +2225,7 @@
       "name": "openat",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.4"
     },
     {
@@ -2268,7 +2234,7 @@
       "name": "opendir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2277,7 +2243,7 @@
       "name": "optarg",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2286,7 +2252,7 @@
       "name": "optind",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2295,7 +2261,7 @@
       "name": "pipe",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2304,7 +2270,7 @@
       "name": "pipe2",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.9"
     },
     {
@@ -2313,7 +2279,7 @@
       "name": "poll",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2322,7 +2288,7 @@
       "name": "posix_fallocate",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2331,7 +2297,7 @@
       "name": "posix_madvise",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2340,7 +2306,7 @@
       "name": "posix_memalign",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2349,7 +2315,7 @@
       "name": "posix_spawn",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2358,7 +2324,7 @@
       "name": "posix_spawn_file_actions_adddup2",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2367,7 +2333,7 @@
       "name": "posix_spawn_file_actions_addopen",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2376,7 +2342,7 @@
       "name": "posix_spawn_file_actions_destroy",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2385,7 +2351,7 @@
       "name": "posix_spawn_file_actions_init",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2394,7 +2360,7 @@
       "name": "pow",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2403,7 +2369,7 @@
       "name": "powf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2412,7 +2378,7 @@
       "name": "ppoll",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.4"
     },
     {
@@ -2421,7 +2387,7 @@
       "name": "pread",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2430,7 +2396,7 @@
       "name": "pread64",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2439,7 +2405,7 @@
       "name": "printf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2448,7 +2414,7 @@
       "name": "program_invocation_name",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2970,7 +2936,7 @@
       "name": "putc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2979,7 +2945,7 @@
       "name": "putchar",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2988,7 +2954,7 @@
       "name": "puts",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -2997,7 +2963,7 @@
       "name": "putwc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3006,7 +2972,7 @@
       "name": "pwrite",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3015,7 +2981,7 @@
       "name": "pwrite64",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3024,7 +2990,7 @@
       "name": "qsort",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3033,7 +2999,7 @@
       "name": "raise",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3042,7 +3008,7 @@
       "name": "raise",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3051,7 +3017,7 @@
       "name": "rand",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3060,7 +3026,7 @@
       "name": "read",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3069,7 +3035,7 @@
       "name": "read",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3078,7 +3044,7 @@
       "name": "readdir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3087,7 +3053,7 @@
       "name": "readlink",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3096,7 +3062,7 @@
       "name": "readlinkat",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.4"
     },
     {
@@ -3105,7 +3071,7 @@
       "name": "realloc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3114,7 +3080,7 @@
       "name": "realpath",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.3"
     },
     {
@@ -3123,7 +3089,7 @@
       "name": "recv",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3132,7 +3098,7 @@
       "name": "recv",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3141,7 +3107,7 @@
       "name": "recvmsg",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3150,7 +3116,7 @@
       "name": "recvmsg",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3159,7 +3125,7 @@
       "name": "remove",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3168,7 +3134,7 @@
       "name": "rewind",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3177,7 +3143,7 @@
       "name": "rewinddir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3186,7 +3152,7 @@
       "name": "rmdir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3195,7 +3161,7 @@
       "name": "round",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3204,7 +3170,7 @@
       "name": "roundf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3213,7 +3179,7 @@
       "name": "scandir",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3222,7 +3188,7 @@
       "name": "scandir64",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3231,7 +3197,7 @@
       "name": "sched_get_priority_max",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3240,7 +3206,7 @@
       "name": "sched_get_priority_min",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3249,7 +3215,7 @@
       "name": "sched_getaffinity",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.3.4"
     },
     {
@@ -3258,7 +3224,7 @@
       "name": "sched_getcpu",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.6"
     },
     {
@@ -3267,7 +3233,7 @@
       "name": "sched_setaffinity",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.3.4"
     },
     {
@@ -3276,7 +3242,7 @@
       "name": "sched_yield",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3285,7 +3251,7 @@
       "name": "select",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3348,7 +3314,7 @@
       "name": "send",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3357,7 +3323,7 @@
       "name": "sendmsg",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3366,7 +3332,7 @@
       "name": "sendmsg",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3375,7 +3341,7 @@
       "name": "setenv",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3384,7 +3350,7 @@
       "name": "setmntent",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3393,7 +3359,7 @@
       "name": "setrlimit",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3402,7 +3368,7 @@
       "name": "setsid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3411,7 +3377,7 @@
       "name": "setsockopt",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3420,7 +3386,7 @@
       "name": "shm_open",
       "quality": "UNSUPPORTED",
       "soname": "librt.so.1",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3429,7 +3395,7 @@
       "name": "shm_unlink",
       "quality": "UNSUPPORTED",
       "soname": "librt.so.1",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3438,7 +3404,7 @@
       "name": "shmat",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3447,7 +3413,7 @@
       "name": "shmctl",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3456,7 +3422,7 @@
       "name": "shmdt",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3465,7 +3431,7 @@
       "name": "shmget",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3474,7 +3440,7 @@
       "name": "shutdown",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3483,7 +3449,7 @@
       "name": "sigaction",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3492,7 +3458,7 @@
       "name": "sigaddset",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3501,7 +3467,7 @@
       "name": "sigdelset",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3510,7 +3476,7 @@
       "name": "sigemptyset",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3519,7 +3485,7 @@
       "name": "sigfillset",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3528,7 +3494,7 @@
       "name": "sigismember",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3537,7 +3503,7 @@
       "name": "signal",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3546,7 +3512,7 @@
       "name": "sigprocmask",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3555,7 +3521,7 @@
       "name": "sin",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3564,7 +3530,7 @@
       "name": "sincos",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3573,7 +3539,7 @@
       "name": "sincosf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3582,7 +3548,7 @@
       "name": "sinf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3591,7 +3557,7 @@
       "name": "sinh",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3600,7 +3566,7 @@
       "name": "sleep",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3609,7 +3575,7 @@
       "name": "snprintf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3618,7 +3584,7 @@
       "name": "socket",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3627,7 +3593,7 @@
       "name": "socketpair",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3636,7 +3602,7 @@
       "name": "sprintf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3645,7 +3611,7 @@
       "name": "sqrt",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3654,7 +3620,7 @@
       "name": "sqrtf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3663,7 +3629,7 @@
       "name": "srand",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3672,7 +3638,7 @@
       "name": "sscanf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3681,7 +3647,7 @@
       "name": "statfs",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3699,7 +3665,7 @@
       "name": "stderr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3708,7 +3674,7 @@
       "name": "stdin",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3717,7 +3683,7 @@
       "name": "stdout",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3726,7 +3692,7 @@
       "name": "stpcpy",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3735,7 +3701,7 @@
       "name": "strcasecmp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3744,7 +3710,7 @@
       "name": "strcat",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3753,7 +3719,7 @@
       "name": "strchr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3762,7 +3728,7 @@
       "name": "strcmp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3771,7 +3737,7 @@
       "name": "strcoll",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3780,7 +3746,7 @@
       "name": "strcpy",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3789,7 +3755,7 @@
       "name": "strcspn",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3798,7 +3764,7 @@
       "name": "strdup",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3807,7 +3773,7 @@
       "name": "strerror",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3816,7 +3782,7 @@
       "name": "strerror_r",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3825,7 +3791,7 @@
       "name": "strftime",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3834,7 +3800,7 @@
       "name": "strlen",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3843,7 +3809,7 @@
       "name": "strncasecmp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3852,7 +3818,7 @@
       "name": "strncat",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3861,7 +3827,7 @@
       "name": "strncmp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3870,7 +3836,7 @@
       "name": "strncpy",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3879,7 +3845,7 @@
       "name": "strnlen",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3888,7 +3854,7 @@
       "name": "strpbrk",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3897,7 +3863,7 @@
       "name": "strrchr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3906,7 +3872,7 @@
       "name": "strsep",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3915,7 +3881,7 @@
       "name": "strsignal",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3924,7 +3890,7 @@
       "name": "strspn",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3933,7 +3899,7 @@
       "name": "strstr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3942,7 +3908,7 @@
       "name": "strtod",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3951,7 +3917,7 @@
       "name": "strtof",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3960,7 +3926,7 @@
       "name": "strtok",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3969,7 +3935,7 @@
       "name": "strtok_r",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3978,7 +3944,7 @@
       "name": "strtol",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -3987,7 +3953,7 @@
       "name": "strtold_l",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.3"
     },
     {
@@ -3996,7 +3962,7 @@
       "name": "strtoll",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4005,7 +3971,7 @@
       "name": "strtoul",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4014,7 +3980,7 @@
       "name": "strtoull",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4023,7 +3989,7 @@
       "name": "symlink",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4032,7 +3998,7 @@
       "name": "syscall",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4041,7 +4007,7 @@
       "name": "sysconf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4050,7 +4016,7 @@
       "name": "sysinfo",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4059,7 +4025,7 @@
       "name": "syslog",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4068,7 +4034,7 @@
       "name": "tan",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4077,7 +4043,7 @@
       "name": "tanf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4086,7 +4052,7 @@
       "name": "tanh",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4095,7 +4061,7 @@
       "name": "time",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4104,7 +4070,7 @@
       "name": "tolower",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4113,7 +4079,7 @@
       "name": "toupper",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4122,7 +4088,7 @@
       "name": "trunc",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4131,7 +4097,7 @@
       "name": "truncf",
       "quality": "UNSUPPORTED",
       "soname": "libm.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4140,7 +4106,7 @@
       "name": "umask",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4149,7 +4115,7 @@
       "name": "uname",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4158,7 +4124,7 @@
       "name": "ungetc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4167,7 +4133,7 @@
       "name": "ungetwc",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4176,7 +4142,7 @@
       "name": "unlink",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4185,7 +4151,7 @@
       "name": "unsetenv",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4194,7 +4160,7 @@
       "name": "usleep",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4203,7 +4169,7 @@
       "name": "vfork",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4212,7 +4178,7 @@
       "name": "vfprintf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4221,7 +4187,7 @@
       "name": "vsnprintf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4230,7 +4196,7 @@
       "name": "vsprintf",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4239,7 +4205,7 @@
       "name": "wait",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4248,7 +4214,7 @@
       "name": "wait4",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4257,7 +4223,7 @@
       "name": "waitpid",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4266,7 +4232,7 @@
       "name": "waitpid",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4275,7 +4241,7 @@
       "name": "warnx",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4284,7 +4250,7 @@
       "name": "wcrtomb",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4293,7 +4259,7 @@
       "name": "wcscmp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4302,7 +4268,7 @@
       "name": "wcslen",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4311,7 +4277,7 @@
       "name": "wcsncmp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4320,7 +4286,7 @@
       "name": "wcsnrtombs",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4329,7 +4295,7 @@
       "name": "wcstoul",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4338,7 +4304,7 @@
       "name": "wctob",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4347,7 +4313,7 @@
       "name": "wmemchr",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4356,7 +4322,7 @@
       "name": "wmemcpy",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4365,7 +4331,7 @@
       "name": "wmemmove",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4374,7 +4340,7 @@
       "name": "wmemset",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4383,7 +4349,7 @@
       "name": "write",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4392,7 +4358,7 @@
       "name": "write",
       "quality": "UNSUPPORTED",
       "soname": "libpthread.so.0",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -4401,7 +4367,7 @@
       "name": "writev",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/nvidia-scan:provider-analysis",
+      "test": "tools/elf-scan:provider-analysis",
       "version": "GLIBC_2.2.5"
     }
   ]

@@ -15,7 +15,7 @@
 
 struct preload_case {
     const char* core;
-    const char* nvidia_tls;
+    const char* early;
     const char* user;
     const char* expected;
 };
@@ -24,13 +24,13 @@ int main(void) {
     static const struct preload_case cases[] = {
         {"/core.so", NULL, NULL, "/core.so"},
         {"/core.so", "", "", "/core.so"},
-        {"/core.so", "/nvidia-tls.so", NULL, "/core.so:/nvidia-tls.so"},
+        {"/core.so", "/early.so", NULL, "/core.so:/early.so"},
         {"/core.so", NULL, "/user-a.so:/user-b.so", "/core.so:/user-a.so:/user-b.so"},
-        {"/core.so", "/nvidia-tls.so", "/user-a.so:/user-b.so", "/core.so:/nvidia-tls.so:/user-a.so:/user-b.so"},
+        {"/core.so", "/early.so", "/user-a.so:/user-b.so", "/core.so:/early.so:/user-a.so:/user-b.so"},
     };
 
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
-        char* list = musl_bsd_preload_list(cases[i].core, cases[i].nvidia_tls, cases[i].user);
+        char* list = musl_bsd_preload_list(cases[i].core, cases[i].early, cases[i].user);
         CHECK(list != NULL);
         CHECK(strcmp(list, cases[i].expected) == 0);
         free(list);

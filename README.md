@@ -5,7 +5,8 @@
 The project has two distinct roles:
 
 1. **Source compatibility** for software that can be rebuilt against musl.
-2. **Optional glibc binary compatibility** for a qualified x86_64 LP64 runtime, with focused support and testing for NVIDIA 610.x and CUDA 13.3 binaries.
+2. **Optional glibc binary compatibility** for explicitly qualified x86_64
+   LP64 binaries.
 
 > [!IMPORTANT]
 > The glibc binary-runtime bridge is intentionally limited and qualified. It is not a blanket replacement for glibc, and secure execution is not supported.
@@ -31,8 +32,8 @@ The runtime bridge provides:
 - glibc-named facade DSOs
 - a glibc-named interpreter alias
 - explicit runtime qualification metadata
-- focused compatibility policy for the NVIDIA/CUDA ELF graph
-- NVIDIA TLS preload handling
+- audited, manifest-backed compatibility policy
+- explicit early-dependency preload handling
 - symbol/provider auditing tools
 
 The qualified runtime currently targets **x86_64 LP64**.
@@ -162,126 +163,80 @@ No environment variable or runtime option can weaken this check.
 
 ---
 
-## NVIDIA and CUDA
+## ELF Inventory and Compatibility Policy
 
-The runtime contains focused qualification and regression coverage for the observed **NVIDIA 610.x** and **CUDA 13.3** dependency roots.
+### Optional early preload
 
-### NVIDIA TLS
-
-NVIDIA's initial-exec TLS library must be present in the process's initial static TLS set.
-
-Before launching an NVIDIA compatibility target, set:
+Some ELF binaries require a dependency to be present in the process's initial
+static TLS or constructor set. Set an explicit early DSO when needed:
 
 ```sh
-export MUSL_BSD_NVIDIA_TLS_PATH=/absolute/path/to/libnvidia-tls.so.<version>
+export MUSL_BSD_EARLY_PRELOAD_PATH=/absolute/path/to/required-early.so
 ```
 
-The path must be absolute.
-
-The loader does **not**:
-
-- guess the installed NVIDIA version
-- search for the TLS library
-- read this environment-controlled path during secure execution
-
-Preload order is fixed:
+The path must be absolute and must identify one DSO. The loader does not guess
+package versions or search for this dependency. Preload order is fixed:
 
 ```text
-musl-bsd glibc host → NVIDIA TLS → user LD_PRELOAD
+musl-bsd glibc host → optional early DSO → user LD_PRELOAD
 ```
 
-Musl-native processes that later load NVIDIA DSOs cannot use that interpreter
-path. They must link `musl-bsd-glibc-startup` into the initial executable and
-carry the NVIDIA TLS DSO into the initial dependency graph through a
-vendor-owned startup DSO. Loading either component from `main()`, a
-constructor, or a plugin loader is too late for NVIDIA's initial-exec TLS.
+The secure-execution check runs before this environment variable is read.
 
-### Scan installed NVIDIA libraries
+### Scan ELF files
 
-`tools/nvidia-scan` inspects local NVIDIA DSOs and recursively follows their `DT_NEEDED` dependencies.
-
-It does not download drivers or invoke a package manager.
-
-Example:
+`tools/elf-scan` inspects explicit ELF files or directories and recursively
+follows their `DT_NEEDED` dependencies. It does not download packages or invoke
+a package manager.
 
 ```sh
-NVIDIA_LIBDIR=/usr/lib \
-  tools/nvidia-scan --format json --output nvidia-inventory.json
+tools/elf-scan --format json --output inventory.json /path/to/root.so
 ```
 
-The report includes:
-
-- SONAMEs
-- undefined symbols
-- symbol bindings and versions
-- TLS relocations
-- IFUNC/IRELATIVE use
-- relocation types
-- unresolved dependencies
-- consolidated compatibility requirements
-
-Pass explicit DSO paths when you do not want automatic NVIDIA filename discovery.
-
-### Provider analysis
+The report includes SONAMEs, undefined symbols, symbol bindings and versions,
+TLS relocations, IFUNC/IRELATIVE use, relocation types, unresolved
+dependencies, and consolidated compatibility requirements. Directory discovery
+considers ELF files directly within the named directory; it does not perform a
+vendor-shaped system search.
 
 Requirements can be checked against explicit runtime ELF providers:
 
 ```sh
-tools/nvidia-scan --format json \
+tools/elf-scan --format json \
   --provider /lib/libc.so \
   --provider build/libmusl-bsd-glibc-host.so.2.0.0 \
   --provider-alias ftruncate64=ftruncate \
-  --provider-alias statfs64=statfs
+  --provider-alias statfs64=statfs \
+  /path/to/root.so
 ```
 
-Provider aliases are accepted only when the configured provider exports the aliased target symbol.
+Provider aliases are accepted only when a configured provider exports the
+aliased symbol. Use `--strict` to fail on unresolved mandatory dependencies or
+provider-backed symbol requirements. Unresolved weak imports remain optional.
 
-Use `--strict` to fail on unresolved mandatory dependencies or provider-backed symbol requirements.
+### Compatibility manifest
 
-Unresolved weak imports are reported separately as optional.
-
----
-
-## NVIDIA Compatibility Manifest
-
-`nvidia-symbols.json` is the checked compatibility-policy manifest for the observed NVIDIA 610.x and CUDA 13.3 roots.
-
-Validate it with:
+`compatibility-symbols.json` is the checked runtime compatibility-policy
+manifest. Validate it with:
 
 ```sh
-tools/nvidia-manifest validate nvidia-symbols.json
+tools/compatibility-manifest validate compatibility-symbols.json
 ```
 
-Generate an updated manifest from a scanner inventory:
+Generate or check policy for any scanner inventory:
 
 ```sh
-tools/nvidia-manifest generate nvidia-inventory.json \
-  --base nvidia-symbols.json \
-  --output nvidia-symbols.new.json
+tools/compatibility-manifest generate inventory.json \
+  --base compatibility-symbols.json \
+  --output compatibility-symbols.new.json
+
+tools/compatibility-manifest check \
+  compatibility-symbols.new.json inventory.json
 ```
 
-Check an inventory against the audited manifest:
-
-```sh
-tools/nvidia-manifest check \
-  nvidia-symbols.json nvidia-inventory.json
-```
-
-New requirements default to `UNSUPPORTED` until their ABI and behavior have been audited.
-
-The compatibility policy uses these quality levels:
-
-| Quality | Meaning |
-|---|---|
-| `EXACT` | Qualified behavior and ABI match the required path |
-| `TRANSLATED` | Required behavior is provided through a tested musl/toolchain adaptation |
-| `DEGRADED` | The observed path works, but known glibc behavior is not fully reproduced |
-| `STUB` | The symbol exists only with deliberately limited behavior |
-| `UNSUPPORTED` | The requested behavior is intentionally rejected |
-
-The manifest contains no proprietary binary content or absolute local paths.
-
----
+New requirements default to `UNSUPPORTED` until their ABI and behavior have
+been audited. Policy quality levels are `EXACT`, `TRANSLATED`, `DEGRADED`,
+`STUB`, and `UNSUPPORTED`.
 
 ## Important Runtime Limitations
 
@@ -311,13 +266,13 @@ The runtime deliberately does **not** inject every facade as a workaround.
 
 `dlvsym()` support is **degraded**.
 
-musl cannot select among multiple glibc symbol-version definitions, so the adapter resolves by name only for the finite `GLIBC_*` version set observed in the qualified NVIDIA/CUDA graph and direct probes.
+musl cannot select among multiple glibc symbol-version definitions, so the adapter resolves by name only for the finite `GLIBC_*` version set covered by the compatibility manifest and direct probes.
 
 Unknown versions, `GLIBC_PRIVATE`, and null versions fail with `dlerror()`.
 
 ### glibc allocator hooks
 
-The NVIDIA stack probes the historical glibc allocator-hook names:
+Some glibc binaries probe the historical allocator-hook names:
 
 - `__malloc_hook`
 - `__realloc_hook`
@@ -330,7 +285,7 @@ The observed probes allow all four to be absent.
 
 ### Locale and libc differences
 
-Some qualified NVIDIA/CUDA paths are intentionally classified `DEGRADED` where musl and glibc differ in areas such as:
+Some qualified compatibility paths are intentionally classified `DEGRADED` where musl and glibc differ in areas such as:
 
 - locale databases
 - collation behavior
@@ -339,7 +294,7 @@ Some qualified NVIDIA/CUDA paths are intentionally classified `DEGRADED` where m
 - per-DSO finalization semantics
 - legacy version-selector handling
 
-The authoritative per-symbol policy is `nvidia-symbols.json`.
+The authoritative per-symbol policy is `compatibility-symbols.json`.
 
 ---
 
@@ -357,27 +312,21 @@ Toolchain construction errors are treated as test/toolchain defects rather than 
 
 ---
 
-## Local NVIDIA Loader Test
+## External ELF Loader Tests
 
-The proprietary-driver loader test is opt-in:
+The optional external suite can exercise any explicitly selected DSO:
 
 ```sh
-NVIDIA_LIBDIR=/usr/lib \
-  meson test -C build --suite nvidia --print-errorlogs
+MUSL_BSD_TEST_DSO=/absolute/path/to/root.so \
+  meson test -C build --suite external --print-errorlogs
 ```
 
-Among other checks, the suite verifies that:
-
-- `libnvidia-glcore` fails without early NVIDIA TLS
-- the complete compatibility-interpreter path succeeds when the explicit TLS policy is enabled
-- `RTLD_LOCAL` exports remain private
-- later `RTLD_GLOBAL` promotion exposes the same original symbol addresses
-- overlapping handles survive repeated open/close cycles
-- weak imports are classified correctly
-- NVIDIA TLS storage remains distinct across threads
-- observed pthread-key destructors run as required
-
----
+Set `MUSL_BSD_TEST_EARLY_PRELOAD_PATH` when that DSO needs an early dependency.
+Set `MUSL_BSD_TEST_TLS_DSO` to opt into the generic multithreaded TLS probe.
+Optional comma-separated `MUSL_BSD_TEST_EXPORTS` and
+`MUSL_BSD_TEST_WEAK_SYMBOLS` lists enable publication, repeated-load, and weak
+relocation checks for symbols selected by the user.
+External binaries are never copied into the repository.
 
 ## API at a Glance
 

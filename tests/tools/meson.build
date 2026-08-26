@@ -1,7 +1,7 @@
 tools_python = find_program('python3')
-nvidia_scan = meson.project_source_root() / 'tools/nvidia-scan'
-nvidia_manifest = meson.project_source_root() / 'tools/nvidia-manifest'
-committed_nvidia_manifest = meson.project_source_root() / 'nvidia-symbols.json'
+elf_scan = meson.project_source_root() / 'tools/elf-scan'
+compatibility_manifest = meson.project_source_root() / 'tools/compatibility-manifest'
+committed_compatibility_manifest = meson.project_source_root() / 'compatibility-symbols.json'
 provider_map = meson.current_source_dir() / 'provider_required.map'
 required_provider = shared_library(
   'tools-required-provider',
@@ -23,11 +23,11 @@ runtime_provider = shared_library(
 )
 
 test(
-  'tools/nvidia-scan',
+  'tools/elf-scan',
   tools_python,
   args: [
-    files('test_nvidia_scan.py'),
-    nvidia_scan,
+    files('test_elf_scan.py'),
+    elf_scan,
     provider_consumer.full_path(),
     runtime_provider.full_path(),
   ],
@@ -37,15 +37,15 @@ test(
 )
 
 test(
-  'tools/nvidia-manifest',
+  'tools/compatibility-manifest',
   tools_python,
   args: [
-    files('test_nvidia_manifest.py'),
-    nvidia_manifest,
-    nvidia_scan,
+    files('test_compatibility_manifest.py'),
+    compatibility_manifest,
+    elf_scan,
     provider_consumer.full_path(),
     runtime_provider.full_path(),
-    committed_nvidia_manifest,
+    committed_compatibility_manifest,
   ],
   depends: [required_provider, provider_consumer, runtime_provider],
   suite: 'tools',

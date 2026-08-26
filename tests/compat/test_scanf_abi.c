@@ -195,9 +195,9 @@ static int verify_sscanf_observed_formats(sscanf_function function) {
     CHECK(first_signed == 12);
     CHECK(function("in4_label", "in%d_label", &first_signed) == 1);
     CHECK(first_signed == 4);
-    CHECK(function(".nv.constant7", ".nv.constant%d", &first_signed) == 1);
+    CHECK(function(".section7", ".section%d", &first_signed) == 1);
     CHECK(first_signed == 7);
-    CHECK(function("Cuda compilation tools, release 13.3, V13.3", "Cuda compilation tools, release %d.%d,",
+    CHECK(function("Compiler tools, release 13.3, V13.3", "Compiler tools, release %d.%d,",
                    &first_signed, &second_signed) == 2);
     CHECK(first_signed == 13);
     CHECK(second_signed == 3);

@@ -231,12 +231,12 @@ if glibc_runtime_enabled
     timeout: 60,
   )
 
-  nvidia_loader_runner = files('run_nvidia_loader_test.py')
+  external_loader_runner = files('run_external_loader_test.py')
   test(
-    'nvidia/loader_glcore',
+    'external/loader',
     python,
     args: [
-      nvidia_loader_runner,
+      external_loader_runner,
       glibc_loader.full_path(),
       compat_loader_test.full_path(),
       libcompat.full_path(),
@@ -249,28 +249,28 @@ if glibc_runtime_enabled
       libcompat,
       compat_loader_test,
     ] + glibc_facades,
-    suite: ['compat', 'nvidia'],
+    suite: ['compat', 'external'],
     timeout: 60,
   )
 
-  nvidia_tls_threads = executable(
-    'nvidia_tls_threads',
-    'nvidia_tls_threads.c',
+  external_tls_threads = executable(
+    'external_tls_threads',
+    'external_tls_threads.c',
     install: false,
   )
-  nvidia_tls_runner = files('run_nvidia_tls_test.py')
+  external_tls_runner = files('run_external_tls_test.py')
   test(
-    'nvidia/tls_threads',
+    'external/tls_threads',
     python,
     args: [
-      nvidia_tls_runner,
+      external_tls_runner,
       musl_linker_path,
       readelf.full_path(),
-      nvidia_tls_threads.full_path(),
+      external_tls_threads.full_path(),
       libcompat.full_path(),
     ],
-    depends: [nvidia_tls_threads, libcompat],
-    suite: ['compat', 'nvidia'],
+    depends: [external_tls_threads, libcompat],
+    suite: ['compat', 'external'],
     timeout: 60,
   )
 
@@ -300,7 +300,7 @@ if glibc_runtime_enabled
     python,
     args: [
       dlfcn_manifest_checker,
-      meson.project_source_root() / 'nvidia-symbols.json',
+      meson.project_source_root() / 'compatibility-symbols.json',
     ],
     suite: 'compat',
   )
@@ -312,7 +312,7 @@ if glibc_runtime_enabled
     args: [
       runtime_manifest_checker,
       readelf.full_path(),
-      meson.project_source_root() / 'nvidia-symbols.json',
+      meson.project_source_root() / 'compatibility-symbols.json',
       libcompat.full_path(),
       musl_linker_path,
     ],
@@ -688,7 +688,7 @@ if pthread_abi_supported
     args: [
       pthread_manifest_checker,
       readelf.full_path(),
-      meson.project_source_root() / 'nvidia-symbols.json',
+      meson.project_source_root() / 'compatibility-symbols.json',
       libcompat.full_path(),
     ],
     depends: libcompat,

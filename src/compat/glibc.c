@@ -19,12 +19,7 @@ int __register_atfork(void (*prepare)(void), void (*parent)(void), void (*child)
     return pthread_atfork(prepare, parent, child);
 }
 
-/*
- * NVIDIA's compiler runtime uses glibc's internal key-creation entry point
- * through a weak GLOB_DAT relocation.  musl only exports the public alias,
- * so leaving this unresolved makes the runtime treat TLS initialization as a
- * hard failure and throw std::system_error.
- */
+/* Some glibc binaries import the internal alias instead of the public name. */
 int __pthread_key_create(pthread_key_t* key, void (*destructor)(void*)) {
     return pthread_key_create(key, destructor);
 }

@@ -38,7 +38,7 @@ int main(int argc, char* argv[], char* envp[]) {
     unsigned long at_secure;
     const char* target;
     const char* core_preload;
-    const char* nvidia_tls_preload;
+    const char* early_preload;
     const char* library_path;
     const char* user_preload;
     char* preloads;
@@ -81,17 +81,17 @@ int main(int argc, char* argv[], char* envp[]) {
     }
 
     core_preload = musl_bsd_compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
-    nvidia_tls_preload = getenv("MUSL_BSD_NVIDIA_TLS_PATH");
+    early_preload = getenv("MUSL_BSD_EARLY_PRELOAD_PATH");
     library_path = musl_bsd_compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
     user_preload = getenv("LD_PRELOAD");
 
     /*
      * musl's --preload replaces, rather than augments, LD_PRELOAD.  Build the
      * option value without changing the environment: the trusted core is
-     * first, optional NVIDIA initial-exec TLS is second, and user-requested
-     * preloads retain their original order after both required entries.
+     * first, an optional early dependency is second, and user-requested
+     * preloads retain their original order afterward.
      */
-    preloads = musl_bsd_preload_list(core_preload, nvidia_tls_preload, user_preload);
+    preloads = musl_bsd_preload_list(core_preload, early_preload, user_preload);
     if (preloads == NULL) {
         fprintf(stderr, "musl-bsd loader: cannot construct preload list: %s\n", strerror(errno));
         return LOADER_FAILURE;

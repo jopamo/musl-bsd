@@ -11,8 +11,8 @@ const char* musl_bsd_compatibility_path(const char* variable, const char* config
     return value != NULL && value[0] != '\0' ? value : configured;
 }
 
-char* musl_bsd_preload_list(const char* core, const char* nvidia_tls, const char* user) {
-    const char* entries[] = {core, nvidia_tls, user};
+char* musl_bsd_preload_list(const char* core, const char* early, const char* user) {
+    const char* entries[] = {core, early, user};
     size_t lengths[3] = {0};
     size_t count = 0;
     size_t total = 1;
@@ -24,11 +24,11 @@ char* musl_bsd_preload_list(const char* core, const char* nvidia_tls, const char
         return NULL;
     }
     /*
-     * NVIDIA TLS is one policy-controlled preload, not another user list.
-     * Requiring an absolute, delimiter-free path keeps its identity and
-     * position unambiguous.
+     * The optional early DSO is one policy-controlled preload, not another
+     * user list. Requiring an absolute, delimiter-free path keeps its
+     * identity and position unambiguous.
      */
-    if (nvidia_tls != NULL && nvidia_tls[0] != '\0' && (nvidia_tls[0] != '/' || strchr(nvidia_tls, ':') != NULL)) {
+    if (early != NULL && early[0] != '\0' && (early[0] != '/' || strchr(early, ':') != NULL)) {
         errno = EINVAL;
         return NULL;
     }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify audited runtime compatibility policy in the NVIDIA/CUDA manifest."""
+"""Verify audited runtime policy in the compatibility manifest."""
 
 import json
 from pathlib import Path

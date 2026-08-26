@@ -79,7 +79,7 @@ int main(void) {
             _exit(120);
         close(pipe_fds[1]);
         signal(SIGABRT, SIG_DFL);
-        assert_fail("gpu != NULL", "nvidia-test.c", 321, "load_gpu");
+        assert_fail("handle != NULL", "compat-test.c", 321, "load_plugin");
     }
 
     CHECK(close(pipe_fds[1]) == 0);
@@ -88,9 +88,9 @@ int main(void) {
     CHECK(waitpid(child, &status, 0) == child);
     CHECK(WIFSIGNALED(status));
     CHECK(WTERMSIG(status) == SIGABRT);
-    CHECK(strstr(diagnostic, "gpu != NULL") != NULL);
-    CHECK(strstr(diagnostic, "nvidia-test.c") != NULL);
-    CHECK(strstr(diagnostic, "load_gpu") != NULL);
+    CHECK(strstr(diagnostic, "handle != NULL") != NULL);
+    CHECK(strstr(diagnostic, "compat-test.c") != NULL);
+    CHECK(strstr(diagnostic, "load_plugin") != NULL);
     CHECK(strstr(diagnostic, "321") != NULL);
     memset(&info, 0, sizeof(info));
     CHECK(dladdr((const void*)abort_function, &info) != 0);

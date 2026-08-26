@@ -58,7 +58,7 @@ static int worker_main(void* argument) {
 
 int main(int argc, char** argv) {
     struct worker workers[THREAD_COUNT];
-    uintptr_t main_marker = UINT64_C(0x4d4253444e56544c);
+    uintptr_t main_marker = UINT64_C(0x4d425344544c5321);
     uintptr_t* main_slot;
     uintptr_t saved_main;
     key_create_fn key_create;

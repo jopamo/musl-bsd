@@ -129,7 +129,7 @@ static int check_dso_value(const char* dso_path, const char* symbol, int expecte
     return result;
 }
 
-static int check_nvidia_weak(const char* dso_path, int symbol_count, char** symbols) {
+static int check_weak_load(const char* dso_path, int symbol_count, char** symbols) {
     int absent = 0;
     int provided = 0;
     void* handle;
@@ -152,14 +152,14 @@ static int check_nvidia_weak(const char* dso_path, int symbol_count, char** symb
     }
     if (absent == 0 || provided == 0) {
         fprintf(stderr,
-                "weak NVIDIA symbols do not cover both outcomes: "
+                "weak symbols do not cover both outcomes: "
                 "absent=%d provided=%d\n",
                 absent, provided);
         return 76;
     }
     handle = dlopen(dso_path, RTLD_NOW | RTLD_LOCAL);
     if (handle == NULL) {
-        fprintf(stderr, "weak NVIDIA dlopen: %s\n", dlerror());
+        fprintf(stderr, "weak-symbol dlopen: %s\n", dlerror());
         return 77;
     }
     if (dlclose(handle) != 0)
@@ -401,8 +401,8 @@ int main(int argc, char** argv) {
         return check_dso_value(argv[2], "loader_weak_value", atoi(argv[3]));
     if (strcmp(argv[1], "versioned") == 0 && argc == 5)
         return check_dso_value(argv[2], argv[3], atoi(argv[4]));
-    if (strcmp(argv[1], "nvidia-weak") == 0 && argc >= 4)
-        return check_nvidia_weak(argv[2], argc - 3, argv + 3);
+    if (strcmp(argv[1], "weak-load") == 0 && argc >= 4)
+        return check_weak_load(argv[2], argc - 3, argv + 3);
     if (strcmp(argv[1], "global-load") == 0 && argc >= 4)
         return check_global_load(argv[2], argc - 3, argv + 3);
     if (strcmp(argv[1], "repeat-load") == 0 && argc >= 5)

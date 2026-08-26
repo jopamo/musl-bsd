@@ -115,6 +115,7 @@ def main():
         env["MUSL_BSD_PRELOAD_PATH"] = str(core)
         env["MUSL_BSD_LIBRARY_PATH"] = f"{facade_dir}:/usr/lib"
         env.pop("LD_PRELOAD", None)
+        env.pop("MUSL_BSD_EARLY_PRELOAD_PATH", None)
         env.pop("MUSL_BSD_LOADER_STAGE", None)
 
         result = run(

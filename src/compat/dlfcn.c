@@ -27,8 +27,8 @@ void* dlmopen(Lmid_t lmid, const char* filename, int flags) {
 
 /*
  * musl resolves symbols by name and cannot select a glibc version definition.
- * Keep that downgrade explicit and bounded to versions observed in the
- * qualified NVIDIA/CUDA graph or in its direct dlvsym probes.
+ * Keep that downgrade explicit and bounded to versions covered by the
+ * compatibility manifest and direct dlvsym probes.
  */
 static int dlvsym_version_supported(const char* version) {
     static const char* const versions[] = {
@@ -51,10 +51,9 @@ void* dlvsym(void* handle, const char* symbol, const char* version) {
 }
 
 /*
- * glibc exposes dladdr1() as an extension to dladdr().  NVIDIA's GLX
- * runtime uses the RTLD_DL_LINKMAP form to find the link map for a symbol.
- * musl has the two primitives needed to implement that form, but does not
- * expose dladdr1 itself.
+ * glibc exposes dladdr1() as an extension to dladdr(). Some binaries use the
+ * RTLD_DL_LINKMAP form to find the link map for a symbol. musl has the two
+ * primitives needed to implement that form, but does not expose dladdr1.
  *
  * Keep RTLD_DL_SYMENT deliberately unsupported.  Returning a fabricated
  * ElfW(Sym) would be worse than reporting failure because callers may use

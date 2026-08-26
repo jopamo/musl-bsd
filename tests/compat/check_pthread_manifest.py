@@ -48,7 +48,7 @@ def main():
         if item["name"].startswith(PREFIXES)
     ]
     if not entries:
-        fail("manifest contains no NVIDIA/CUDA pthread requirements")
+        fail("manifest contains no pthread requirements")
 
     exports = versioned_exports(readelf, core)
     for item in entries:

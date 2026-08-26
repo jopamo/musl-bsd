@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Black-box tests for the local NVIDIA ELF inventory tool."""
+"""Black-box tests for the ELF inventory tool."""
 
 import json
 from pathlib import Path
@@ -27,7 +27,7 @@ def fail(message, result=None):
 def main():
     if len(sys.argv) != 4:
         raise SystemExit(
-            "usage: test_nvidia_scan.py SCANNER CONSUMER PROVIDER"
+            "usage: test_elf_scan.py SCANNER CONSUMER PROVIDER"
         )
     scanner = Path(sys.argv[1]).resolve()
     consumer = Path(sys.argv[2]).resolve()
@@ -78,7 +78,7 @@ def main():
     ):
         if key not in report["summary"]:
             fail(f"missing summary field: {key}")
-    with tempfile.TemporaryDirectory(prefix="musl-bsd-nvidia-scan-") as name:
+    with tempfile.TemporaryDirectory(prefix="musl-bsd-elf-scan-") as name:
         bad = Path(name) / "not-an-elf"
         bad.write_bytes(b"not an ELF file\n")
         result = run(scanner, str(bad))
@@ -86,10 +86,10 @@ def main():
             fail("malformed ELF input was not rejected", result)
 
         # Directory discovery must be local and deterministic; it must not
-        # require an NVIDIA installation just to exercise the naming rules.
+        # require a local third-party installation.
         discovered = [
-            Path(name) / "libcuda.so.1",
-            Path(name) / "libcudart.so.13",
+            Path(name) / "libexample.so.1",
+            Path(name) / "plain-executable",
         ]
         for path in discovered:
             path.write_bytes(Path(sys.executable).read_bytes())
