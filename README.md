@@ -23,6 +23,15 @@ The project has two distinct roles:
 - **BSD compatibility headers** — including `sys/queue.h`, `sys/tree.h`, and `sys/cdefs.h`
 - **Linux libc wrappers** — including the file-descriptor mount and pidfd APIs
 - **Byte-preserving multibyte input** — for consumers that cannot rely on glibc stdio recovery semantics
+- **Passphrase input** — `<musl-bsd/readpassphrase.h>` and `readpassphrase()`
+  through `musl-bsd-source`, without the foreign-binary runtime
+
+The passphrase implementation is derived from OpenBSD via libbsd commit
+`5d2dcb1b729d1faebc09aec5e78909efe10eed1d`, retaining its ISC license.
+It preserves the BSD flags, terminal restoration, and signal redelivery.
+Terminal setup failures are rejected before prompting or reading.
+Like the BSD interface, it changes process-wide signal handlers; callers
+must serialize its use. It is not a cryptographic primitive or an RNG.
 
 The source-compatibility layer remains portable independently of the optional glibc binary runtime.
 

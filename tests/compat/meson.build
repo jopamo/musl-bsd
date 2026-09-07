@@ -731,3 +731,21 @@ foreach test_name : compat_tests
   )
   test('compat/' + test_name, test_exe, suite: 'compat')
 endforeach
+
+readpassphrase_test = executable(
+  'test_readpassphrase',
+  'test_readpassphrase.c',
+  include_directories: overlay_inc,
+  link_with: libcompat_static,
+  link_args: ['-Wl,--wrap=tcsetattr'],
+  c_args: c_flags,
+  install: false,
+)
+test(
+  'compat/readpassphrase',
+  find_program('python3'),
+  args: [files('test_readpassphrase.py'), readpassphrase_test.full_path()],
+  depends: readpassphrase_test,
+  suite: 'compat',
+  timeout: 30,
+)

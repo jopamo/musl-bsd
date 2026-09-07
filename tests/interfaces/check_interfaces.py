@@ -188,6 +188,8 @@ def main():
     sysroot = Path("/musl-bsd-test-sysroot")
 
     env = os.environ.copy()
+    # Inspect the complete link contract, including compiler-default paths.
+    env["PKG_CONFIG_ALLOW_SYSTEM_LIBS"] = "1"
     env["PKG_CONFIG_LIBDIR"] = str(build_root)
     env.pop("PKG_CONFIG_PATH", None)
     env.pop("PKG_CONFIG_SYSROOT_DIR", None)

@@ -284,6 +284,7 @@ compat_common_sources = [
 compat_source_sources = [
   'src/source/mb-reader.c',
   'src/source/pidfd.c',
+  'src/source/readpassphrase.c',
 ]
 
 compat_interpose_sources = []
