@@ -4,3 +4,7 @@
 docs/
 build*
 doc/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
