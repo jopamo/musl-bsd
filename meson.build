@@ -268,12 +268,13 @@ libargp_static = static_library(
   c_args: c_flags
 )
 
+compat_glibc_source = files('src/compat/glibc.c')
 compat_common_sources = [
   'src/compat/core.c',
   'src/compat/dlfcn.c',
   'src/compat/error.c',
   'src/compat/fs64.c',
-  'src/compat/glibc.c',
+  compat_glibc_source,
   'src/compat/math.c',
   'src/compat/mount.c',
   'src/compat/string.c',

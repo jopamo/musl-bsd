@@ -5,7 +5,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
@@ -63,9 +62,9 @@ void mtrace(void) {}
 void muntrace(void) {}
 
 char* __realpath_chk(const char* path, char* resolved_path, size_t resolved_len) {
-    assert(path != NULL);
-    assert(resolved_path != NULL);
-    assert(resolved_len >= PATH_MAX);
+    /* Match glibc's fixed-PATH_MAX fortify contract even with NDEBUG. */
+    if (resolved_len < PATH_MAX)
+        abort();
 
     return realpath(path, resolved_path);
 }
