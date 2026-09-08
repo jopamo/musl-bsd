@@ -80,6 +80,14 @@ int main(int argc, char* argv[], char* envp[]) {
         return LOADER_FAILURE;
     }
 
+    /* The readlink/re-exec shims must not resolve this against a later cwd. */
+    const char* startup_target = target;
+    target = realpath(startup_target, NULL);
+    if (target == NULL) {
+        fprintf(stderr, "musl-bsd loader: cannot resolve %s: %s\n", startup_target, strerror(errno));
+        return LOADER_FAILURE;
+    }
+
     core_preload = musl_bsd_compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
     early_preload = getenv("MUSL_BSD_EARLY_PRELOAD_PATH");
     library_path = musl_bsd_compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);

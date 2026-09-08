@@ -153,6 +153,10 @@ The glibc-named interpreter alias points into `loader/`. It launches musl's load
 
 User `LD_PRELOAD` entries are preserved rather than rewritten.
 
+The interpreter resolves the target to an absolute path before application
+code runs. The `/proc/self/exe` and re-execution adapters reuse that path even
+after a working-directory change; `argv[0]` remains the caller's original value.
+
 ---
 
 ## Security Model
