@@ -648,7 +648,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
             cur->fts_flags |= FTS_DONTCHDIR;
         }
         else {
-            descend = 1;
+            descend = !ISSET(FTS_NOCHDIR);
         }
     }
 
@@ -763,30 +763,26 @@ static FTSENT* fts_build(FTS* sp, int type) {
 
     OPS(sp)->closedir_fn(dirp);
 
-    if (nitems == 0) {
-        if (type == BREAD)
-            cur->fts_info = FTS_DP;
-        return NULL;
-    }
-
     if (sp->fts_compar && nitems > 1)
         head = fts_sort(sp, head, nitems);
 
     if (descend && (type == BCHILD || nitems == 0)) {
-        if (cur->fts_level == FTS_ROOTLEVEL) {
-            if (OPS(sp)->fchdir_fn(sp->fts_rfd) == -1) {
-                cur->fts_info = FTS_ERR;
-                SET(FTS_STOP);
-                return NULL;
-            }
-        }
-        else if (fts_safe_changedir(sp, cur->fts_parent, -1, "..")) {
+        int result = cur->fts_level == FTS_ROOTLEVEL
+                         ? OPS(sp)->fchdir_fn(sp->fts_rfd)
+                         : fts_safe_changedir(sp, cur->fts_parent, -1, "..");
+        if (result == -1) {
+            saved_errno = errno;
+            fts_lfree(head);
+            cur->fts_errno = saved_errno;
             cur->fts_info = FTS_ERR;
             SET(FTS_STOP);
+            errno = saved_errno;
             return NULL;
         }
     }
 
+    if (nitems == 0 && type == BREAD)
+        cur->fts_info = FTS_DP;
     return head;
 }
 
