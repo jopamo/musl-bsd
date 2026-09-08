@@ -1,6 +1,6 @@
 #include "preload_policy.h"
+#include "native_lookup.h"
 
-#include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
@@ -32,17 +32,13 @@ static char* preload_list(void) {
     return musl_bsd_preload_list(core, early, user);
 }
 
-static int (*real_execve)(const char* pathname, char* const argv[], char* const envp[]);
-static int (*real_execvp)(const char* file, char* const argv[]);
+static void* execve_symbol;
+static void* execvp_symbol;
 
 int execve(const char* pathname, char* const argv[], char* const envp[]) {
-    if (real_execve == NULL) {
-        real_execve = dlsym(RTLD_NEXT, "execve");
-        if (real_execve == NULL) {
-            errno = ENOSYS;
-            return -1;
-        }
-    }
+    int (*real_execve)(const char*, char* const[], char* const[]) = musl_bsd_native_lookup(&execve_symbol, "execve");
+    if (real_execve == NULL)
+        return -1;
 
     if (strcmp(pathname, "/proc/self/exe") == 0) {
         char target[PATH_MAX];
@@ -106,13 +102,9 @@ int execvp(const char* file, char* const argv[]) {
     if (strcmp(file, "/proc/self/exe") == 0)
         return execv(file, argv);
 
-    if (real_execvp == NULL) {
-        real_execvp = dlsym(RTLD_NEXT, "execvp");
-        if (real_execvp == NULL) {
-            errno = ENOSYS;
-            return -1;
-        }
-    }
+    int (*real_execvp)(const char*, char* const[]) = musl_bsd_native_lookup(&execvp_symbol, "execvp");
+    if (real_execvp == NULL)
+        return -1;
 
     return real_execvp(file, argv);
 }

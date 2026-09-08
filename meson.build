@@ -288,12 +288,14 @@ compat_source_sources = [
   'src/source/readpassphrase.c',
 ]
 
+compat_exec_source = files('src/compat/exec.c')
+compat_readlink_source = files('src/compat/readlink.c')
 compat_interpose_sources = []
 if glibc_runtime_enabled
   compat_interpose_sources += [
-    'src/compat/exec.c',
+    compat_exec_source,
     'src/compat/preload_policy.c',
-    'src/compat/readlink.c',
+    compat_readlink_source,
   ]
 endif
 

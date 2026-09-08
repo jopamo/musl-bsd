@@ -1,4 +1,5 @@
-#include <dlfcn.h>
+#include "native_lookup.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -10,9 +11,9 @@
 #error MUSL_BSD_MUSL_LINKER_PATH must be defined
 #endif
 
-static char exe_path[PATH_MAX];
-static char* linker_path;
-static ssize_t (*real_readlink)(const char* path, char* buf, size_t len);
+/* The winning path is immutable and retained for the process lifetime. */
+static char* cached_exe_path;
+static void* readlink_symbol;
 
 static int target_from_cmdline(char* target, size_t size) {
     char cmdline[PATH_MAX * 2];
@@ -75,33 +76,42 @@ ssize_t readlink(const char* path, char* buf, size_t len) {
     size_t path_len;
     size_t copy_len;
 
-    if (real_readlink == NULL) {
-        real_readlink = dlsym(RTLD_NEXT, "readlink");
-        if (real_readlink == NULL) {
-            errno = ENOSYS;
-            return -1;
-        }
-    }
+    ssize_t (*real_readlink)(const char*, char*, size_t) = musl_bsd_native_lookup(&readlink_symbol, "readlink");
+    if (real_readlink == NULL)
+        return -1;
 
     if (strcmp(path, "/proc/self/exe") != 0)
         return real_readlink(path, buf, len);
 
-    if (exe_path[0] == '\0') {
+    char* exe_path = __atomic_load_n(&cached_exe_path, __ATOMIC_ACQUIRE);
+    if (exe_path == NULL) {
+        char candidate[PATH_MAX];
+        char linker_path[PATH_MAX];
         ssize_t count;
 
-        if (linker_path == NULL) {
-            linker_path = realpath(MUSL_BSD_MUSL_LINKER_PATH, NULL);
-            if (linker_path == NULL)
-                return -1;
-        }
+        if (realpath(MUSL_BSD_MUSL_LINKER_PATH, linker_path) == NULL)
+            return -1;
 
-        count = real_readlink(path, exe_path, sizeof(exe_path) - 1);
+        count = real_readlink(path, candidate, sizeof(candidate));
         if (count < 1)
             goto fail;
-        exe_path[count] = '\0';
+        if ((size_t)count == sizeof(candidate)) {
+            errno = ENAMETOOLONG;
+            return -1;
+        }
+        candidate[count] = '\0';
 
-        if (strcmp(exe_path, linker_path) == 0 && target_from_cmdline(exe_path, sizeof(exe_path)) != 0)
+        if (strcmp(candidate, linker_path) == 0 && target_from_cmdline(candidate, sizeof(candidate)) != 0)
             goto fail;
+
+        exe_path = strdup(candidate);
+        if (exe_path == NULL)
+            return -1;
+        char* expected = NULL;
+        if (!__atomic_compare_exchange_n(&cached_exe_path, &expected, exe_path, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
+            free(exe_path);
+            exe_path = expected;
+        }
     }
 
     path_len = strlen(exe_path);
@@ -110,7 +120,6 @@ ssize_t readlink(const char* path, char* buf, size_t len) {
     return (ssize_t)copy_len;
 
 fail:
-    exe_path[0] = '\0';
     errno = EIO;
     return -1;
 }
