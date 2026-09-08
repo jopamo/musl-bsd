@@ -189,7 +189,8 @@ static TLS or constructor set. Set an explicit early DSO when needed:
 export MUSL_BSD_EARLY_PRELOAD_PATH=/absolute/path/to/required-early.so
 ```
 
-The path must be absolute and must identify one DSO. The loader does not guess
+The path must be absolute, contain no colon or ASCII whitespace, and identify
+one DSO. The loader does not guess
 package versions or search for this dependency. Preload order is fixed:
 
 ```text

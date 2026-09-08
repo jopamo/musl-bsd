@@ -26,9 +26,10 @@ char* musl_bsd_preload_list(const char* core, const char* early, const char* use
     /*
      * The optional early DSO is one policy-controlled preload, not another
      * user list. Requiring an absolute, delimiter-free path keeps its
-     * identity and position unambiguous.
+     * identity and position unambiguous. Musl splits on ':' and isspace();
+     * enumerate ASCII whitespace here without depending on locale state.
      */
-    if (early != NULL && early[0] != '\0' && (early[0] != '/' || strchr(early, ':') != NULL)) {
+    if (early != NULL && early[0] != '\0' && (early[0] != '/' || strpbrk(early, ": \t\n\r\f\v") != NULL)) {
         errno = EINVAL;
         return NULL;
     }
