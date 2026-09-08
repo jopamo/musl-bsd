@@ -659,8 +659,12 @@ static FTSENT* fts_build(FTS* sp, int type) {
 
     level = (cur->fts_level < SHRT_MAX) ? cur->fts_level + 1 : SHRT_MAX;
 
-    errno = 0;
-    while ((dp = OPS(sp)->readdir_fn(dirp)) != NULL) {
+    for (;;) {
+        /* Only this readdir call may turn directory exhaustion into an error. */
+        errno = 0;
+        dp = OPS(sp)->readdir_fn(dirp);
+        if (dp == NULL)
+            break;
         if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
             continue;
 
