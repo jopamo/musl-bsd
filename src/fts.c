@@ -554,6 +554,8 @@ FTSENT* fts_children(FTS* sp, int instr) {
     else {
         sp->fts_child = fts_build(sp, instr == FTS_NAMEONLY ? BNAMES : BCHILD);
     }
+    /* Child construction borrows the shared path; only fts_read advances it. */
+    sp->fts_path[cur->fts_pathlen] = '\0';
     if (!sp->fts_child && errno == 0)
         errno = 0;
     return sp->fts_child;
