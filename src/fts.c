@@ -528,8 +528,10 @@ FTSENT* fts_children(FTS* sp, int instr) {
         return NULL;
     }
 
-    if (sp->fts_child)
+    if (sp->fts_child) {
         fts_lfree(sp->fts_child);
+        sp->fts_child = NULL;
+    }
 
     if (instr == FTS_NAMEONLY)
         SET(FTS_NAMEONLY);
