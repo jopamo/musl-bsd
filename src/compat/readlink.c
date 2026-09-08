@@ -20,6 +20,8 @@ static int target_from_cmdline(char* target, size_t size) {
     char* end;
     ssize_t count;
     int fd;
+    /* Skip the interpreter's argv[0], then consume options and their values. */
+    int skip_value = 1;
 
     fd = open("/proc/self/cmdline", O_RDONLY | O_CLOEXEC);
     if (fd < 0)
@@ -38,6 +40,11 @@ static int target_from_cmdline(char* target, size_t size) {
 
         if (item_len == (size_t)(end - cursor))
             break;
+        if (skip_value) {
+            skip_value = 0;
+            cursor += item_len + 1;
+            continue;
+        }
         if (strcmp(cursor, "--") == 0) {
             const char* value = cursor + item_len + 1;
             size_t value_len;
@@ -45,6 +52,8 @@ static int target_from_cmdline(char* target, size_t size) {
             if (value >= end)
                 break;
             value_len = strnlen(value, (size_t)(end - value));
+            if (value_len == (size_t)(end - value))
+                break;
             if (value_len == 0 || value_len >= size) {
                 errno = value_len == 0 ? EIO : ENAMETOOLONG;
                 return -1;
@@ -52,6 +61,9 @@ static int target_from_cmdline(char* target, size_t size) {
             memcpy(target, value, value_len + 1);
             return 0;
         }
+        if (strcmp(cursor, "--preload") != 0 && strcmp(cursor, "--library-path") != 0 && strcmp(cursor, "--argv0") != 0)
+            break;
+        skip_value = 1;
         cursor += item_len + 1;
     }
 
