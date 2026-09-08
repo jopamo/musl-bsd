@@ -51,6 +51,9 @@ static inline __fts_length_t fts_length_cap(size_t len) {
 #define BNAMES 2
 #define BREAD 3
 
+/* Following permission is independent of FTS_SYMFOLLOW's fd ownership. */
+#define FTS_EXPLICIT_FOLLOW 0x08
+
 struct cycle_entry {
     dev_t dev;
     ino_t ino;
@@ -108,6 +111,7 @@ static size_t fts_pow2(size_t);
 static int fts_palloc(FTS*, size_t);
 static FTSENT* fts_sort(FTS*, FTSENT*, int);
 static unsigned short fts_stat(FTS*, FTSENT*, int, int);
+static void fts_follow(FTS*, FTSENT*);
 static int fts_safe_changedir(FTS*, FTSENT*, int, const char*);
 static int cycle_init(struct cycle_state*);
 static void cycle_free(struct cycle_state*);
@@ -116,6 +120,22 @@ static int cycle_insert(struct cycle_state*, dev_t, ino_t, FTSENT*);
 static void cycle_remove(struct cycle_state*, dev_t, ino_t);
 static int fts_cycle_push(FTS*, FTSENT*);
 static void fts_cycle_pop(FTS*, FTSENT*);
+
+static void fts_close_symfd(FTS* sp, FTSENT* p) {
+    if (p->fts_flags & FTS_SYMFOLLOW) {
+        OPS(sp)->close_fn(p->fts_symfd);
+        p->fts_flags &= ~FTS_SYMFOLLOW;
+    }
+}
+
+static int fts_directory_flags(FTS* sp, FTSENT* p) {
+    int flags = O_RDONLY | O_DIRECTORY | O_CLOEXEC;
+#if HAS_O_NOFOLLOW
+    if (ISSET(FTS_PHYSICAL) && !(p->fts_flags & FTS_EXPLICIT_FOLLOW))
+        flags |= O_NOFOLLOW;
+#endif
+    return flags;
+}
 
 static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size) {
     if (size != 0 && newnmemb > SIZE_MAX / size) {
@@ -279,10 +299,9 @@ int fts_close(FTS* sp) {
 
     if (sp->fts_cur) {
         FTSENT* p = sp->fts_cur;
-        if (p->fts_flags & FTS_SYMFOLLOW)
-            OPS(sp)->close_fn(p->fts_symfd);
         while (p->fts_level >= FTS_ROOTLEVEL) {
             FTSENT* next = p->fts_link ? p->fts_link : p->fts_parent;
+            fts_close_symfd(sp, p);
             free(p);
             p = next;
         }
@@ -338,24 +357,13 @@ FTSENT* fts_read(FTS* sp) {
     }
 
     if (instr == FTS_FOLLOW && (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
-        p->fts_info = fts_stat(sp, p, 1, -1);
-        if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
-            p->fts_symfd = OPS(sp)->open_fn(".", O_RDONLY | O_CLOEXEC);
-            if (p->fts_symfd == -1) {
-                p->fts_errno = errno;
-                p->fts_info = FTS_ERR;
-            }
-            else {
-                p->fts_flags |= FTS_SYMFOLLOW;
-            }
-        }
+        fts_follow(sp, p);
         return fts_return_dir(p);
     }
 
     if (p->fts_info == FTS_D) {
         if (instr == FTS_SKIP || (ISSET(FTS_XDEV) && p->fts_dev != sp->fts_dev)) {
-            if (p->fts_flags & FTS_SYMFOLLOW)
-                OPS(sp)->close_fn(p->fts_symfd);
+            fts_close_symfd(sp, p);
             if (sp->fts_child) {
                 fts_lfree(sp->fts_child);
                 sp->fts_child = NULL;
@@ -405,6 +413,7 @@ next:
     if (p) {
         fts_cycle_pop(sp, tmp);
         sp->fts_cur = NULL;
+        fts_close_symfd(sp, tmp);
         free(tmp);
 
         if (p->fts_level == FTS_ROOTLEVEL) {
@@ -420,27 +429,16 @@ next:
 
         if (p->fts_instr == FTS_SKIP)
             goto next;
-        if (p->fts_instr == FTS_FOLLOW) {
-            p->fts_info = fts_stat(sp, p, 1, -1);
-            if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
-                p->fts_symfd = OPS(sp)->open_fn(".", O_RDONLY | O_CLOEXEC);
-                if (p->fts_symfd == -1) {
-                    p->fts_errno = errno;
-                    p->fts_info = FTS_ERR;
-                }
-                else {
-                    p->fts_flags |= FTS_SYMFOLLOW;
-                }
-            }
-            p->fts_instr = FTS_NOINSTR;
-        }
-
     name:
         t = sp->fts_path + ((p->fts_parent->fts_path[p->fts_parent->fts_pathlen - 1] == '/')
                                 ? p->fts_parent->fts_pathlen - 1
                                 : p->fts_parent->fts_pathlen);
         *t++ = '/';
         memmove(t, p->fts_name, p->fts_namelen + 1);
+        if (p->fts_instr == FTS_FOLLOW) {
+            fts_follow(sp, p);
+            p->fts_instr = FTS_NOINSTR;
+        }
         sp->fts_cur = p;
         return fts_return_dir(p);
     }
@@ -449,6 +447,7 @@ next:
         FTSENT* up = tmp->fts_parent;
         fts_cycle_pop(sp, tmp);
         sp->fts_cur = NULL;
+        fts_close_symfd(sp, tmp);
         free(tmp);
         p = up;
     }
@@ -477,13 +476,13 @@ next:
     else if (p->fts_flags & FTS_SYMFOLLOW) {
         if (!ISSET(FTS_NOCHDIR) && OPS(sp)->fchdir_fn(p->fts_symfd)) {
             saved_errno = errno;
-            OPS(sp)->close_fn(p->fts_symfd);
+            fts_close_symfd(sp, p);
             errno = saved_errno;
             SET(FTS_STOP);
             sp->fts_cur = p;
             return NULL;
         }
-        OPS(sp)->close_fn(p->fts_symfd);
+        fts_close_symfd(sp, p);
     }
     else if (!(p->fts_flags & FTS_DONTCHDIR) && fts_safe_changedir(sp, p->fts_parent, -1, "..")) {
         SET(FTS_STOP);
@@ -584,12 +583,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
         return NULL;
     }
 
-    int open_flags = O_RDONLY | O_DIRECTORY | O_CLOEXEC;
-#if HAS_O_NOFOLLOW
-    if (ISSET(FTS_PHYSICAL))
-        open_flags |= O_NOFOLLOW;
-#endif
-    int fd = OPS(sp)->open_fn(cur->fts_accpath, open_flags);
+    int fd = OPS(sp)->open_fn(cur->fts_accpath, fts_directory_flags(sp, cur));
     if (fd == -1) {
         cur->fts_info = (type == BREAD) ? FTS_DNR : FTS_ERR;
         cur->fts_errno = errno;
@@ -767,9 +761,13 @@ static FTSENT* fts_build(FTS* sp, int type) {
         head = fts_sort(sp, head, nitems);
 
     if (descend && (type == BCHILD || nitems == 0)) {
-        int result = cur->fts_level == FTS_ROOTLEVEL
-                         ? OPS(sp)->fchdir_fn(sp->fts_rfd)
-                         : fts_safe_changedir(sp, cur->fts_parent, -1, "..");
+        int result;
+        if (cur->fts_level == FTS_ROOTLEVEL)
+            result = OPS(sp)->fchdir_fn(sp->fts_rfd);
+        else if (cur->fts_flags & FTS_SYMFOLLOW)
+            result = OPS(sp)->fchdir_fn(cur->fts_symfd);
+        else
+            result = fts_safe_changedir(sp, cur->fts_parent, -1, "..");
         if (result == -1) {
             saved_errno = errno;
             fts_lfree(head);
@@ -837,6 +835,8 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
     }
 
     if (S_ISDIR(sbp->st_mode)) {
+        if (follow)
+            p->fts_flags |= FTS_EXPLICIT_FOLLOW;
         p->fts_dev = sbp->st_dev;
         p->fts_ino = sbp->st_ino;
         p->fts_nlink = sbp->st_nlink;
@@ -867,6 +867,20 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
 err:
     memset(sbp, 0, sizeof(__fts_stat_t));
     return FTS_NS;
+}
+
+static void fts_follow(FTS* sp, FTSENT* p) {
+    p->fts_info = fts_stat(sp, p, 1, -1);
+    if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
+        p->fts_symfd = OPS(sp)->open_fn(".", O_RDONLY | O_CLOEXEC);
+        if (p->fts_symfd == -1) {
+            p->fts_errno = errno;
+            p->fts_info = FTS_ERR;
+        }
+        else {
+            p->fts_flags |= FTS_SYMFOLLOW;
+        }
+    }
 }
 
 static FTSENT* fts_sort(FTS* sp, FTSENT* head, int nitems) {
@@ -1001,12 +1015,7 @@ static int fts_safe_changedir(FTS* sp, FTSENT* p, int fd, const char* path) {
 
     int newfd = fd;
     if (fd == -1) {
-        int oflags = O_RDONLY | O_DIRECTORY | O_CLOEXEC
-#if HAS_O_NOFOLLOW
-                     | O_NOFOLLOW
-#endif
-            ;
-        newfd = OPS(sp)->open_fn(path ? path : p->fts_accpath, oflags);
+        newfd = OPS(sp)->open_fn(path ? path : p->fts_accpath, fts_directory_flags(sp, p));
         if (newfd == -1)
             return -1;
     }
