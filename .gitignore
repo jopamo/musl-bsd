@@ -1,6 +1,5 @@
 *.md
 !README.md
-!tests/README.md
 docs/
 build*
 doc/

@@ -61,10 +61,10 @@ Configure without the glibc binary runtime:
 meson setup build -Dglibc_runtime=disabled
 ```
 
-Run the test suite:
+Build the libraries:
 
 ```sh
-meson test -C build --print-errorlogs
+meson compile -C build
 ```
 
 ### Enable the glibc binary runtime automatically
@@ -330,7 +330,8 @@ Toolchain construction errors are treated as test/toolchain defects rather than 
 
 ## External ELF Loader Tests
 
-The optional external suite can exercise any explicitly selected DSO:
+The optional external suite in the `musl-bsd-tests` repository can exercise any
+explicitly selected DSO. Run there after configuring its build:
 
 ```sh
 MUSL_BSD_TEST_DSO=/absolute/path/to/root.so \
@@ -473,52 +474,21 @@ Option flags:
 
 ## Testing
 
-Tests are grouped by component under `tests/`.
+Tests and coverage tooling live in the separate `musl-bsd-tests` repository.
+This repository builds only the production libraries, headers, and runtime.
 
-Meson test IDs use the:
-
-```text
-component/behavior
-```
-
-convention, and each component is also a Meson suite.
-
-Run all tests:
+For sibling checkouts, configure and run the tests with:
 
 ```sh
+cd ../musl-bsd-tests
+ln -s ../../musl-bsd subprojects/musl-bsd
 meson setup build
 meson test -C build --print-errorlogs
 ```
 
-Run a single component suite:
-
-```sh
-meson test -C build --suite fts --print-errorlogs
-```
-
-See [`tests/README.md`](tests/README.md) for the test layout and naming rules.
-
----
-
-## Coverage
-
-Use the canonical coverage command:
-
-```sh
-./scripts/coverage.sh build-coverage
-```
-
-Reports are written to:
-
-```text
-build-coverage/meson-logs/coverage.txt
-build-coverage/coverage/index.html
-build-coverage/coverage/coverage.xml
-build-coverage/coverage/summary.json
-build-coverage/coverage/src-summary.json
-```
-
-Coverage is configured through `gcovr.cfg`.
+The test repository builds this checkout as a local Meson subproject. Use
+`-Dmusl-bsd:glibc_runtime=disabled` for source-only testing. Its README documents
+component suites, external DSO tests, and `scripts/coverage.sh`.
 
 ---
 

@@ -40,6 +40,9 @@ add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')
 
 inc = include_directories('include', 'src/argp')
 overlay_inc = include_directories('overlay/include')
+compat_inc = include_directories('src/compat')
+musl_bsd_source_root = meson.current_source_dir()
+musl_bsd_build_root = meson.current_build_dir()
 
 c_flags = [
   '-D_GNU_SOURCE'
@@ -198,14 +201,6 @@ libobstack_static = static_library(
   c_args: c_flags
 )
 
-libobstack_test = static_library(
-  'obstack_test',
-  obstack_sources,
-  include_directories: inc,
-  c_args: c_flags,
-  install: false
-)
-
 install_headers('include/obstack.h', subdir: '')
 
 fts_sources = ['src/fts.c']
@@ -227,14 +222,6 @@ libfts_static = static_library(
   include_directories: inc,
   install: true,
   c_args: c_flags
-)
-
-libfts_test = static_library(
-  'fts_test',
-  fts_sources,
-  include_directories: inc,
-  c_args: c_flags,
-  install: false
 )
 
 install_headers('include/fts.h', subdir: '')
@@ -288,13 +275,15 @@ compat_source_sources = [
   'src/source/readpassphrase.c',
 ]
 
+loader_policy_source = files('src/compat/loader_policy.c')
+preload_policy_source = files('src/compat/preload_policy.c')
 compat_exec_source = files('src/compat/exec.c')
 compat_readlink_source = files('src/compat/readlink.c')
 compat_interpose_sources = []
 if glibc_runtime_enabled
   compat_interpose_sources += [
     compat_exec_source,
-    'src/compat/preload_policy.c',
+    preload_policy_source,
     compat_readlink_source,
   ]
 endif
@@ -381,10 +370,8 @@ if glibc_runtime_enabled
     glibc_loader_name,
     [
       'src/compat/loader.c',
-      'src/compat/loader_policy.c',
-      'src/compat/preload_policy.c',
-    ],
-    include_directories: include_directories('src/compat'),
+    ] + loader_policy_source + preload_policy_source,
+    include_directories: compat_inc,
     install: true,
     install_dir: compat_loader_payload_install_dir,
     c_args: compat_runtime_c_args,
@@ -463,5 +450,3 @@ pkg.generate(libargp,
   filebase: 'libargp',
   description: 'Hierarchical argument parsing library broken out from glibc'
 )
-
-subdir('tests')
