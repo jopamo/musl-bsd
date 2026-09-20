@@ -6,3 +6,4 @@ Description: PIC static BSD and glibc source compatibility implementation for mu
 Version: @VERSION@
 Requires: musl-bsd-headers
 Libs: -L${libdir}/musl-bsd -l:libmusl-bsd-core.a
+Cflags: -DHAVE_MUSL_BSD_MOUNT_API=1 -DHAVE_MUSL_BSD_PIDFD_API=1
