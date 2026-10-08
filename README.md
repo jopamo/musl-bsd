@@ -325,6 +325,14 @@ dependency graph.
 tools/elf-scan --format json --output inventory.json /path/to/root.so
 ```
 
+File output uses a same-directory temporary and atomic replacement after
+writing, flushing and closing it. Existing regular-file permission bits are
+preserved; new reports use mode 0600. Symlink and non-regular destinations are
+rejected, and the parent directory must already exist. Failed writes attempt
+temporary-file cleanup without truncating the old report. Output ownership
+belongs to the writer. This does not provide fsync-based crash durability.
+Standard-output behavior is unchanged.
+
 The report includes SONAMEs, undefined symbols, symbol bindings and versions,
 TLS relocations, IFUNC/IRELATIVE use, relocation types, unresolved
 dependencies, and consolidated compatibility requirements. Directory discovery

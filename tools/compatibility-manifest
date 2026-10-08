@@ -419,8 +419,8 @@ def _write_json(path: str, value: dict[str, Any]) -> None:
             prefix=f".{destination.name}.",
             delete=False,
         ) as stream:
-            stream.write(rendered)
             temporary = Path(stream.name)
+            stream.write(rendered)
         os.replace(temporary, destination)
     except OSError as error:
         try:
