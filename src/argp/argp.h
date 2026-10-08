@@ -473,6 +473,9 @@ reflect ARGP_LONG_ONLY mode.  */
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
    ARGP_HELP_*.  */
 /* Option-list allocation failure returns without output and sets errno to ENOMEM. */
+/* Each help call reads ARGP_HELP_FMT from defaults.  Columns must be
+   nonnegative and below rmargin (at least 2); invalid margins restore all
+   defaults after a diagnostic.  Callers must serialize environment changes. */
 extern void argp_help(const struct argp* __restrict __argp,
                       FILE* __restrict __stream,
                       unsigned __flags,

@@ -96,7 +96,7 @@ static const char* dgettext_safe(const char* d, const char* m) {
 
    These may be specified in an environment variable called `ARGP_HELP_FMT',
    with a contents like:  VAR1=VAL1,VAR2=VAL2,BOOLVAR2,no-BOOLVAR2
-   Where VALn must be a positive integer.  The list of variables is in the
+   Where VALn must be a nonnegative integer.  The list of variables is in the
    UPARAM_NAMES vector, below.  */
 
 /* Default parameters.  */
@@ -134,9 +134,8 @@ struct uparams {
     int rmargin;
 };
 
-/* This is a global variable, as user options are only ever read once.  */
-static struct uparams uparams = {DUP_ARGS,    DUP_ARGS_NOTE, SHORT_OPT_COL, LONG_OPT_COL, DOC_OPT_COL,
-                                 OPT_DOC_COL, HEADER_COL,    USAGE_INDENT,  RMARGIN};
+static const struct uparams default_uparams = {DUP_ARGS,    DUP_ARGS_NOTE, SHORT_OPT_COL, LONG_OPT_COL, DOC_OPT_COL,
+                                               OPT_DOC_COL, HEADER_COL,    USAGE_INDENT,  RMARGIN};
 
 /* A particular uparam, and what the user name is.  */
 struct uparam_name {
@@ -158,13 +157,14 @@ static const struct uparam_name uparam_names[] = {{"dup-args", true, offsetof(st
 #define nuparam_names (sizeof(uparam_names) / sizeof(uparam_names[0]))
 
 /* Read user options from the environment, and fill in UPARAMS appropriately.  */
-static void fill_in_uparams(const struct argp_state* state) {
+static void fill_in_uparams(const struct argp_state* state, struct uparams* params) {
     const char* var = getenv("ARGP_HELP_FMT");
+    *params = default_uparams;
 
-#define SKIPWS(p)           \
-    do {                    \
-        while (isspace(*p)) \
-            p++;            \
+#define SKIPWS(p)                          \
+    do {                                   \
+        while (isspace((unsigned char)*p)) \
+            p++;                           \
     } while (0);
 
     if (var)
@@ -172,13 +172,13 @@ static void fill_in_uparams(const struct argp_state* state) {
         while (*var) {
             SKIPWS(var);
 
-            if (isalpha(*var)) {
+            if (isalpha((unsigned char)*var)) {
                 size_t var_len;
                 const struct uparam_name* un;
-                int unspec = 0, val = 0;
+                int unspec = 0, val = 0, invalid = 0;
                 const char* arg = var;
 
-                while (isalnum(*arg) || *arg == '-' || *arg == '_')
+                while (isalnum((unsigned char)*arg) || *arg == '-' || *arg == '_')
                     arg++;
                 var_len = arg - var;
 
@@ -190,9 +190,11 @@ static void fill_in_uparams(const struct argp_state* state) {
                     arg++;
                     SKIPWS(arg);
                 }
+                else
+                    invalid = 1;
 
                 if (unspec) {
-                    if (var[0] == 'n' && var[1] == 'o' && var[2] == '-') {
+                    if (var_len >= 3 && strncmp(var, "no-", 3) == 0) {
                         val = 0;
                         var += 3;
                         var_len -= 3;
@@ -200,11 +202,28 @@ static void fill_in_uparams(const struct argp_state* state) {
                     else
                         val = 1;
                 }
-                else if (isdigit(*arg)) {
-                    val = atoi(arg);
-                    while (isdigit(*arg))
+                else if (*arg >= '0' && *arg <= '9') {
+                    while (*arg >= '0' && *arg <= '9') {
+                        int digit = *arg - '0';
+                        if (val > (INT_MAX - digit) / 10)
+                            invalid = 1;
+                        else if (!invalid)
+                            val = val * 10 + digit;
                         arg++;
+                    }
                     SKIPWS(arg);
+                }
+                else
+                    invalid = 1;
+
+                if (*arg && *arg != ',')
+                    invalid = 1;
+                if (invalid) {
+                    __argp_failure(state, 0, 0,
+                                   dgettext(state == NULL ? NULL : state->root_argp->argp_domain,
+                                            "Invalid value in ARGP_HELP_FMT: %s"),
+                                   var);
+                    break;
                 }
 
                 un = uparam_names;
@@ -218,7 +237,7 @@ static void fill_in_uparams(const struct argp_state* state) {
 %.*s: ARGP_HELP_FMT parameter requires a value"),
                                            (int)var_len, var);
                         else
-                            *(int*)((char*)&uparams + un->uparams_offs) = val;
+                            *(int*)((char*)params + un->uparams_offs) = val;
                         break;
                     }
                 if (u == nuparam_names)
@@ -226,7 +245,7 @@ static void fill_in_uparams(const struct argp_state* state) {
                                    dgettext(state == NULL ? NULL : state->root_argp->argp_domain,
                                             "\
 %.*s: Unknown ARGP_HELP_FMT parameter"),
-                                   (int)var_len, var);
+                                   (int)(var_len > INT_MAX ? INT_MAX : var_len), var);
 
                 var = arg;
                 if (*var == ',')
@@ -240,6 +259,15 @@ static void fill_in_uparams(const struct argp_state* state) {
                 break;
             }
         }
+    if (params->rmargin < 2 || params->short_opt_col >= params->rmargin || params->long_opt_col >= params->rmargin ||
+        params->doc_opt_col >= params->rmargin || params->opt_doc_col >= params->rmargin ||
+        params->header_col >= params->rmargin || params->usage_indent >= params->rmargin ||
+        params->opt_doc_col > INT_MAX - 3) {
+        __argp_failure(
+            state, 0, 0,
+            dgettext(state == NULL ? NULL : state->root_argp->argp_domain, "Invalid margins in ARGP_HELP_FMT"));
+        *params = default_uparams;
+    }
 }
 
 /* Returns true if OPT hasn't been marked invisible.  Visibility only affects
@@ -912,6 +940,7 @@ static void arg(const struct argp_option* real,
 
 /* State used during the execution of hol_help.  */
 struct hol_help_state {
+    const struct uparams* params;
     /* PREV_ENTRY should contain the previous entry printed, or 0.  */
     struct hol_entry* prev_entry;
 
@@ -966,9 +995,9 @@ static void print_header(const char* str, const struct argp* argp, struct pentry
             if (pest->hhstate->prev_entry)
                 /* Precede with a blank line.  */
                 __argp_fmtstream_putc(pest->stream, '\n');
-            indent_to(pest->stream, uparams.header_col);
-            __argp_fmtstream_set_lmargin(pest->stream, uparams.header_col);
-            __argp_fmtstream_set_wmargin(pest->stream, uparams.header_col);
+            indent_to(pest->stream, pest->hhstate->params->header_col);
+            __argp_fmtstream_set_lmargin(pest->stream, pest->hhstate->params->header_col);
+            __argp_fmtstream_set_wmargin(pest->stream, pest->hhstate->params->header_col);
             __argp_fmtstream_puts(pest->stream, fstr);
             __argp_fmtstream_set_lmargin(pest->stream, 0);
             __argp_fmtstream_putc(pest->stream, '\n');
@@ -1017,6 +1046,7 @@ static void hol_entry_help(struct hol_entry* entry,
                            const struct argp_state* state,
                            argp_fmtstream_t stream,
                            struct hol_help_state* hhstate) {
+    const struct uparams* params = hhstate->params;
     unsigned num;
     const struct argp_option *real = entry->opt, *opt;
     char* so = entry->short_options;
@@ -1036,16 +1066,16 @@ static void hol_entry_help(struct hol_entry* entry,
             }
 
     /* First emit short options.  */
-    __argp_fmtstream_set_wmargin(stream, uparams.short_opt_col); /* For truly bizarre cases. */
+    __argp_fmtstream_set_wmargin(stream, params->short_opt_col); /* For truly bizarre cases. */
     for (opt = real, num = entry->num; num > 0; opt++, num--)
         if (oshort(opt) && opt->key == *so)
         /* OPT has a valid (non shadowed) short option.  */
         {
             if (ovisible(opt)) {
-                comma(uparams.short_opt_col, &pest);
+                comma(params->short_opt_col, &pest);
                 __argp_fmtstream_putc(stream, '-');
                 __argp_fmtstream_putc(stream, *so);
-                if (!have_long_opt || uparams.dup_args)
+                if (!have_long_opt || params->dup_args)
                     arg(real, " %s", "[%s]", state == NULL ? NULL : state->root_argp->argp_domain, stream);
                 else if (real->arg)
                     hhstate->suppressed_dup_arg = 1;
@@ -1057,10 +1087,10 @@ static void hol_entry_help(struct hol_entry* entry,
     if (odoc(real))
     /* A `documentation' option.  */
     {
-        __argp_fmtstream_set_wmargin(stream, uparams.doc_opt_col);
+        __argp_fmtstream_set_wmargin(stream, params->doc_opt_col);
         for (opt = real, num = entry->num; num > 0; opt++, num--)
             if (opt->name && ovisible(opt)) {
-                comma(uparams.doc_opt_col, &pest);
+                comma(params->doc_opt_col, &pest);
                 /* Calling gettext here isn't quite right, since sorting will
                    have been done on the original; but documentation options
                    should be pretty rare anyway...  */
@@ -1071,10 +1101,10 @@ static void hol_entry_help(struct hol_entry* entry,
     else
     /* A real long option.  */
     {
-        __argp_fmtstream_set_wmargin(stream, uparams.long_opt_col);
+        __argp_fmtstream_set_wmargin(stream, params->long_opt_col);
         for (opt = real, num = entry->num; num > 0; opt++, num--)
             if (opt->name && ovisible(opt)) {
-                comma(uparams.long_opt_col, &pest);
+                comma(params->long_opt_col, &pest);
                 __argp_fmtstream_printf(stream, "--%s", opt->name);
                 arg(real, "=%s", "[=%s]", state == NULL ? NULL : state->root_argp->argp_domain, stream);
             }
@@ -1099,15 +1129,15 @@ static void hol_entry_help(struct hol_entry* entry,
         if (fstr && *fstr) {
             unsigned int col = __argp_fmtstream_point(stream);
 
-            __argp_fmtstream_set_lmargin(stream, uparams.opt_doc_col);
-            __argp_fmtstream_set_wmargin(stream, uparams.opt_doc_col);
+            __argp_fmtstream_set_lmargin(stream, params->opt_doc_col);
+            __argp_fmtstream_set_wmargin(stream, params->opt_doc_col);
 
-            if (col > (unsigned int)(uparams.opt_doc_col + 3))
+            if (col > (unsigned int)(params->opt_doc_col + 3))
                 __argp_fmtstream_putc(stream, '\n');
-            else if (col >= (unsigned int)uparams.opt_doc_col)
+            else if (col >= (unsigned int)params->opt_doc_col)
                 __argp_fmtstream_puts(stream, "   ");
             else
-                indent_to(stream, uparams.opt_doc_col);
+                indent_to(stream, params->opt_doc_col);
 
             __argp_fmtstream_puts(stream, fstr);
         }
@@ -1127,15 +1157,18 @@ cleanup:
 }
 
 /* Output a long help message about the options in HOL to STREAM.  */
-static void hol_help(struct hol* hol, const struct argp_state* state, argp_fmtstream_t stream) {
+static void hol_help(struct hol* hol,
+                     const struct argp_state* state,
+                     argp_fmtstream_t stream,
+                     const struct uparams* params) {
     unsigned num;
     struct hol_entry* entry;
-    struct hol_help_state hhstate = {0, 0, 0};
+    struct hol_help_state hhstate = {params, 0, 0, 0};
 
     for (entry = hol->entries, num = hol->num_entries; num > 0; entry++, num--)
         hol_entry_help(entry, state, stream, &hhstate);
 
-    if (hhstate.suppressed_dup_arg && uparams.dup_args_note) {
+    if (hhstate.suppressed_dup_arg && params->dup_args_note) {
         const char* tstr = dgettext(state == NULL ? NULL : state->root_argp->argp_domain,
                                     "\
 Mandatory or optional arguments to long options are also mandatory or \
@@ -1446,6 +1479,7 @@ static void _help(const struct argp* argp, const struct argp_state* state, FILE*
     int saved_errno = 0;
     struct hol* hol = 0;
     argp_fmtstream_t fs;
+    struct uparams params;
 
     if (!stream)
         return;
@@ -1454,9 +1488,9 @@ static void _help(const struct argp* argp, const struct argp_state* state, FILE*
   __flockfile (stream);
 #endif
 
-    fill_in_uparams(state);
+    fill_in_uparams(state, &params);
 
-    fs = __argp_make_fmtstream(stream, 0, uparams.rmargin, 0);
+    fs = __argp_make_fmtstream(stream, 0, params.rmargin, 0);
     if (!fs) {
 #if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
       __funlockfile (stream);
@@ -1489,7 +1523,7 @@ static void _help(const struct argp* argp, const struct argp_state* state, FILE*
 
         do {
             int old_lm;
-            int old_wm = __argp_fmtstream_set_wmargin(fs, uparams.usage_indent);
+            int old_wm = __argp_fmtstream_set_wmargin(fs, params.usage_indent);
             char* levels = pattern_levels;
 
             if (first_pattern)
@@ -1499,7 +1533,7 @@ static void _help(const struct argp* argp, const struct argp_state* state, FILE*
 
             /* We set the lmargin as well as the wmargin, because hol_usage
                manually wraps options with newline to avoid annoying breaks.  */
-            old_lm = __argp_fmtstream_set_lmargin(fs, uparams.usage_indent);
+            old_lm = __argp_fmtstream_set_lmargin(fs, params.usage_indent);
 
             if (flags & ARGP_HELP_SHORT_USAGE)
             /* Just show where the options go.  */
@@ -1545,7 +1579,7 @@ Try `%s --help' or `%s --usage' for more information.\n"),
         if (hol->num_entries > 0) {
             if (anything)
                 __argp_fmtstream_putc(fs, '\n');
-            hol_help(hol, state, fs);
+            hol_help(hol, state, fs, &params);
             anything = 1;
         }
     }
