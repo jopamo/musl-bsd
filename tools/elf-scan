@@ -431,15 +431,24 @@ class ELFFile:
                 "<IIII", offset, "GNU hash header"
             )
             if (
-                nbuckets > MAX_TABLE_ENTRIES
+                nbuckets == 0
+                or bloom_size == 0
+                or bloom_size & (bloom_size - 1)
+                or symoffset == 0
+                or nbuckets > MAX_TABLE_ENTRIES
                 or bloom_size > MAX_TABLE_ENTRIES
                 or symoffset > MAX_TABLE_ENTRIES
             ):
                 raise ScanError(f"{self.path}: unreasonable GNU hash table")
+            prefix_size = 16 + bloom_size * 8 + nbuckets * 4
+            prefix_offset = self._address_range(
+                self.dynamic[DT_GNU_HASH], prefix_size, "GNU hash prefix"
+            )
+            if prefix_offset != offset:
+                raise ScanError(f"{self.path}: inconsistent GNU hash mapping")
             buckets = offset + 16 + bloom_size * 8
-            self.reader.range(buckets, nbuckets * 4, "GNU hash buckets")
-            chains = buckets + nbuckets * 4
             highest = symoffset - 1
+            work = nbuckets
             for bucket_index in range(nbuckets):
                 bucket = self.reader.unpack(
                     "<I",
@@ -452,7 +461,18 @@ class ELFFile:
                     raise ScanError(f"{self.path}: invalid GNU hash bucket")
                 index = bucket
                 while True:
-                    chain_offset = chains + (index - symoffset) * 4
+                    if work == MAX_TABLE_ENTRIES:
+                        raise ScanError(f"{self.path}: unreasonable GNU hash work")
+                    work += 1
+                    if index >= MAX_TABLE_ENTRIES:
+                        raise ScanError(f"{self.path}: unreasonable GNU hash symbol index")
+                    chain_address = (
+                        self.dynamic[DT_GNU_HASH] + prefix_size
+                        + (index - symoffset) * 4
+                    )
+                    chain_offset = self._address_range(
+                        chain_address, 4, "GNU hash chain"
+                    )
                     value = self.reader.unpack(
                         "<I", chain_offset, "GNU hash chain"
                     )[0]
@@ -460,10 +480,6 @@ class ELFFile:
                     if value & 1:
                         break
                     index += 1
-                    if index - symoffset > MAX_TABLE_ENTRIES:
-                        raise ScanError(
-                            f"{self.path}: unreasonable GNU hash chain"
-                        )
             count = highest + 1
             if count == 0 or count > MAX_TABLE_ENTRIES:
                 raise ScanError(f"{self.path}: invalid GNU hash symbol count")
