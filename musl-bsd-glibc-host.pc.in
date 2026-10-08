@@ -1,5 +1,5 @@
 prefix=@PREFIX@
-libdir=${prefix}/@LIBDIR@
+libdir=@LIBDIR@
 
 Name: musl-bsd-glibc-host
 Description: Qualified x86_64 LP64 host runtime for loading glibc-targeted DSOs on musl

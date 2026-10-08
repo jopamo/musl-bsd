@@ -1,5 +1,5 @@
 prefix=@PREFIX@
-libdir=${prefix}/@LIBDIR@
+libdir=@LIBDIR@
 facadelibdir=${libdir}/musl-bsd/glibc
 
 Name: musl-bsd-glibc-startup

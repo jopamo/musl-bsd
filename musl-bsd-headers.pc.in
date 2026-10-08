@@ -1,5 +1,5 @@
 prefix=@PREFIX@
-libdir=${prefix}/@LIBDIR@
+libdir=@LIBDIR@
 overlayincludedir=${libdir}/musl-bsd/overlay/include
 
 Name: musl-bsd-headers

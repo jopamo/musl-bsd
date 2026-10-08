@@ -1,5 +1,5 @@
 prefix=@PREFIX@
-libdir=${prefix}/@LIBDIR@
+libdir=@LIBDIR@
 
 Name: musl-bsd-source
 Description: PIC static BSD and glibc source compatibility implementation for musl

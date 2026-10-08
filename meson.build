@@ -442,7 +442,10 @@ install_subdir(
 
 interface_pc_data = configuration_data()
 interface_pc_data.set('PREFIX', get_option('prefix'))
-interface_pc_data.set('LIBDIR', get_option('libdir'))
+interface_pc_data.set(
+  'LIBDIR',
+  get_option('libdir').startswith('/') ? get_option('libdir') : '${prefix}/' + get_option('libdir'),
+)
 interface_pc_data.set('VERSION', meson.project_version())
 interface_pc_install_dir = get_option('libdir') / 'pkgconfig'
 

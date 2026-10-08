@@ -123,6 +123,11 @@ environment or machine files. For example, select Clang/LLD with
 that selection. Shared libraries require ELF symbol version-script support.
 Setup links a probe defining the symbol named by its script and fails when
 the selected linker cannot handle it, including in source-only mode.
+The four explicit pkg-config interfaces support relative library directories
+under `prefix` and absolute library directories outside it. Staged installs
+apply `DESTDIR` to absolute targets rather than adding `prefix` again.
+Host linker-name cleanup removes only the expected unversioned symlink and
+refuses a regular file at that name.
 
 ### Source compatibility only
 
