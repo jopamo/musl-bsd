@@ -299,6 +299,10 @@ a package manager.
 Dynamic symbol inventory requires `DT_SYMTAB`, the ELF64 `DT_SYMENT` size,
 and a file-backed SysV or GNU hash table to bound the symbol count. Section
 headers are not required; table order is not used to guess missing bounds.
+Inputs must be regular files. Size checks and reads use one opened descriptor;
+reads stop with an error if input exceeds 512 MiB, including growth after
+the size check. This does not freeze in-place file changes or snapshot a
+dependency graph.
 
 ```sh
 tools/elf-scan --format json --output inventory.json /path/to/root.so
