@@ -82,6 +82,9 @@ public count representation or `PTRDIFF_MAX / sizeof(FTSENT *)`; oversized
 lists fail with `EOVERFLOW`. Sort-array padding clips to that bound, and
 `FTS.fts_nitems` records the exact array capacity. Entry allocation checks
 name representation and the complete name/stat span before allocating.
+`FTS_NOSTAT` skips metadata for known non-directory entry types, but stats
+directories and `DT_UNKNOWN` entries. Directory link counts do not establish
+that no child directories remain. `FTS_NAMEONLY` still skips child metadata.
 
 ### Optional glibc binary runtime
 

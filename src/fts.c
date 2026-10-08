@@ -599,7 +599,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     int cderrno = 0;
     int descend = 0;
     int level;
-    int nlinks, nostat;
+    int nostat;
     int saved_errno;
     struct stat sb;
     char* cp;
@@ -645,26 +645,13 @@ static FTSENT* fts_build(FTS* sp, int type) {
         return NULL;
     }
 
-    if (type == BNAMES) {
-        nlinks = 0;
-        nostat = 1;
-    }
-    else if (ISSET(FTS_NOSTAT) && ISSET(FTS_PHYSICAL)) {
-        nlinks = (int)cur->fts_nlink - (ISSET(FTS_SEEDOT) ? 0 : 2);
-        if (nlinks < 0)
-            nlinks = 0;
-        nostat = 1;
-    }
-    else {
-        nlinks = -1;
-        nostat = 0;
-    }
+    nostat = ISSET(FTS_NOSTAT) && ISSET(FTS_PHYSICAL);
 
 #ifndef DT_DIR
     (void)nostat;
 #endif
 
-    if ((nlinks != 0) || (type == BREAD)) {
+    if (type != BNAMES) {
         if (fts_safe_changedir(sp, cur, dirfd(dirp), NULL)) {
             cderrno = errno;
             cur->fts_flags |= FTS_DONTCHDIR;
@@ -734,11 +721,11 @@ static FTSENT* fts_build(FTS* sp, int type) {
 #endif
 
         if (cderrno) {
-            p->fts_info = nlinks ? FTS_NS : FTS_NSOK;
+            p->fts_info = FTS_NS;
             p->fts_errno = cderrno;
             p->fts_accpath = cur->fts_accpath;
         }
-        else if (nlinks == 0
+        else if (type == BNAMES
 #ifdef DT_DIR
                  || (nostat && dp->d_type != DT_DIR && dp->d_type != DT_UNKNOWN)
 #endif
@@ -756,8 +743,6 @@ static FTSENT* fts_build(FTS* sp, int type) {
                 p->fts_accpath = p->fts_name;
                 p->fts_info = fts_stat(sp, p, 0, -1);
             }
-            if (nlinks > 0 && (p->fts_info == FTS_D || p->fts_info == FTS_DC || p->fts_info == FTS_DOT))
-                --nlinks;
         }
 
         p->fts_link = NULL;
