@@ -448,7 +448,20 @@ class ELFFile:
             "or DT_GNU_HASH"
         )
 
-    def _version_requirements(self) -> dict[int, dict[str, str]]:
+    def _version_record_offset(
+        self, address: int, size: int, what: str, spans: dict[int, int]
+    ) -> int:
+        offset = self._address_range(address, size, what)
+        # Version records are at most 20 bytes; inspect possible prior starts.
+        for start in range(address - 19, address + size):
+            if start in spans and address < start + spans[start]:
+                raise ScanError(f"{self.path}: overlapping version records")
+        spans[address] = size
+        return offset
+
+    def _version_requirements(
+        self, spans: dict[int, int]
+    ) -> dict[int, dict[str, str]]:
         result: dict[int, dict[str, str]] = {}
         address = self.dynamic.get(DT_VERNEED)
         count = self.dynamic.get(DT_VERNEEDNUM)
@@ -458,23 +471,13 @@ class ELFFile:
             raise ScanError(f"{self.path}: invalid version-need address/count")
         current = address
         total_aux = 0
-        record_starts: set[int] = set()
-
-        def record_offset(location: int, what: str) -> int:
-            offset = self._address_range(location, 16, what)
-            if any(
-                start in record_starts
-                for start in range(location - 15, location + 16)
-            ):
-                raise ScanError(f"{self.path}: overlapping version-need records")
-            record_starts.add(location)
-            return offset
-
         for need_index in range(count):
             version, aux_count, file_offset, aux_offset, next_offset = (
                 self.reader.unpack(
                     "<HHIII",
-                    record_offset(current, "DT_VERNEED"),
+                    self._version_record_offset(
+                        current, 16, "DT_VERNEED", spans
+                    ),
                     f"version need {need_index}",
                 )
             )
@@ -492,7 +495,9 @@ class ELFFile:
             for aux_index in range(aux_count):
                 _hash, flags, other, name_offset, next_aux = self.reader.unpack(
                     "<IHHII",
-                    record_offset(aux, "version-need auxiliary"),
+                    self._version_record_offset(
+                        aux, 16, "version-need auxiliary", spans
+                    ),
                     f"version need auxiliary {need_index}:{aux_index}",
                 )
                 version_index = other & 0x7FFF
@@ -524,6 +529,76 @@ class ELFFile:
             current += next_offset
         return result
 
+    def _version_definitions(self, spans: dict[int, int]) -> dict[int, str]:
+        result: dict[int, str] = {}
+        address = self.dynamic.get(DT_VERDEF)
+        count = self.dynamic.get(DT_VERDEFNUM)
+        if address is None and count is None:
+            return result
+        if (
+            address is None
+            or count is None
+            or not 0 < count <= min(MAX_TABLE_ENTRIES, 0x7FFF)
+        ):
+            raise ScanError(
+                f"{self.path}: invalid version-definition address/count"
+            )
+        current = address
+        total_aux = 0
+        for definition_index in range(count):
+            (
+                version, flags, index, aux_count, _hash, aux_offset, next_offset
+            ) = self.reader.unpack(
+                "<HHHHIII",
+                self._version_record_offset(current, 20, "DT_VERDEF", spans),
+                f"version definition {definition_index}",
+            )
+            index &= 0x7FFF
+            if version != 1 or index == 0 or aux_count == 0 or aux_offset < 20:
+                raise ScanError(
+                    f"{self.path}: malformed version definition entry"
+                )
+            if index in result or bool(flags & 1) != (index == 1):
+                raise ScanError(
+                    f"{self.path}: invalid or duplicate version-definition index"
+                )
+            total_aux += aux_count
+            if total_aux > min(MAX_TABLE_ENTRIES, 0x7FFF):
+                raise ScanError(
+                    f"{self.path}: unreasonable version-definition auxiliary count"
+                )
+            aux = current + aux_offset
+            for aux_index in range(aux_count):
+                name_offset, next_aux = self.reader.unpack(
+                    "<II",
+                    self._version_record_offset(
+                        aux, 8, "version-definition auxiliary", spans
+                    ),
+                    f"version definition auxiliary {definition_index}:{aux_index}",
+                )
+                name = self._string(name_offset, "version-definition name")
+                if not name:
+                    raise ScanError(f"{self.path}: empty version-definition name")
+                if aux_index == 0:
+                    result[index] = name
+                if (
+                    aux_index + 1 == aux_count and next_aux != 0
+                    or aux_index + 1 < aux_count and next_aux < 8
+                ):
+                    raise ScanError(
+                        f"{self.path}: malformed version-definition auxiliary link"
+                    )
+                aux += next_aux
+            if (
+                definition_index + 1 == count and next_offset != 0
+                or definition_index + 1 < count and next_offset < 20
+            ):
+                raise ScanError(
+                    f"{self.path}: malformed version-definition link"
+                )
+            current += next_offset
+        return result
+
     def _symbols(self) -> list[dict[str, Any]]:
         self.version_requirements: dict[int, dict[str, str]] = {}
         address = self.dynamic.get(DT_SYMTAB)
@@ -551,8 +626,14 @@ class ELFFile:
                 )[0]
                 for index in range(count)
             ]
-        self.version_requirements = self._version_requirements()
+        version_spans: dict[int, int] = {}
+        self.version_requirements = self._version_requirements(version_spans)
         requirements = self.version_requirements
+        definitions = self._version_definitions(version_spans)
+        if requirements.keys() & definitions.keys():
+            raise ScanError(
+                f"{self.path}: conflicting need/definition version indices"
+            )
         symbols: list[dict[str, Any]] = []
         for index in range(count):
             entry = offset + index * syment
@@ -567,9 +648,18 @@ class ELFFile:
                 version_index = versions[index] & 0x7FFF
                 hidden = bool(versions[index] & 0x8000)
                 version = requirements.get(version_index)
-                if shndx == SHN_UNDEF and version_index >= 2 and version is None:
+                if (
+                    shndx != SHN_UNDEF
+                    and version_index >= 2
+                    and version_index in definitions
+                ):
+                    version = {
+                        "version": definitions[version_index], "library": ""
+                    }
+                if version_index >= 2 and version is None:
+                    kind = "undefined" if shndx == SHN_UNDEF else "defined"
                     raise ScanError(
-                        f"{self.path}: undefined symbol {index} has "
+                        f"{self.path}: {kind} symbol {index} has "
                         f"unmapped version index {version_index}"
                     )
             symbols.append(
