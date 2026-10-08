@@ -9,11 +9,6 @@ project(
   ]
 )
 
-env = environment()
-env.set('CC', 'clang')
-env.set('CXX', 'clang++')
-env.set('LD', 'ld.lld')
-
 cc = meson.get_compiler('c')
 
 conf_data = configuration_data()
@@ -155,38 +150,29 @@ fts_map = meson.current_source_dir() / 'src/fts/libfts.map'
 obstack_map = meson.current_source_dir() / 'src/obstack/libobstack.map'
 argp_map = meson.current_source_dir() / 'src/argp/libargp.map'
 
-# has_link_argument() links an empty probe against the supplied script.  The
-# fts script names symbols that are not present in that probe, so it reports a
-# false negative even though the linker supports version scripts.  The
-# compatibility and ABI libraries rely on these scripts for versioned glibc
-# entry points.
-vs_supported = true
-
-fts_link_args = []
-fts_link_deps = []
-if vs_supported
-  fts_link_args = ['-Wl,--version-script=' + fts_map]
-  fts_link_deps = [fts_map]
+version_script_probe = meson.current_source_dir() / 'meson/version-script-probe.map'
+if not cc.links(
+  '''
+    int musl_bsd_version_script_probe(void) { return 0; }
+    int main(void) { return musl_bsd_version_script_probe(); }
+  ''',
+  args: ['-Wl,--version-script=' + version_script_probe],
+  name: 'ELF symbol version scripts',
+)
+  error('musl-bsd shared libraries require ELF symbol version-script support')
 endif
 
-obstack_link_args = []
-obstack_link_deps = []
-if vs_supported
-  obstack_link_args = ['-Wl,--version-script=' + obstack_map]
-  obstack_link_deps = [obstack_map]
-endif
-
-argp_link_args = []
-argp_link_deps = []
-if vs_supported
-  argp_link_args = ['-Wl,--version-script=' + argp_map]
-  argp_link_deps = [argp_map]
-endif
+fts_link_args = ['-Wl,--version-script=' + fts_map]
+fts_link_deps = [fts_map]
+obstack_link_args = ['-Wl,--version-script=' + obstack_map]
+obstack_link_deps = [obstack_map]
+argp_link_args = ['-Wl,--version-script=' + argp_map]
+argp_link_deps = [argp_map]
 
 compat_map = meson.current_source_dir() / 'src/compat/libmusl-bsd-compat.map'
 compat_link_args = []
 compat_link_deps = []
-if vs_supported and glibc_runtime_enabled
+if glibc_runtime_enabled
   compat_link_args = ['-Wl,--version-script=' + compat_map]
   compat_link_deps = [compat_map]
 endif

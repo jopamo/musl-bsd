@@ -1,0 +1,4 @@
+MUSL_BSD_PROBE_1 {
+    global: musl_bsd_version_script_probe;
+    local: *;
+};

@@ -104,6 +104,13 @@ The qualified runtime currently targets **x86_64 LP64**.
 
 ## Quick Start
 
+Meson selects the compiler and linker during setup from the invocation
+environment or machine files. For example, select Clang/LLD with
+`CC=clang CC_LD=lld meson setup ...`; the build description does not override
+that selection. Shared libraries require ELF symbol version-script support.
+Setup links a probe defining the symbol named by its script and fails when
+the selected linker cannot handle it, including in source-only mode.
+
 ### Source compatibility only
 
 Configure without the glibc binary runtime:
