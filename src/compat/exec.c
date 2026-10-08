@@ -24,10 +24,10 @@
 #error MUSL_BSD_LIBRARY_PATH must be defined
 #endif
 
-static char* preload_list(void) {
-    const char* core = musl_bsd_compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
-    const char* early = getenv("MUSL_BSD_EARLY_PRELOAD_PATH");
-    const char* user = getenv("LD_PRELOAD");
+static char* preload_list(char* const envp[]) {
+    const char* core = musl_bsd_compatibility_path(envp, "MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
+    const char* early = musl_bsd_environment_value(envp, "MUSL_BSD_EARLY_PRELOAD_PATH");
+    const char* user = musl_bsd_environment_value(envp, "LD_PRELOAD");
 
     return musl_bsd_preload_list(core, early, user);
 }
@@ -64,7 +64,7 @@ int execve(const char* pathname, char* const argv[], char* const envp[]) {
         }
         target[len] = '\0';
 
-        preloads = preload_list();
+        preloads = preload_list(envp);
         if (preloads == NULL)
             return -1;
 
@@ -80,7 +80,7 @@ int execve(const char* pathname, char* const argv[], char* const envp[]) {
         new_argv[1] = (char*)"--preload";
         new_argv[2] = preloads;
         new_argv[3] = (char*)"--library-path";
-        new_argv[4] = (char*)musl_bsd_compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
+        new_argv[4] = (char*)musl_bsd_compatibility_path(envp, "MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
         new_argv[5] = (char*)"--argv0";
         new_argv[6] = argc ? argv[0] : (char*)"";
         new_argv[7] = (char*)"--";

@@ -88,10 +88,10 @@ int main(int argc, char* argv[], char* envp[]) {
         return LOADER_FAILURE;
     }
 
-    core_preload = musl_bsd_compatibility_path("MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
-    early_preload = getenv("MUSL_BSD_EARLY_PRELOAD_PATH");
-    library_path = musl_bsd_compatibility_path("MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
-    user_preload = getenv("LD_PRELOAD");
+    core_preload = musl_bsd_compatibility_path(envp, "MUSL_BSD_PRELOAD_PATH", MUSL_BSD_PRELOAD_PATH);
+    early_preload = musl_bsd_environment_value(envp, "MUSL_BSD_EARLY_PRELOAD_PATH");
+    library_path = musl_bsd_compatibility_path(envp, "MUSL_BSD_LIBRARY_PATH", MUSL_BSD_LIBRARY_PATH);
+    user_preload = musl_bsd_environment_value(envp, "LD_PRELOAD");
 
     /*
      * musl's --preload replaces, rather than augments, LD_PRELOAD.  Build the

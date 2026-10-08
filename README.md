@@ -164,6 +164,11 @@ after a working-directory change; `argv[0]` remains the caller's original value.
 Re-execution with an empty argument vector supplies an empty `argv[0]`, as
 Linux does for a direct exec. A truncated executable path is rejected with
 `ENAMETOOLONG` rather than passed to the loader.
+For `/proc/self/exe`, `execve` selects compatibility paths and preloads from
+its supplied `envp`, then forwards that environment unchanged. `execv` and
+`execvp` use `environ`. Missing or empty path overrides use configured paths;
+early-preload validation and core → early → user ordering apply to both startup
+and re-execution.
 
 ---
 

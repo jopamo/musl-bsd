@@ -956,7 +956,7 @@
       "name": "execv",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/elf-scan:provider-analysis",
+      "test": "compat/exec_inputs",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -965,7 +965,7 @@
       "name": "execve",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/elf-scan:provider-analysis",
+      "test": "compat/exec_inputs",
       "version": "GLIBC_2.2.5"
     },
     {
@@ -974,7 +974,7 @@
       "name": "execvp",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/elf-scan:provider-analysis",
+      "test": "compat/exec_inputs",
       "version": "GLIBC_2.2.5"
     },
     {

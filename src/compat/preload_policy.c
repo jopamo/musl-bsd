@@ -5,8 +5,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-const char* musl_bsd_compatibility_path(const char* variable, const char* configured) {
-    const char* value = getenv(variable);
+const char* musl_bsd_environment_value(char* const envp[], const char* variable) {
+    size_t length = strlen(variable);
+    if (envp != NULL)
+        for (size_t i = 0; envp[i] != NULL; ++i)
+            if (strncmp(envp[i], variable, length) == 0 && envp[i][length] == '=')
+                return envp[i] + length + 1;
+    return NULL;
+}
+
+const char* musl_bsd_compatibility_path(char* const envp[], const char* variable, const char* configured) {
+    const char* value = musl_bsd_environment_value(envp, variable);
 
     return value != NULL && value[0] != '\0' ? value : configured;
 }
