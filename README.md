@@ -33,9 +33,14 @@ redelivery. Setup failures are rejected before prompting or reading. Cleanup
 failures return `NULL` without returning input; the first input/setup error
 takes precedence over a later cleanup error. A refused restoration can leave
 process state changed. Signals are resent only after their original action
-is restored.
+is restored. Input uses deferred cancellation; setup and restoration disable
+cancellation. Cancellation attempts the same restoration, closes only owned
+descriptors, and wipes the caller's buffer. Normal return restores the caller's
+cancellation state and type. Prompt and final-newline writes handle short
+writes and reject errors without returning input.
 Like the BSD interface, it changes process-wide signal handlers; callers
-must serialize its use. It is not a cryptographic primitive or an RNG.
+must serialize its use. Cancellation cleanup does not establish safe signal
+routing between threads. It is not a cryptographic primitive or an RNG.
 
 The source-compatibility layer remains portable independently of the optional glibc binary runtime.
 

@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <paths.h>
+#include <pthread.h>
 #include <signal.h>
 #include <string.h>
 #include <termios.h>
@@ -50,163 +51,82 @@ static const int caught_signals[] = {
 	SIGTSTP, SIGTTIN, SIGTTOU
 };
 
+#define NUM_SIGNALS (sizeof(caught_signals) / sizeof(caught_signals[0]))
+
+struct cleanup_state {
+	int input, tty_opened, term_changed, error, restore_error;
+	size_t installed;
+	unsigned char owned[NUM_SIGNALS], restored[_NSIG];
+	struct termios oterm;
+	struct sigaction saved[NUM_SIGNALS];
+	char *buf;
+	size_t bufsiz;
+};
+
 static void handler(int);
 
-char *
-readpassphrase(const char *prompt, char *buf, size_t bufsiz, int flags)
+static void
+record_error(struct cleanup_state *state, int error)
 {
-	ssize_t nr;
-	int input, output, save_errno, i, need_restart, tty_opened;
-	int setup_done, restore_error;
-	size_t installed;
-	unsigned char restored[_NSIG];
-	char ch, *p, *end;
-	struct termios term, oterm;
-	struct sigaction sa, saved[sizeof(caught_signals) / sizeof(caught_signals[0])];
+	if (!state->error)
+		state->error = error ? error : EIO;
+}
 
-	/* I suppose we could alloc on demand in this case (XXX). */
-	if (bufsiz == 0) {
-		errno = EINVAL;
-		return(NULL);
-	}
-	buf[0] = '\0';
-
-restart:
-	for (i = 0; i < _NSIG; i++)
-		signo[i] = 0;
-	nr = -1;
-	save_errno = 0;
-	need_restart = 0;
-	setup_done = restore_error = 0;
-	installed = 0;
-	memset(restored, 0, sizeof(restored));
-	/*
-	 * Read and write to /dev/tty if available.  If not, read from
-	 * stdin and write to stderr unless a tty is required.
-	 */
-	input = output = -1;
-	if (!(flags & RPP_STDIN))
-		input = output = open(_PATH_TTY, O_RDWR | O_CLOEXEC);
-	tty_opened = input != -1;
-	if (!tty_opened) {
-		if (flags & RPP_REQUIRE_TTY) {
-			errno = ENOTTY;
-			return(NULL);
-		}
-		input = STDIN_FILENO;
-		output = STDERR_FILENO;
-	}
-
-	/*
-	 * Turn off echo if possible.
-	 * If we are using a tty but are not the foreground pgrp this will
-	 * generate SIGTTOU, so do it *before* installing the signal handlers.
-	 */
-	if (tty_opened) {
-		if (tcgetattr(input, &oterm) == -1)
-			goto tty_error;
-		memcpy(&term, &oterm, sizeof(term));
-		if (!(flags & RPP_ECHO_ON))
-			term.c_lflag &= ~(ECHO | ECHONL);
-#ifdef VSTATUS
-		if (term.c_cc[VSTATUS] != _POSIX_VDISABLE)
-			term.c_cc[VSTATUS] = _POSIX_VDISABLE;
-#endif
-		/* Never prompt for a secret if terminal setup failed. */
-		if (tcsetattr(input, TCSAFLUSH|TCSASOFT, &term) == -1)
-			goto tty_error;
-	} else {
-		memset(&term, 0, sizeof(term));
-		term.c_lflag |= ECHO;
-		memset(&oterm, 0, sizeof(oterm));
-		oterm.c_lflag |= ECHO;
-	}
-
-	/*
-	 * Catch signals that would otherwise cause the user to end
-	 * up with echo turned off in the shell.  Don't worry about
-	 * things like SIGXCPU and SIGVTALRM for now.
-	 */
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;		/* don't restart system calls */
-	sa.sa_handler = handler;
-	for (; installed < sizeof(caught_signals) / sizeof(caught_signals[0]); installed++) {
-		if (sigaction(caught_signals[installed], &sa, &saved[installed]) == -1) {
-			save_errno = errno;
-			goto restore;
-		}
-	}
-	setup_done = 1;
-
-	if (!(flags & RPP_STDIN))
-		(void)write(output, prompt, strlen(prompt));
-	end = buf + bufsiz - 1;
-	p = buf;
-	while ((nr = read(input, &ch, 1)) == 1 && ch != '\n' && ch != '\r') {
-		if (p < end) {
-			if ((flags & RPP_SEVENBIT))
-				ch &= 0x7f;
-			if (isalpha((unsigned char)ch)) {
-				if ((flags & RPP_FORCELOWER))
-					ch = (char)tolower((unsigned char)ch);
-				if ((flags & RPP_FORCEUPPER))
-					ch = (char)toupper((unsigned char)ch);
-			}
-			*p++ = ch;
-		}
-	}
-	*p = '\0';
-	save_errno = errno;
-	if (!(term.c_lflag & ECHO))
-		(void)write(output, "\n", 1);
-
-restore:
-	/* Restore only state that this invocation acquired. */
-	if (memcmp(&term, &oterm, sizeof(term)) != 0) {
+/* Called with cancellation disabled, including during cancellation cleanup. */
+static void
+restore_state(struct cleanup_state *state)
+{
+	if (state->term_changed) {
 		const int sigttou = signo[SIGTTOU];
+		int result;
 
 		/* Ignore SIGTTOU generated when we are not the fg pgrp. */
-		int result;
 		do {
-			result = tcsetattr(input, TCSAFLUSH|TCSASOFT, &oterm);
+			result = tcsetattr(state->input, TCSAFLUSH|TCSASOFT, &state->oterm);
 		} while (result == -1 && errno == EINTR && !signo[SIGTTOU]);
 		if (result == -1) {
-			if (nr != -1 || !save_errno)
-				save_errno = errno;
-			nr = -1;
-			restore_error = 1;
+			record_error(state, errno);
+			state->restore_error = 1;
 		}
 		signo[SIGTTOU] = sigttou;
+		state->term_changed = 0;
 	}
-	for (size_t action = 0; action < installed; action++) {
+	for (size_t action = 0; action < state->installed; action++) {
 		int sig = caught_signals[action];
-		if (sigaction(sig, &saved[action], NULL) == -1) {
-			if (nr != -1 || !save_errno)
-				save_errno = errno;
-			nr = -1;
-			restore_error = 1;
+		if (!state->owned[action])
+			continue;
+		if (sigaction(sig, &state->saved[action], NULL) == -1) {
+			record_error(state, errno);
+			state->restore_error = 1;
 		} else {
-			restored[sig] = 1;
+			state->owned[action] = 0;
+			state->restored[sig] = 1;
 		}
 	}
-	if (tty_opened && close(input) == -1) {
-		if (nr != -1 || !save_errno)
-			save_errno = errno;
-		nr = -1;
-		restore_error = 1;
+	if (state->tty_opened) {
+		state->tty_opened = 0;
+		if (close(state->input) == -1) {
+			record_error(state, errno);
+			state->restore_error = 1;
+		}
 	}
+}
 
-	/*
-	 * If we were interrupted by a signal, resend it to ourselves
-	 * now that we have restored the signal handlers.
-	 */
-	for (i = 0; i < _NSIG; i++) {
-		if (signo[i] && restored[i]) {
+static int
+redeliver_signals(struct cleanup_state *state)
+{
+	int need_restart = 0, wiped = 0;
+	for (int i = 0; i < _NSIG; i++) {
+		if (signo[i] && state->restored[i]) {
+			record_error(state, EINTR);
+			if (!wiped) {
+				explicit_bzero(state->buf, state->bufsiz);
+				wiped = 1;
+			}
+			signo[i] = 0;
 			if (kill(getpid(), i) == -1) {
-				if (nr != -1 || !save_errno)
-					save_errno = errno;
-				nr = -1;
-				restore_error = 1;
+				record_error(state, errno);
+				state->restore_error = 1;
 				continue;
 			}
 			switch (i) {
@@ -217,24 +137,177 @@ restore:
 			}
 		}
 	}
-	if (need_restart && setup_done && !restore_error)
-		goto restart;
-
-	if (save_errno)
-		errno = save_errno;
-	if (nr == -1)
-		explicit_bzero(buf, bufsiz);
-	return(nr == -1 ? NULL : buf);
-
-tty_error:
-	save_errno = errno;
-	(void)close(input);
-	errno = save_errno;
-	return(NULL);
+	return need_restart;
 }
 
-static void handler(int s)
+static void
+cancel_read(void *argument)
 {
+	struct cleanup_state *state = argument;
+	(void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+	explicit_bzero(state->buf, state->bufsiz);
+	restore_state(state);
+	(void)redeliver_signals(state);
+}
 
+static int
+write_output(int fd, const char *data, size_t length)
+{
+	while (length) {
+		ssize_t count = write(fd, data, length);
+		if (count <= 0) {
+			if (count == 0)
+				errno = EIO;
+			return -1;
+		}
+		data += count;
+		length -= (size_t)count;
+	}
+	return 0;
+}
+
+static char *
+read_passphrase(const char *prompt, struct cleanup_state *state, int flags,
+    int cancel_state)
+{
+	ssize_t nr;
+	int output, save_errno, setup_done;
+	char ch, *p, *end;
+	struct termios term;
+	struct sigaction sa;
+
+restart:
+	for (int i = 0; i < _NSIG; i++)
+		signo[i] = 0;
+	save_errno = 0;
+	setup_done = 0;
+	state->input = output = -1;
+	state->tty_opened = state->term_changed = 0;
+	state->error = state->restore_error = 0;
+	state->installed = 0;
+	memset(state->owned, 0, sizeof(state->owned));
+	memset(state->restored, 0, sizeof(state->restored));
+	/* Read/write /dev/tty, or borrow stdin/stderr unless a tty is required. */
+	if (!(flags & RPP_STDIN))
+		state->input = output = open(_PATH_TTY, O_RDWR | O_CLOEXEC);
+	state->tty_opened = state->input != -1;
+	if (!state->tty_opened) {
+		if (flags & RPP_REQUIRE_TTY) {
+			record_error(state, ENOTTY);
+			goto restore;
+		}
+		state->input = STDIN_FILENO;
+		output = STDERR_FILENO;
+	}
+
+	/* A background pgrp must receive SIGTTOU before we install handlers. */
+	if (state->tty_opened) {
+		if (tcgetattr(state->input, &state->oterm) == -1) {
+			record_error(state, errno);
+			goto restore;
+		}
+		memcpy(&term, &state->oterm, sizeof(term));
+		if (!(flags & RPP_ECHO_ON))
+			term.c_lflag &= ~(ECHO | ECHONL);
+#ifdef VSTATUS
+		if (term.c_cc[VSTATUS] != _POSIX_VDISABLE)
+			term.c_cc[VSTATUS] = _POSIX_VDISABLE;
+#endif
+		/* Never prompt for a secret if terminal setup failed. */
+		if (tcsetattr(state->input, TCSAFLUSH|TCSASOFT, &term) == -1) {
+			record_error(state, errno);
+			goto restore;
+		}
+		state->term_changed = memcmp(&term, &state->oterm, sizeof(term)) != 0;
+	} else {
+		memset(&term, 0, sizeof(term));
+		term.c_lflag = ECHO;
+	}
+
+	/* Do not restart reads interrupted by a caught signal. */
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sa.sa_handler = handler;
+	while (state->installed < NUM_SIGNALS) {
+		size_t action = state->installed;
+		if (sigaction(caught_signals[action], &sa, &state->saved[action]) == -1) {
+			record_error(state, errno);
+			goto restore;
+		}
+		state->owned[action] = 1;
+		state->installed++;
+	}
+	setup_done = 1;
+
+	(void)pthread_setcancelstate(cancel_state, NULL);
+	if (!(flags & RPP_STDIN) && write_output(output, prompt, strlen(prompt)) == -1) {
+		record_error(state, errno);
+		goto restore;
+	}
+	end = state->buf + state->bufsiz - 1;
+	p = state->buf;
+	while ((nr = read(state->input, &ch, 1)) == 1 && ch != '\n' && ch != '\r') {
+		if (p < end) {
+			if (flags & RPP_SEVENBIT)
+				ch &= 0x7f;
+			if (isalpha((unsigned char)ch)) {
+				if (flags & RPP_FORCELOWER)
+					ch = (char)tolower((unsigned char)ch);
+				if (flags & RPP_FORCEUPPER)
+					ch = (char)toupper((unsigned char)ch);
+			}
+			*p++ = ch;
+		}
+	}
+	*p = '\0';
+	save_errno = errno;
+	if (nr == -1)
+		record_error(state, save_errno);
+	if (!(term.c_lflag & ECHO) && write_output(output, "\n", 1) == -1)
+		record_error(state, errno);
+
+restore:
+	(void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+	restore_state(state);
+	if (redeliver_signals(state) && setup_done && !state->restore_error)
+		goto restart;
+	if (state->error) {
+		explicit_bzero(state->buf, state->bufsiz);
+		errno = state->error;
+		return NULL;
+	}
+	errno = save_errno;
+	return state->buf;
+}
+
+char *
+readpassphrase(const char *prompt, char *buf, size_t bufsiz, int flags)
+{
+	struct cleanup_state state = { .buf = buf, .bufsiz = bufsiz };
+	int old_state, old_type, save_errno;
+	char *result;
+
+	if (bufsiz == 0) {
+		errno = EINVAL;
+		return NULL;
+	}
+	(void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_state);
+	(void)pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_type);
+	buf[0] = '\0';
+	pthread_cleanup_push(cancel_read, &state);
+	result = read_passphrase(prompt, &state, flags, old_state);
+	save_errno = errno;
+	/* Keep wiping armed while restoring the caller's cancellation mode. */
+	(void)pthread_setcanceltype(old_type, NULL);
+	(void)pthread_setcancelstate(old_state, NULL);
+	pthread_testcancel();
+	pthread_cleanup_pop(0);
+	errno = save_errno;
+	return result;
+}
+
+static void
+handler(int s)
+{
 	signo[s] = 1;
 }

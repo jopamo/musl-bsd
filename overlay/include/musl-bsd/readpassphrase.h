@@ -38,7 +38,9 @@ extern "C" {
 #endif
 
 /* Changes process signal handlers: callers must serialize terminal input.
-   Setup/cleanup failures return NULL; a cleanup failure does not return input. */
+   Setup/output/cleanup failures return NULL without input.
+   Deferred input cancellation attempts restoration and wipes the buffer;
+   normal return preserves the caller's cancellation state and type. */
 char * readpassphrase(const char *, char *, size_t, int);
 
 #ifdef __cplusplus
