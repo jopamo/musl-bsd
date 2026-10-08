@@ -29,6 +29,11 @@ static inline __fts_length_t fts_length_cap(size_t len) {
     return len > max ? (__fts_length_t)max : (__fts_length_t)len;
 }
 
+static inline size_t fts_path_capacity_limit(void) {
+    size_t max = fts_length_max();
+    return max < (size_t)PTRDIFF_MAX ? max : (size_t)PTRDIFF_MAX;
+}
+
 #ifndef ALIGNBYTES
 #define ALIGNBYTES (sizeof(long) - 1)
 #endif
@@ -200,9 +205,17 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
 
     {
         size_t need = fts_maxarglen(argv);
+        if (need == 0) {
+            cycle_free(CYCLE_STATE(sp));
+            free(sp);
+            return NULL;
+        }
 #ifdef PATH_MAX
-        if (need < PATH_MAX)
-            need = PATH_MAX;
+        size_t floor = PATH_MAX;
+        if (floor > fts_path_capacity_limit())
+            floor = fts_path_capacity_limit();
+        if (need < floor)
+            need = floor;
 #endif
         if (fts_palloc(sp, need)) {
             cycle_free(CYCLE_STATE(sp));
@@ -649,6 +662,10 @@ static FTSENT* fts_build(FTS* sp, int type) {
     }
 
     len = ((cur->fts_path[cur->fts_pathlen - 1] == '/') ? cur->fts_pathlen - 1 : cur->fts_pathlen);
+    if (sp->fts_pathlen < 2 || len > (size_t)sp->fts_pathlen - 2) {
+        errno = ENAMETOOLONG;
+        goto mem_fail;
+    }
     if (ISSET(FTS_NOCHDIR)) {
         cp = sp->fts_path + len;
         *cp++ = '/';
@@ -669,6 +686,11 @@ static FTSENT* fts_build(FTS* sp, int type) {
             continue;
 
         size_t dnamlen = strlen(dp->d_name);
+        if (dnamlen > fts_path_capacity_limit() - len - 1) {
+            errno = ENAMETOOLONG;
+            goto mem_fail;
+        }
+        size_t pathlen = len + dnamlen;
 
         p = fts_alloc(sp, dp->d_name, dnamlen);
         if (!p)
@@ -676,7 +698,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
 
         if (dnamlen >= maxlen) {
             char* oldaddr = sp->fts_path;
-            if (fts_palloc(sp, dnamlen + len + 1)) {
+            if (fts_palloc(sp, pathlen + 1)) {
                 free(p);
                 goto mem_fail;
             }
@@ -691,12 +713,6 @@ static FTSENT* fts_build(FTS* sp, int type) {
 
         p->fts_level = level;
         p->fts_parent = cur;
-        size_t pathlen = len + dnamlen;
-        if (pathlen < len || pathlen > fts_length_max()) {
-            free(p);
-            errno = ENAMETOOLONG;
-            goto mem_fail;
-        }
         p->fts_pathlen = fts_length_cap(pathlen);
 
 #ifdef DT_WHT
@@ -958,7 +974,7 @@ static size_t fts_pow2(size_t x) {
     x |= x >> 4;
     x |= x >> 8;
     x |= x >> 16;
-#if ULONG_MAX > 0xffffffffUL
+#if SIZE_MAX > 0xffffffffUL
     x |= x >> 32;
 #endif
     x++;
@@ -967,20 +983,25 @@ static size_t fts_pow2(size_t x) {
 
 static int fts_palloc(FTS* sp, size_t need) {
     const size_t pad = 256;
+    const size_t limit = fts_path_capacity_limit();
 
-    if (need > SIZE_MAX - pad) {
+    if (need > limit) {
         errno = ENAMETOOLONG;
         return 1;
     }
-    need += pad;
-    need = fts_pow2(need);
+    need += limit - need < pad ? limit - need : pad;
+    size_t rounded = fts_pow2(need);
+    if (rounded != 0 && rounded <= limit)
+        need = rounded;
+    else
+        need = limit;
 
     char* newbuf = realloc(sp->fts_path, need);
     if (!newbuf)
         return 1;
 
     sp->fts_path = newbuf;
-    sp->fts_pathlen = fts_length_cap(need);
+    sp->fts_pathlen = (__fts_length_t)need;
     return 0;
 }
 
@@ -1009,6 +1030,10 @@ static size_t fts_maxarglen(char* const* argv) {
     size_t max = 0;
     for (; *argv; ++argv) {
         size_t len = strlen(*argv);
+        if (len >= fts_path_capacity_limit()) {
+            errno = ENAMETOOLONG;
+            return 0;
+        }
         if (len > max)
             max = len;
     }

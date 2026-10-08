@@ -73,6 +73,12 @@ the allocation-failure handler with `EINVAL` or `EOVERFLOW`. That handler must
 exit or perform a non-local return; if it returns normally, the library aborts.
 The `_fast` macros remain unchecked and require callers to reserve room.
 
+FTS path buffers are bounded by both `__fts_length_t` and `PTRDIFF_MAX`.
+Paths must leave space for the terminator within that capacity. Padding and
+power-of-two growth stop at the bound; `fts_pathlen` records the actual
+allocation size rather than a capped larger allocation. Unrepresentable
+paths fail with `ENAMETOOLONG`.
+
 ### Optional glibc binary runtime
 
 The runtime bridge provides:
