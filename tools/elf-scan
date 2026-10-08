@@ -26,6 +26,8 @@ from typing import Any, Iterable, Iterator
 FORMAT_VERSION = 1
 MAX_FILE_SIZE = 512 * 1024 * 1024
 MAX_TABLE_ENTRIES = 16 * 1024 * 1024
+MAX_SCAN_BYTES = 1024 * 1024 * 1024
+MAX_SCAN_OBJECTS = 4096
 
 PT_LOAD = 1
 PT_DYNAMIC = 2
@@ -191,6 +193,34 @@ class ScanError(Exception):
     """An input cannot be inspected without guessing."""
 
 
+class ScanBudget:
+    def __init__(self) -> None:
+        self.max_objects = MAX_SCAN_OBJECTS
+        self.max_bytes = MAX_SCAN_BYTES
+        self.objects = 0
+        self.bytes = 0
+
+    def check_pending(self, count: int) -> None:
+        if count > self.max_objects - self.objects:
+            raise ScanError(
+                f"aggregate object read limit ({self.max_objects}) exceeded"
+            )
+
+    def begin_object(self) -> None:
+        self.check_pending(1)
+        self.objects += 1
+
+    def remaining_bytes(self) -> int:
+        return self.max_bytes - self.bytes
+
+    def consume_bytes(self, count: int) -> None:
+        if count > self.remaining_bytes():
+            raise ScanError(
+                f"aggregate input byte limit ({self.max_bytes}) exceeded"
+            )
+        self.bytes += count
+
+
 class Reader:
     def __init__(self, data: bytes, path: Path):
         self.data = data
@@ -235,7 +265,7 @@ def _regular_file(path: Path) -> Iterator[tuple[int, os.stat_result]]:
         os.close(fd)
 
 
-def _file_bytes(path: Path) -> bytes:
+def _file_bytes(path: Path, budget: ScanBudget | None = None) -> bytes:
     try:
         with _regular_file(path) as (fd, metadata):
             if metadata.st_size > MAX_FILE_SIZE:
@@ -245,8 +275,16 @@ def _file_bytes(path: Path) -> bytes:
                 )
             chunks: list[bytes] = []
             total = 0
+            if budget is not None and metadata.st_size > budget.remaining_bytes():
+                raise ScanError(
+                    f"{path}: aggregate input byte limit "
+                    f"({budget.max_bytes}) exceeded"
+                )
             while True:
-                chunk = os.read(fd, min(64 * 1024, MAX_FILE_SIZE - total + 1))
+                remaining = MAX_FILE_SIZE - total
+                if budget is not None:
+                    remaining = min(remaining, budget.remaining_bytes())
+                chunk = os.read(fd, min(64 * 1024, remaining + 1))
                 if not chunk:
                     break
                 total += len(chunk)
@@ -254,6 +292,8 @@ def _file_bytes(path: Path) -> bytes:
                     raise ScanError(
                         f"{path}: input exceeds {MAX_FILE_SIZE} bytes while reading"
                     )
+                if budget is not None:
+                    budget.consume_bytes(len(chunk))
                 chunks.append(chunk)
             return b"".join(chunks)
     except OSError as error:
@@ -269,9 +309,11 @@ class ELFFile:
     unsafe to act on.
     """
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, budget: ScanBudget | None = None):
         self.path = path
-        self.reader = Reader(_file_bytes(path), path)
+        budget = budget if budget is not None else ScanBudget()
+        budget.begin_object()
+        self.reader = Reader(_file_bytes(path, budget), path)
         self.data = self.reader.data
         self._parse_header()
         self._parse_program_headers()
@@ -1040,20 +1082,33 @@ class DependencyResolver:
         return None
 
 
-def scan(roots: list[Path], library_paths: list[Path], recursive: bool) -> dict[str, Any]:
+def scan(
+    roots: list[Path],
+    library_paths: list[Path],
+    recursive: bool,
+    budget: ScanBudget | None = None,
+) -> dict[str, Any]:
+    budget = budget if budget is not None else ScanBudget()
     resolver = DependencyResolver(library_paths)
-    queue: deque[Path] = deque(roots)
+    queue: deque[Path] = deque()
+    queued: set[Path] = set()
+    for path in roots:
+        if path not in queued:
+            budget.check_pending(len(queued) + 1)
+            queue.append(path)
+            queued.add(path)
     reports: dict[Path, dict[str, Any]] = {}
     missing: list[dict[str, str]] = []
     while queue:
         path = queue.popleft()
+        queued.remove(path)
         try:
             canonical = path.resolve(strict=True)
         except OSError as error:
             raise ScanError(f"{path}: cannot resolve file: {error}") from error
         if canonical in reports:
             continue
-        elf = ELFFile(canonical)
+        elf = ELFFile(canonical, budget)
         report = elf.report()
         reports[canonical] = report
         if not recursive:
@@ -1067,7 +1122,10 @@ def scan(roots: list[Path], library_paths: list[Path], recursive: bool) -> dict[
                 )
             else:
                 dependency["resolved"] = str(resolved)
-                queue.append(resolved)
+                if resolved not in reports and resolved not in queued:
+                    budget.check_pending(len(queued) + 1)
+                    queue.append(resolved)
+                    queued.add(resolved)
 
     ordered_reports = [reports[path] for path in sorted(reports)]
     missing = sorted(
@@ -1221,7 +1279,9 @@ def _provider_analysis(
     requirements: list[dict[str, Any]],
     provider_paths: list[Path],
     aliases: dict[str, str],
+    budget: ScanBudget | None = None,
 ) -> dict[str, Any]:
+    budget = budget if budget is not None else ScanBudget()
     providers: list[dict[str, Any]] = []
     symbol_providers: dict[str, set[str]] = {}
     canonical_paths: list[Path] = []
@@ -1232,11 +1292,12 @@ def _provider_analysis(
         except OSError as error:
             raise ScanError(f"{path}: cannot resolve provider: {error}") from error
         if canonical not in seen_paths:
+            budget.check_pending(len(canonical_paths) + 1)
             seen_paths.add(canonical)
             canonical_paths.append(canonical)
 
     for path in canonical_paths:
-        symbols = ELFFile(path).exported_symbol_names()
+        symbols = ELFFile(path, budget).exported_symbol_names()
         if not symbols:
             raise ScanError(f"{path}: provider exports no usable dynamic symbols")
         provider = str(path)
@@ -1517,7 +1578,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     try:
         roots = discover_targets(input_paths)
-        report = scan(roots, library_paths, not args.no_recursive)
+        budget = ScanBudget()
+        report = scan(roots, library_paths, not args.no_recursive, budget)
         aliases = _provider_aliases(args.provider_alias)
         if aliases and not args.provider:
             raise ScanError("--provider-alias requires at least one --provider")
@@ -1526,6 +1588,7 @@ def main(argv: list[str] | None = None) -> int:
                 report["summary"]["required_glibc_symbols"],
                 [Path(path) for path in args.provider],
                 aliases,
+                budget,
             )
         rendered = (
             json.dumps(report, indent=2, sort_keys=True) + "\n"

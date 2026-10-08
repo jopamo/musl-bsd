@@ -303,6 +303,9 @@ Inputs must be regular files. Size checks and reads use one opened descriptor;
 reads stop with an error if input exceeds 512 MiB, including growth after
 the size check. GNU hash inspection caps aggregate bucket/chain work at
 16,777,216 steps per table and checks file-backed prefix/chain ranges.
+Each invocation permits at most 4,096 ELF reads and 1 GiB of full-input
+bytes across roots, dependencies and providers. Re-reading a graph object
+as a provider counts again. Limit failures do not emit a partial inventory.
 This does not freeze in-place file changes or snapshot a
 dependency graph.
 
