@@ -11,6 +11,37 @@ project(
 
 cc = meson.get_compiler('c')
 
+# These values cross C, JSON, pkg-config and loader separator grammars.
+install_path_characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/_-.+'
+foreach path_option : [
+  ['prefix', get_option('prefix')],
+  ['libdir', get_option('libdir')],
+  ['glibc_loader_name', get_option('glibc_loader_name')],
+  ['musl_linker_path', get_option('musl_linker_path')],
+]
+  if path_option[1].strip(install_path_characters) != ''
+    error(path_option[0] + ': unsupported path characters; use ASCII letters, digits and /_.+-')
+  endif
+  if path_option[1] == '' and path_option[0] in ['prefix', 'libdir']
+    error(path_option[0] + ' must not be empty')
+  endif
+  foreach component : path_option[1].split('/')
+    if component == '..'
+      error(path_option[0] + ': parent path components are not supported')
+    endif
+  endforeach
+endforeach
+loader_name_option = get_option('glibc_loader_name')
+if loader_name_option.contains('/') or loader_name_option in ['.', '..']
+  error('glibc_loader_name must be a filename, not a path or dot component')
+endif
+linker_path_option = get_option('musl_linker_path')
+if linker_path_option != '' and (
+  not linker_path_option.startswith('/') or linker_path_option.endswith('/')
+)
+  error('musl_linker_path must be an absolute target path without a trailing slash')
+endif
+
 conf_data = configuration_data()
 
 conf_data.set10('HAVE_CONFIG_H', true)

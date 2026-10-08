@@ -128,6 +128,14 @@ under `prefix` and absolute library directories outside it. Staged installs
 apply `DESTDIR` to absolute targets rather than adding `prefix` again.
 Host linker-name cleanup removes only the expected unversioned symlink and
 refuses a regular file at that name.
+Configured `prefix`, `libdir` and loader overrides accept only ASCII letters,
+digits and `/_.+-`, with no parent-directory components. Prefix/libdir must
+not be empty. Loader names must be filenames; nonempty musl interpreter
+overrides must be absolute target paths without a trailing slash. Setup
+rejects unsupported characters rather than embedding them into C, JSON,
+pkg-config or loader separator grammars. Staging `DESTDIR` is not embedded
+into those target values. Startup's explicit DSO linker inputs use
+`pc_sysrootdir`; its runtime RPATH remains a target path.
 
 ### Source compatibility only
 
