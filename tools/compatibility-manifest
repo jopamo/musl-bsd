@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import stat
 import sys
 import tempfile
 from typing import Any
@@ -14,6 +15,7 @@ from typing import Any
 
 SCHEMA_VERSION = 1
 INVENTORY_FORMAT = 1
+MAX_JSON_BYTES = 1024 * 1024 * 1024
 MANIFEST_SCOPE = "audited GLIBC-versioned compatibility symbols"
 QUALITIES = {"EXACT", "TRANSLATED", "DEGRADED", "STUB", "UNSUPPORTED"}
 SYMBOL_FIELDS = {
@@ -44,10 +46,34 @@ def _reject_constant(value: str) -> None:
     raise ManifestError(f"non-JSON numeric constant {value}")
 
 
+def _json_text(path: Path) -> str:
+    limit = MAX_JSON_BYTES
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        metadata = os.fstat(fd)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ManifestError("JSON input is not a regular file")
+        if metadata.st_size > limit:
+            raise ManifestError(f"JSON input byte limit ({limit}) exceeded")
+        chunks: list[bytes] = []
+        total = 0
+        while True:
+            chunk = os.read(fd, min(64 * 1024, limit - total + 1))
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > limit:
+                raise ManifestError(f"JSON input byte limit ({limit}) exceeded")
+            chunks.append(chunk)
+        return b"".join(chunks).decode("utf-8")
+    finally:
+        os.close(fd)
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     try:
         value = json.loads(
-            path.read_text(encoding="utf-8"),
+            _json_text(path),
             object_pairs_hook=_unique_object,
             parse_constant=_reject_constant,
         )

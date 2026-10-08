@@ -388,6 +388,9 @@ integers, not booleans or floating-point equivalents. JSON must use UTF-8,
 unique object keys and standard numeric literals. Provider outcome counts
 must match their arrays; unresolved outcomes must be weak. Invalid nested
 types and duplicate object reports are rejected before policy generation.
+JSON inputs must be regular files and cannot exceed 1 GiB each. Size checks
+and bounded reads use one descriptor; growth after the size check cannot
+bypass the byte limit. This does not freeze concurrent in-place edits.
 The manifest's exact-field schema remains unchanged. Validate it with:
 
 ```sh
