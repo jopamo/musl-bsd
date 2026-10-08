@@ -813,8 +813,10 @@ static FTSENT* fts_build(FTS* sp, int type) {
         }
     }
 
-    if (nitems == 0 && type == BREAD)
+    if (nitems == 0 && type == BREAD) {
+        sp->fts_path[cur->fts_pathlen] = '\0';
         cur->fts_info = FTS_DP;
+    }
     return head;
 }
 
