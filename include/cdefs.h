@@ -35,6 +35,7 @@
 
 #if !defined(HAVE_QSORT_R)
 
+/* Comparators must return normally: escaping leaves the TLS stack unrestored. */
 typedef int (*qsort_r_compar_fn_t)(const void*, const void*, void*);
 
 struct qsort_r_shim_ctx {
@@ -53,9 +54,9 @@ static int qsort_r_global_shim(const void* a, const void* b) {
 #define qsort_r(base, nmemb, size, cmpfn, user_arg)          \
     do {                                                     \
         struct qsort_r_shim_ctx __ctx = {                    \
-            .compar = (qsort_r_compar_fn_t)(cmpfn),          \
-            .arg = (void*)(user_arg),                        \
-            .prev = qsort_r_ctx_top,                         \
+            (qsort_r_compar_fn_t)(cmpfn),                   \
+            (void*)(user_arg),                               \
+            qsort_r_ctx_top,                                 \
         };                                                   \
         qsort_r_ctx_top = &__ctx;                            \
         qsort((base), (nmemb), (size), qsort_r_global_shim); \

@@ -668,6 +668,13 @@ Option flags:
 - `__BEGIN_DECLS`
 - `__END_DECLS`
 
+Unless `HAVE_QSORT_R` is defined, `sys/cdefs.h` supplies a GNU-signature
+`qsort_r` macro using a per-thread stack of comparator contexts. Nested
+sorts restore the outer context on normal return. Comparators must not
+escape by `longjmp`, exception or thread cancellation: those paths bypass
+the macro's context restoration. Define
+`HAVE_QSORT_R` only when libc declares the matching GNU signature.
+
 ---
 
 ## Testing

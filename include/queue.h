@@ -9,7 +9,7 @@
 #endif
 
 static inline void queue_getrandom(void* buf, size_t len) {
-    unsigned char* p = buf;
+    unsigned char* p = (unsigned char*)buf;
     size_t bytes_read = 0;
     while (bytes_read < len) {
         ssize_t ret = getrandom(p + bytes_read, len - bytes_read, 0);
