@@ -18,22 +18,33 @@ cc = meson.get_compiler('c')
 
 conf_data = configuration_data()
 
-conf_data.set('HAVE_CONFIG_H', true)
-conf_data.set('HAVE_ALLOCA_H', cc.check_header('alloca.h'))
-conf_data.set('HAVE_UNISTD_H', cc.check_header('unistd.h'))
-conf_data.set('HAVE_EX_USAGE', cc.has_header_symbol('sysexits.h', 'EX_USAGE'))
-conf_data.set('HAVE_DECL_FLOCKFILE', cc.has_function('flockfile'))
-conf_data.set('HAVE_DECL_FPUTS_UNLOCKED', cc.has_function('fputs_unlocked', prefix: '#include <stdio.h>'))
-conf_data.set('HAVE_DECL_FPUTC_UNLOCKED', cc.has_function('fputc_unlocked', prefix: '#include <stdio.h>'))
-conf_data.set('HAVE_DECL_FWRITE_UNLOCKED', cc.has_function('fwrite_unlocked', prefix: '#include <stdio.h>'))
-conf_data.set('HAVE_DECL_PUTC_UNLOCKED', cc.has_function('putc_unlocked', prefix: '#include <stdio.h>'))
-conf_data.set('HAVE_MEMPCPY', cc.has_function('mempcpy', prefix: '#include <string.h>'))
-conf_data.set('HAVE_ASPRINTF', cc.has_function('asprintf', prefix: '#include <stdio.h>'))
-conf_data.set('HAVE_STRCHRNUL', cc.has_function('strchrnul', prefix: '#include <string.h>'))
-conf_data.set('HAVE_STRNDUP', cc.has_function('strndup', prefix: '#include <string.h>'))
-conf_data.set('HAVE_STRCASECMP', cc.has_function('strcasecmp', prefix: '#include <string.h>'))
-conf_data.set('HAVE_DECL_PROGRAM_INVOCATION_NAME', cc.has_header_symbol('errno.h', 'program_invocation_name'))
-conf_data.set('HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME', cc.has_header_symbol('errno.h', 'program_invocation_short_name'))
+conf_data.set10('HAVE_CONFIG_H', true)
+conf_data.set10('HAVE_ALLOCA_H', cc.check_header('alloca.h'))
+conf_data.set10('HAVE_UNISTD_H', cc.check_header('unistd.h'))
+conf_data.set10('HAVE_EX_USAGE', cc.has_header_symbol('sysexits.h', 'EX_USAGE'))
+
+# Match the feature namespace used by the library translation units.
+stdio_prefix = '#define _GNU_SOURCE 1\n#include <stdio.h>'
+foreach function : [
+  'clearerr_unlocked', 'feof_unlocked', 'ferror_unlocked', 'fflush_unlocked',
+  'fgets_unlocked', 'fputc_unlocked', 'fputs_unlocked', 'fread_unlocked',
+  'fwrite_unlocked', 'getc_unlocked', 'getchar_unlocked', 'putc_unlocked',
+  'putchar_unlocked',
+]
+  conf_data.set10('HAVE_DECL_' + function.to_upper(), cc.has_function(function, prefix: stdio_prefix))
+endforeach
+conf_data.set10('HAVE_FLOCKFILE', cc.has_function('flockfile', prefix: stdio_prefix))
+conf_data.set10('HAVE_FUNLOCKFILE', cc.has_function('funlockfile', prefix: stdio_prefix))
+conf_data.set10('HAVE_ASPRINTF', cc.has_function('asprintf', prefix: stdio_prefix))
+
+string_prefix = '#define _GNU_SOURCE 1\n#include <string.h>'
+foreach function : ['mempcpy', 'strchrnul', 'strndup']
+  conf_data.set10('HAVE_' + function.to_upper(), cc.has_function(function, prefix: string_prefix))
+endforeach
+errno_prefix = '#define _GNU_SOURCE 1\n#include <errno.h>'
+foreach symbol : ['program_invocation_name', 'program_invocation_short_name']
+  conf_data.set10('HAVE_DECL_' + symbol.to_upper(), cc.has_header_symbol('errno.h', symbol, prefix: errno_prefix))
+endforeach
 
 configure_file(input: 'meson_config.h.in', output: 'config.h', configuration: conf_data)
 add_project_arguments('-DHAVE_CONFIG_H=1', language: 'c')

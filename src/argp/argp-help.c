@@ -1484,7 +1484,7 @@ static void _help(const struct argp* argp, const struct argp_state* state, FILE*
     if (!stream)
         return;
 
-#if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
+#if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE
   __flockfile (stream);
 #endif
 
@@ -1492,7 +1492,7 @@ static void _help(const struct argp* argp, const struct argp_state* state, FILE*
 
     fs = __argp_make_fmtstream(stream, 0, params.rmargin, 0);
     if (!fs) {
-#if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
+#if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE
       __funlockfile (stream);
 #endif
         return;
@@ -1596,14 +1596,13 @@ Try `%s --help' or `%s --usage' for more information.\n"),
     }
 
 out:
-#if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
-  __funlockfile (stream);
-#endif
-
     if (hol)
         hol_free(hol);
 
     __argp_fmtstream_free(fs);
+#if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE
+    __funlockfile(stream);
+#endif
     if (saved_errno)
         __set_errno(saved_errno);
 }
@@ -1665,7 +1664,7 @@ weak_alias(__argp_state_help, argp_state_help)
         FILE* stream = state ? state->err_stream : stderr;
 
         if (stream) {
-#if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
+#if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE
 	  __flockfile (stream);
 #endif
 
@@ -1691,7 +1690,7 @@ weak_alias(__argp_state_help, argp_state_help)
 
             __argp_state_help(state, stream, ARGP_HELP_STD_ERR);
 
-#if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
+#if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE
 	  __funlockfile (stream);
 #endif
         }
@@ -1726,7 +1725,7 @@ weak_alias(__argp_error, argp_error)
         FILE* stream = state ? state->err_stream : stderr;
 
         if (stream) {
-#if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
+#if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE
 	  __flockfile (stream);
 #endif
 
@@ -1775,7 +1774,7 @@ weak_alias(__argp_error, argp_error)
 #endif
             putc_unlocked('\n', stream);
 
-#if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
+#if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE
 	  __funlockfile (stream);
 #endif
 

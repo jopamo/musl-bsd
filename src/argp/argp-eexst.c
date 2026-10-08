@@ -21,7 +21,7 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_EX_USAGE
+#if HAVE_EX_USAGE
 #include <sysexits.h>
 #else
 #define EX_USAGE 64

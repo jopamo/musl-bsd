@@ -17,48 +17,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* Meson leaves HAVE_DECL_* undefined when a symbol is missing; default to 0 so
-   the fallback macros below take effect. */
-#ifndef HAVE_DECL_CLEARERR_UNLOCKED
-#define HAVE_DECL_CLEARERR_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FEOF_UNLOCKED
-#define HAVE_DECL_FEOF_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FERROR_UNLOCKED
-#define HAVE_DECL_FERROR_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FFLUSH_UNLOCKED
-#define HAVE_DECL_FFLUSH_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FGETS_UNLOCKED
-#define HAVE_DECL_FGETS_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FPUTC_UNLOCKED
-#define HAVE_DECL_FPUTC_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FPUTS_UNLOCKED
-#define HAVE_DECL_FPUTS_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FREAD_UNLOCKED
-#define HAVE_DECL_FREAD_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_FWRITE_UNLOCKED
-#define HAVE_DECL_FWRITE_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_GETC_UNLOCKED
-#define HAVE_DECL_GETC_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_GETCHAR_UNLOCKED
-#define HAVE_DECL_GETCHAR_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_PUTC_UNLOCKED
-#define HAVE_DECL_PUTC_UNLOCKED 0
-#endif
-#ifndef HAVE_DECL_PUTCHAR_UNLOCKED
-#define HAVE_DECL_PUTCHAR_UNLOCKED 0
-#endif
-
 #if !_LIBC
 /* This code is written for inclusion in gnu-libc, and uses names in the
    namespace reserved for libc.  If we're not compiling in libc, define those
@@ -176,11 +134,11 @@
 #define putchar_unlocked(x) putchar(x)
 #endif
 
-#if defined(HAVE_STRCHRNUL) && !HAVE_STRCHRNUL
+#if !HAVE_STRCHRNUL
 char* strchrnul(const char* s, int c);
 #endif
 
-#if defined(HAVE_MEMPCPY) && !HAVE_MEMPCPY
+#if !HAVE_MEMPCPY
 void* mempcpy(void* to, const void* from, size_t size);
 #endif
 
@@ -192,10 +150,8 @@ extern char* __argp_basename(char* name);
 #define __set_errno(e) (errno = (e))
 #endif
 
-#if defined _LIBC || HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
+#if defined _LIBC
 #define __argp_short_program_name() (program_invocation_short_name)
-#elif HAVE_DECL_PROGRAM_INVOCATION_NAME
-#define __argp_short_program_name() (__argp_basename(program_invocation_name))
 #else
 extern char* __argp_short_program_name(void);
 #endif
