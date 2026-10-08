@@ -17,5 +17,5 @@ option(
   type: 'combo',
   choices: ['auto', 'enabled', 'disabled'],
   value: 'auto',
-  description: 'Build the glibc binary-runtime bridge (auto enables only verified x86_64 LP64)'
+  description: 'Build the glibc binary-runtime bridge (auto enables only verified musl x86_64 LP64)'
 )

@@ -98,7 +98,20 @@ The runtime bridge provides:
 - explicit early-dependency preload handling
 - symbol/provider auditing tools
 
-The qualified runtime currently targets **x86_64 LP64**.
+The qualified runtime currently targets **Linux, musl, x86_64 LP64**.
+For `auto`/`enabled`, setup runs a compiler-built probe that resolves the
+linked `fopen` provider and executes that library's usage entry point.
+Qualification requires musl's x86_64 banner and its usage exit status 1.
+Meson's raw run check therefore prints `NO (1)`; the separate
+`Musl target libc verified` message reports the interpreted result.
+
+`auto` leaves the runtime disabled if identity cannot be verified; `enabled`
+fails explicitly. `disabled` skips this probe. Cross runtime builds need a
+working execution wrapper, and static default executables whose libc provider
+cannot be queried do not qualify. Source-only builds remain available without
+running target binaries. Verified runtime builds still require the compiler
+unwinder and static-PIE linker mode. These probes execute the selected trusted
+toolchain's libc, never scanner inventory inputs.
 
 ---
 

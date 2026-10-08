@@ -58,11 +58,50 @@ c_flags = [
 # x86_64 LP64 is the only ABI qualified by the current layout and loader tests.
 cpu_family = host_machine.cpu_family()
 is_lp64 = cc.sizeof('void *') == 8 and cc.sizeof('long') == 8
-glibc_runtime_qualified = cpu_family == 'x86_64' and is_lp64
+glibc_runtime_abi_qualified = (
+  host_machine.system() == 'linux' and cpu_family == 'x86_64' and is_lp64
+)
 glibc_runtime_option = get_option('glibc_runtime')
+musl_libc_verified = false
 
-if glibc_runtime_option == 'enabled' and not glibc_runtime_qualified
-  error('glibc binary runtime was explicitly enabled for unverified ABI ' + cpu_family)
+if (
+  glibc_runtime_option != 'disabled' and glibc_runtime_abi_qualified and
+  meson.can_run_host_binaries()
+)
+  libc_identity_dl = cc.find_library('dl', required: false)
+  libc_identity = cc.run(
+    '''
+      #define _GNU_SOURCE 1
+      #include <dlfcn.h>
+      #include <unistd.h>
+      int musl_bsd_libc_identity(void) {
+        Dl_info information;
+        void *symbol = dlsym(RTLD_DEFAULT, "fopen");
+        if (!symbol || !dladdr(symbol, &information) || !information.dli_fname)
+          return 2;
+        execl(information.dli_fname, information.dli_fname, (char *)0);
+        return 3;
+      }
+      int main(void) { return musl_bsd_libc_identity(); }
+    ''',
+    dependencies: libc_identity_dl,
+    name: 'libc provider banner (musl exits 1)',
+  )
+  musl_libc_verified = (
+    libc_identity.compiled() and libc_identity.returncode() == 1 and
+    libc_identity.stderr().startswith('musl libc (x86_64)\n')
+  )
+endif
+if glibc_runtime_option != 'disabled'
+  message('Musl target libc verified: ' + musl_libc_verified.to_string('yes', 'no'))
+endif
+glibc_runtime_qualified = glibc_runtime_abi_qualified and musl_libc_verified
+
+if glibc_runtime_option == 'enabled' and not glibc_runtime_abi_qualified
+  error('glibc binary runtime requires Linux x86_64 LP64; got ' + host_machine.system() + '/' + cpu_family)
+endif
+if glibc_runtime_option == 'enabled' and not musl_libc_verified
+  error('glibc binary runtime requires a runnable, verified musl libc target')
 endif
 
 glibc_runtime_enabled = glibc_runtime_option == 'enabled' or (
@@ -135,7 +174,7 @@ endif
 
 runtime_metadata = configuration_data()
 runtime_metadata.set('ARCHITECTURE', cpu_family)
-runtime_metadata.set('ABI', glibc_runtime_qualified ? 'x86_64-lp64' : 'unqualified')
+runtime_metadata.set('ABI', glibc_runtime_abi_qualified ? 'x86_64-lp64' : 'unqualified')
 runtime_metadata.set('GLIBC_RUNTIME', glibc_runtime_enabled ? 'true' : 'false')
 runtime_metadata.set('GLIBC_LOADER', glibc_loader_name)
 runtime_metadata.set('MUSL_LINKER', musl_linker_path)
