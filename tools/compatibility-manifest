@@ -213,11 +213,11 @@ def build_manifest(
     base_manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     requirements, implementations = _inventory_requirements(inventory)
-    policies: dict[tuple[str, str, str, str], tuple[str, str]] = {}
+    policies: dict[tuple[str, str, str, str, str], tuple[str, str]] = {}
     if base_manifest is not None:
         validate_manifest(base_manifest)
         policies = {
-            _manifest_key(item, "base manifest symbol"): (
+            (*_manifest_key(item, "base manifest symbol"), item["implementation"]): (
                 item["test"],
                 item["quality"],
             )
@@ -228,7 +228,7 @@ def build_manifest(
         key = _inventory_key(item, f"requirement {index}")
         name, version, soname, binding = key
         test, quality = policies.get(
-            key,
+            (*key, implementations[key]),
             ("tools/elf-scan:provider-analysis", "UNSUPPORTED"),
         )
         symbols.append(
@@ -402,7 +402,7 @@ def _parser() -> argparse.ArgumentParser:
     generate.add_argument(
         "--base",
         type=Path,
-        help="preserve test and quality policy for unchanged requirements",
+        help="preserve test and quality policy for unchanged requirements and implementations",
     )
 
     validate = subparsers.add_parser("validate")

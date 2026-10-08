@@ -259,6 +259,10 @@ New requirements default to `UNSUPPORTED` until their ABI and behavior have
 been audited. Policy quality levels are `EXACT`, `TRANSLATED`, `DEGRADED`,
 `STUB`, and `UNSUPPORTED`.
 
+Regeneration preserves base test and quality policy only when the symbol key
+and implementation descriptor still match. A changed implementation requires
+renewed qualification and defaults to `UNSUPPORTED`.
+
 ## Important Runtime Limitations
 
 ### musl legacy SONAME resolution
