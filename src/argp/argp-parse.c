@@ -520,6 +520,8 @@ static void calc_sizes(const struct argp* argp, struct parser_sizes* szs) {
         }
 }
 
+static error_t parser_finalize(struct parser* parser, error_t err, int arg_ebadkey, int* end_index);
+
 /* Initializes PARSER to parse ARGP in a manner described by FLAGS.  */
 static error_t parser_init(struct parser* parser,
                            const struct argp* argp,
@@ -610,8 +612,11 @@ static error_t parser_init(struct parser* parser,
     if (err == EBADKEY)
         err = 0; /* Some parser didn't understand.  */
 
-    if (err)
-        return err;
+    if (err) {
+        /* Only groups that received INIT participate in failure cleanup. */
+        parser->egroup = group;
+        return parser_finalize(parser, err, 0, NULL);
+    }
 
     if (argv[0] && !(parser->state.flags & ARGP_PARSE_ARGV0))
     /* There's an argv[0]; use it for messages.  */
