@@ -59,6 +59,36 @@ DT_GNU_HASH = 0x6FFFFEF5
 DT_HASH = 4
 DT_RUNPATH = 29
 
+DYNAMIC_SINGLETONS = {
+    DT_PLTRELSZ: "DT_PLTRELSZ",
+    DT_STRTAB: "DT_STRTAB",
+    DT_SYMTAB: "DT_SYMTAB",
+    DT_RELA: "DT_RELA",
+    DT_RELASZ: "DT_RELASZ",
+    DT_RELAENT: "DT_RELAENT",
+    DT_STRSZ: "DT_STRSZ",
+    DT_SYMENT: "DT_SYMENT",
+    DT_SONAME: "DT_SONAME",
+    DT_RPATH: "DT_RPATH",
+    DT_REL: "DT_REL",
+    DT_RELSZ: "DT_RELSZ",
+    DT_RELENT: "DT_RELENT",
+    DT_PLTREL: "DT_PLTREL",
+    DT_JMPREL: "DT_JMPREL",
+    DT_TEXTREL: "DT_TEXTREL",
+    DT_FLAGS: "DT_FLAGS",
+    DT_VERSYM: "DT_VERSYM",
+    DT_RELACOUNT: "DT_RELACOUNT",
+    DT_FLAGS_1: "DT_FLAGS_1",
+    DT_VERDEF: "DT_VERDEF",
+    DT_VERDEFNUM: "DT_VERDEFNUM",
+    DT_VERNEED: "DT_VERNEED",
+    DT_VERNEEDNUM: "DT_VERNEEDNUM",
+    DT_GNU_HASH: "DT_GNU_HASH",
+    DT_HASH: "DT_HASH",
+    DT_RUNPATH: "DT_RUNPATH",
+}
+
 SHN_UNDEF = 0
 STB_LOCAL = 0
 STB_GLOBAL = 1
@@ -323,6 +353,10 @@ class ELFFile:
                 break
             if tag == DT_NEEDED:
                 self.needed_offsets.append(value)
+            elif tag in self.dynamic and tag in DYNAMIC_SINGLETONS:
+                raise ScanError(
+                    f"{self.path}: duplicate {DYNAMIC_SINGLETONS[tag]}"
+                )
             elif tag not in self.dynamic:
                 self.dynamic[tag] = value
         if not terminated:
