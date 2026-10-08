@@ -20,19 +20,21 @@ static int next_byte(struct musl_bsd_mb_reader* reader) {
     return byte;
 }
 
+static void replay_sequence(struct musl_bsd_mb_reader* reader, const unsigned char* sequence, size_t length) {
+    /* The sequence plus remaining pending bytes is bounded by MB_LEN_MAX. */
+    if (length != 0) {
+        memmove(reader->pending + length, reader->pending, reader->pending_len);
+        memcpy(reader->pending, sequence, length);
+        reader->pending_len += length;
+    }
+}
+
 static wint_t reject_sequence(struct musl_bsd_mb_reader* reader,
                               const unsigned char* sequence,
                               size_t length,
                               int* invalid_byte) {
     size_t consumed = invalid_byte != NULL ? 1 : 0;
-    size_t replay = length - consumed;
-
-    if (replay != 0) {
-        memmove(reader->pending + replay, reader->pending, reader->pending_len);
-        memcpy(reader->pending, sequence + consumed, replay);
-        reader->pending_len += replay;
-    }
-
+    replay_sequence(reader, sequence + consumed, length - consumed);
     memset(&reader->state, 0, sizeof(reader->state));
     if (invalid_byte != NULL)
         *invalid_byte = sequence[0];
@@ -42,6 +44,7 @@ static wint_t reject_sequence(struct musl_bsd_mb_reader* reader,
 
 wint_t musl_bsd_mb_reader_next(struct musl_bsd_mb_reader* reader, int* invalid_byte) {
     unsigned char sequence[MB_LEN_MAX];
+    mbstate_t initial_state = reader->state;
     size_t length = 0;
     wchar_t character;
 
@@ -57,8 +60,14 @@ wint_t musl_bsd_mb_reader_next(struct musl_bsd_mb_reader* reader, int* invalid_b
 
         byte = next_byte(reader);
         if (byte == EOF) {
-            if (length != 0 && !ferror(reader->stream))
-                return reject_sequence(reader, sequence, length, invalid_byte);
+            if (length != 0) {
+                int error = errno;
+                if (!ferror(reader->stream))
+                    return reject_sequence(reader, sequence, length, invalid_byte);
+                replay_sequence(reader, sequence, length);
+                reader->state = initial_state;
+                errno = error;
+            }
             return WEOF;
         }
 

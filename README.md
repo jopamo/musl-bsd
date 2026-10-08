@@ -44,6 +44,13 @@ routing between threads. It is not a cryptographic primitive or an RNG.
 
 The source-compatibility layer remains portable independently of the optional glibc binary runtime.
 
+The multibyte reader owns byte input from its `FILE` and retains partial bytes
+after an I/O error. Call `clearerr()` before retrying; the retry starts conversion
+from the retained bytes. Malformed input reports `EILSEQ`, consuming one byte
+only when `invalid_byte` is non-null. Incomplete EOF is malformed input; a
+decoded NUL is `L'\0'`, not EOF. Keep the effective `LC_CTYPE` locale fixed for
+the reader's lifetime and do not interleave other reads or seeks on its stream.
+
 ### Optional glibc binary runtime
 
 The runtime bridge provides:
