@@ -384,9 +384,17 @@ class ELFFile:
     def _symbol_count(self) -> int:
         if DT_HASH in self.dynamic:
             offset = self._address_range(self.dynamic[DT_HASH], 8, "DT_HASH")
-            _nbucket, nchain = self.reader.unpack("<II", offset, "DT_HASH header")
-            if nchain > MAX_TABLE_ENTRIES:
-                raise ScanError(f"{self.path}: unreasonable symbol count")
+            nbucket, nchain = self.reader.unpack("<II", offset, "DT_HASH header")
+            if (
+                nbucket == 0
+                or nchain == 0
+                or nbucket > MAX_TABLE_ENTRIES
+                or nchain > MAX_TABLE_ENTRIES
+            ):
+                raise ScanError(f"{self.path}: invalid DT_HASH counts")
+            self._address_range(
+                self.dynamic[DT_HASH], 8 + (nbucket + nchain) * 4, "DT_HASH"
+            )
             return nchain
 
         if DT_GNU_HASH in self.dynamic:
@@ -412,8 +420,10 @@ class ELFFile:
                     buckets + bucket_index * 4,
                     "GNU hash bucket",
                 )[0]
-                if bucket < symoffset:
+                if bucket == 0:
                     continue
+                if bucket < symoffset or bucket >= MAX_TABLE_ENTRIES:
+                    raise ScanError(f"{self.path}: invalid GNU hash bucket")
                 index = bucket
                 while True:
                     chain_offset = chains + (index - symoffset) * 4
@@ -428,23 +438,15 @@ class ELFFile:
                         raise ScanError(
                             f"{self.path}: unreasonable GNU hash chain"
                         )
-            return highest + 1
+            count = highest + 1
+            if count == 0 or count > MAX_TABLE_ENTRIES:
+                raise ScanError(f"{self.path}: invalid GNU hash symbol count")
+            return count
 
-        # A DSO without either hash table is unusual but valid.  The dynamic
-        # string table normally follows dynsym, so this is a safe fallback for
-        # inspection-only purposes when the table order is conventional.
-        symtab = self.dynamic.get(DT_SYMTAB)
-        syment = self.dynamic.get(DT_SYMENT, 24)
-        if symtab is None or syment < 24:
-            return 0
-        symtab_offset = self._address_range(symtab, syment, "DT_SYMTAB")
-        strtab_offset = self.strtab
-        if strtab_offset <= symtab_offset:
-            return 0
-        count = (strtab_offset - symtab_offset) // syment
-        if count > MAX_TABLE_ENTRIES:
-            raise ScanError(f"{self.path}: unreasonable symbol count")
-        return count
+        raise ScanError(
+            f"{self.path}: cannot bound dynamic symbols without DT_HASH "
+            "or DT_GNU_HASH"
+        )
 
     def _version_requirements(self) -> dict[int, dict[str, str]]:
         result: dict[int, dict[str, str]] = {}
@@ -494,13 +496,11 @@ class ELFFile:
         self.version_requirements: dict[int, dict[str, str]] = {}
         address = self.dynamic.get(DT_SYMTAB)
         if address is None:
-            return []
-        syment = self.dynamic.get(DT_SYMENT, 24)
-        if syment < 24:
+            raise ScanError(f"{self.path}: dynamic symbol table is missing")
+        syment = self.dynamic.get(DT_SYMENT)
+        if syment != 24:
             raise ScanError(f"{self.path}: invalid DT_SYMENT")
         count = self._symbol_count()
-        if count == 0:
-            return []
         offset = self._address_range(address, count * syment, "dynamic symbols")
         version_address = self.dynamic.get(DT_VERSYM)
         versions: list[int] = []

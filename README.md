@@ -296,6 +296,9 @@ The secure-execution check runs before this environment variable is read.
 `tools/elf-scan` inspects explicit ELF files or directories and recursively
 follows their `DT_NEEDED` dependencies. It does not download packages or invoke
 a package manager.
+Dynamic symbol inventory requires `DT_SYMTAB`, the ELF64 `DT_SYMENT` size,
+and a file-backed SysV or GNU hash table to bound the symbol count. Section
+headers are not required; table order is not used to guess missing bounds.
 
 ```sh
 tools/elf-scan --format json --output inventory.json /path/to/root.so
