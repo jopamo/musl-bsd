@@ -653,7 +653,6 @@ Option flags:
 - `LIST_*`
 - `STAILQ_*`
 - `TAILQ_*`
-- `CIRCLEQ_*`
 
 `sys/tree.h` provides:
 

@@ -68,7 +68,7 @@
     struct type* name##_SPLAY_INSERT(struct name*, struct type*);                                \
     struct type* name##_SPLAY_REMOVE(struct name*, struct type*);                                \
                                                                                                  \
-    __unused static inline struct type* name##_SPLAY_FIND(struct name* head, struct type* elm) { \
+    __attribute__((__unused__)) static inline struct type* name##_SPLAY_FIND(struct name* head, struct type* elm) { \
         if (SPLAY_EMPTY(head))                                                                   \
             return NULL;                                                                         \
         name##_SPLAY(head, elm);                                                                 \
@@ -77,7 +77,7 @@
         return NULL;                                                                             \
     }                                                                                            \
                                                                                                  \
-    __unused static inline struct type* name##_SPLAY_NEXT(struct name* head, struct type* elm) { \
+    __attribute__((__unused__)) static inline struct type* name##_SPLAY_NEXT(struct name* head, struct type* elm) { \
         name##_SPLAY(head, elm);                                                                 \
         if (SPLAY_RIGHT(elm, field) != NULL) {                                                   \
             elm = SPLAY_RIGHT(elm, field);                                                       \
@@ -90,7 +90,7 @@
         return elm;                                                                              \
     }                                                                                            \
                                                                                                  \
-    __unused static inline struct type* name##_SPLAY_MIN_MAX(struct name* head, int val) {       \
+    __attribute__((__unused__)) static inline struct type* name##_SPLAY_MIN_MAX(struct name* head, int val) {       \
         name##_SPLAY_MINMAX(head, val);                                                          \
         return (SPLAY_ROOT(head));                                                               \
     }
