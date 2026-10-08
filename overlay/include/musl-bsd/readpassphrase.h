@@ -38,6 +38,9 @@ extern "C" {
 #endif
 
 /* Changes process signal handlers: callers must serialize terminal input.
+   Exclusively own input; other threads must block SIGALRM, SIGHUP, SIGINT,
+   SIGPIPE, SIGQUIT, SIGTERM, SIGTSTP, SIGTTIN and SIGTTOU.
+   The reader's incoming signal mask is preserved.
    Setup/output/cleanup failures return NULL without input.
    Deferred input cancellation attempts restoration and wipes the buffer;
    normal return preserves the caller's cancellation state and type. */

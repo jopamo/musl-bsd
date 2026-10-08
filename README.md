@@ -39,8 +39,14 @@ descriptors, and wipes the caller's buffer. Normal return restores the caller's
 cancellation state and type. Prompt and final-newline writes handle short
 writes and reject errors without returning input.
 Like the BSD interface, it changes process-wide signal handlers; callers
-must serialize its use. Cancellation cleanup does not establish safe signal
-routing between threads. It is not a cryptographic primitive or an RNG.
+must serialize its use and exclusively own input while it runs. Do not read
+from the same input, close/reassign its descriptor, or change terminal settings
+concurrently. In a multithreaded process, other threads must block `SIGALRM`,
+`SIGHUP`, `SIGINT`, `SIGPIPE`, `SIGQUIT`, `SIGTERM`, `SIGTSTP`, `SIGTTIN` and
+`SIGTTOU` so process-directed signals reach the reader. The reader preserves
+its incoming mask and uses `ppoll()` to atomically allow those unblocked by
+that mask while waiting for input. Terminal restoration uses the incoming
+mask to retain job-control behavior. It is not a cryptographic primitive or an RNG.
 
 The source-compatibility layer remains portable independently of the optional glibc binary runtime.
 

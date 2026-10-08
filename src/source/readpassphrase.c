@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <paths.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <string.h>
@@ -54,11 +55,12 @@ static const int caught_signals[] = {
 #define NUM_SIGNALS (sizeof(caught_signals) / sizeof(caught_signals[0]))
 
 struct cleanup_state {
-	int input, tty_opened, term_changed, error, restore_error;
+	int input, tty_opened, term_changed, mask_changed, error, restore_error;
 	size_t installed;
 	unsigned char owned[NUM_SIGNALS], restored[_NSIG];
 	struct termios oterm;
 	struct sigaction saved[NUM_SIGNALS];
+	sigset_t mask, blocked;
 	char *buf;
 	size_t bufsiz;
 };
@@ -72,10 +74,28 @@ record_error(struct cleanup_state *state, int error)
 		state->error = error ? error : EIO;
 }
 
+static int
+restore_mask(struct cleanup_state *state)
+{
+	if (state->mask_changed) {
+		/* Allow the saved job-control mask during terminal restoration. */
+		int error = pthread_sigmask(SIG_SETMASK, &state->mask, NULL);
+		if (error) {
+			record_error(state, error);
+			state->restore_error = 1;
+			return -1;
+		} else {
+			state->mask_changed = 0;
+		}
+	}
+	return 0;
+}
+
 /* Called with cancellation disabled, including during cancellation cleanup. */
 static void
 restore_state(struct cleanup_state *state)
 {
+	(void)restore_mask(state);
 	if (state->term_changed) {
 		const int sigttou = signo[SIGTTOU];
 		int result;
@@ -166,6 +186,47 @@ write_output(int fd, const char *data, size_t length)
 	return 0;
 }
 
+/* Block signals before checking flags; ppoll atomically restores the mask.
+   Input must have no competing readers or concurrent descriptor changes. */
+static ssize_t
+read_byte(struct cleanup_state *state, char *byte)
+{
+	struct pollfd input = { .fd = state->input, .events = POLLIN };
+
+	for (;;) {
+		for (size_t action = 0; action < NUM_SIGNALS; action++) {
+			if (signo[caught_signals[action]]) {
+				errno = EINTR;
+				return -1;
+			}
+		}
+		if (ppoll(&input, 1, NULL, &state->mask) == -1)
+			return -1;
+		/* Ready input is exclusive; retain SIGTTIN behavior during the read. */
+		int error = pthread_sigmask(SIG_SETMASK, &state->mask, NULL);
+		if (error) {
+			errno = error;
+			return -1;
+		}
+		ssize_t count = read(state->input, byte, 1);
+		int read_error = errno;
+		error = pthread_sigmask(SIG_BLOCK, &state->blocked, NULL);
+		if (error) {
+			if (count == -1)
+				record_error(state, read_error);
+			record_error(state, error);
+			state->restore_error = 1;
+			if (count != -1)
+				read_error = error;
+			count = -1;
+		}
+		errno = read_error;
+		if (count == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			continue;
+		return count;
+	}
+}
+
 static char *
 read_passphrase(const char *prompt, struct cleanup_state *state, int flags,
     int cancel_state)
@@ -182,7 +243,7 @@ restart:
 	save_errno = 0;
 	setup_done = 0;
 	state->input = output = -1;
-	state->tty_opened = state->term_changed = 0;
+	state->tty_opened = state->term_changed = state->mask_changed = 0;
 	state->error = state->restore_error = 0;
 	state->installed = 0;
 	memset(state->owned, 0, sizeof(state->owned));
@@ -244,9 +305,18 @@ restart:
 		record_error(state, errno);
 		goto restore;
 	}
+	sigemptyset(&state->blocked);
+	for (size_t action = 0; action < NUM_SIGNALS; action++)
+		sigaddset(&state->blocked, caught_signals[action]);
+	int mask_error = pthread_sigmask(SIG_BLOCK, &state->blocked, &state->mask);
+	if (mask_error) {
+		record_error(state, mask_error);
+		goto restore;
+	}
+	state->mask_changed = 1;
 	end = state->buf + state->bufsiz - 1;
 	p = state->buf;
-	while ((nr = read(state->input, &ch, 1)) == 1 && ch != '\n' && ch != '\r') {
+	while ((nr = read_byte(state, &ch)) == 1 && ch != '\n' && ch != '\r') {
 		if (p < end) {
 			if (flags & RPP_SEVENBIT)
 				ch &= 0x7f;
@@ -263,7 +333,8 @@ restart:
 	save_errno = errno;
 	if (nr == -1)
 		record_error(state, save_errno);
-	if (!(term.c_lflag & ECHO) && write_output(output, "\n", 1) == -1)
+	/* Retain SIGTTOU behavior for the final write as well as restoration. */
+	if (restore_mask(state) == 0 && !(term.c_lflag & ECHO) && write_output(output, "\n", 1) == -1)
 		record_error(state, errno);
 
 restore:
