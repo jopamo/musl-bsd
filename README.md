@@ -352,6 +352,26 @@ or semantic ABI compatibility. The historical `matching_policy` identifier
 remains for manifest interoperability; it does not establish those contracts.
 `--strict` does not check every non-GLIBC import.
 
+For target-only inspection, select `--sysroot DIR`. Input and provider
+arguments are host filesystem paths within that directory. Absolute dependency
+names, default library directories and explicit `--library-path` directories
+are target paths rooted there. ORIGIN uses the containing object's target
+directory; relative slash-bearing dependencies use that object's directory.
+Relative library/RPATH/RUNPATH directories are rejected in this mode.
+`ELF_LIBRARY_PATH` and `ELF_SCAN_PATHS` are ignored.
+
+```sh
+tools/elf-scan --sysroot /work/target --library-path /opt/vendor/lib \
+  --format json /work/target/opt/vendor/bin/application
+```
+
+Canonical paths escaping the sysroot are rejected, including outward-pointing
+symlinks in roots, providers, discovery and dependencies. Use target-internal
+relative symlinks; absolute symlinks are not reinterpreted as target paths.
+This remains an inspection approximation, not loader emulation or a filesystem
+isolation boundary against concurrent path replacement. Reports record the
+canonical sysroot. Without this option, existing host search behavior remains.
+
 ### Compatibility manifest
 
 `compatibility-symbols.json` is the checked runtime compatibility-policy

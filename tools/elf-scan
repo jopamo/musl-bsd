@@ -197,8 +197,37 @@ class ScanError(Exception):
     """An input cannot be inspected without guessing."""
 
 
+class SearchPolicy:
+    def __init__(self, sysroot: Path | None = None) -> None:
+        self.sysroot = sysroot.resolve(strict=True) if sysroot is not None else None
+        if self.sysroot is not None and not self.sysroot.is_dir():
+            raise ScanError(f"{sysroot}: sysroot is not a directory")
+
+    def resolve(self, path: Path, strict: bool = True) -> Path:
+        canonical = path.resolve(strict=strict)
+        if self.sysroot is not None and not canonical.is_relative_to(self.sysroot):
+            raise ScanError(f"{path}: path escapes sysroot {self.sysroot}")
+        return canonical
+
+    def target_path(self, path: Path, budget: ScanBudget) -> Path:
+        if self.sysroot is None:
+            return path
+        if not path.is_absolute():
+            raise ScanError(
+                f"{path}: sysroot search paths must be absolute target paths"
+            )
+        budget.consume_path_chars(len(str(self.sysroot)) + len(str(path)) + 1)
+        return self.sysroot / str(path).lstrip("/")
+
+    def origin(self, parent: Path) -> Path:
+        if self.sysroot is None:
+            return parent
+        return Path("/") / self.resolve(parent).relative_to(self.sysroot)
+
+
 class ScanBudget:
-    def __init__(self) -> None:
+    def __init__(self, policy: SearchPolicy | None = None) -> None:
+        self.policy = policy if policy is not None else SearchPolicy()
         self.max_objects = MAX_SCAN_OBJECTS
         self.max_bytes = MAX_SCAN_BYTES
         self.max_work = MAX_SCAN_WORK
@@ -320,6 +349,8 @@ def _regular_file(path: Path) -> Iterator[tuple[int, os.stat_result]]:
 
 
 def _file_bytes(path: Path, budget: ScanBudget | None = None) -> bytes:
+    if budget is not None and budget.policy.sysroot is not None:
+        path = budget.policy.resolve(path)
     try:
         with _regular_file(path) as (fd, metadata):
             if metadata.st_size > MAX_FILE_SIZE:
@@ -1066,7 +1097,10 @@ def _unique_paths(
             budget.consume_work()
             budget.consume_path_chars(len(str(path)))
         try:
-            canonical = path.resolve(strict=True)
+            canonical = (
+                budget.policy.resolve(path)
+                if budget is not None else path.resolve(strict=True)
+            )
         except OSError:
             continue
         if canonical not in seen:
@@ -1078,6 +1112,8 @@ def _unique_paths(
 def _is_elf(path: Path, budget: ScanBudget | None = None) -> bool:
     if budget is not None:
         budget.consume_work()
+        if budget.policy.sysroot is not None:
+            path = budget.policy.resolve(path)
     try:
         with _regular_file(path) as (fd, _metadata):
             size = 4 if budget is None else min(4, budget.remaining_bytes() + 1)
@@ -1093,6 +1129,8 @@ def _directory_entries(
     path: Path, budget: ScanBudget, strict: bool = False
 ) -> Iterator[os.DirEntry]:
     try:
+        if budget.policy.sysroot is not None:
+            path = budget.policy.resolve(path)
         with os.scandir(path) as entries:
             for entry in entries:
                 budget.discover_entry()
@@ -1119,6 +1157,8 @@ def _glob_matches(value: str, budget: ScanBudget) -> list[Path]:
                     if not fnmatch.fnmatchcase(entry.name, component):
                         continue
                     candidate = Path(entry.path)
+                    if budget.policy.sysroot is not None:
+                        budget.policy.resolve(candidate, strict=False)
                     if not final or value.endswith("/"):
                         if not candidate.is_dir():
                             continue
@@ -1127,6 +1167,8 @@ def _glob_matches(value: str, budget: ScanBudget) -> list[Path]:
                 budget.discover_entry()
                 budget.consume_path_chars(len(str(parent)) + len(component) + 1)
                 candidate = parent / component
+                if budget.policy.sysroot is not None and final:
+                    budget.policy.resolve(candidate, strict=False)
                 directory_only = not final or value.endswith("/")
                 exists = (
                     candidate.is_dir() if directory_only else os.path.lexists(candidate)
@@ -1148,6 +1190,8 @@ def discover_targets(
         budget.discover_entry()
         budget.consume_path_chars(len(value))
         path = Path(value)
+        if budget.policy.sysroot is not None:
+            budget.policy.resolve(path, strict=False)
         if any(character in value for character in "*?["):
             matches = _glob_matches(value, budget)
             if not matches:
@@ -1157,6 +1201,8 @@ def discover_targets(
             candidates: list[Path] = []
             for entry in _directory_entries(path, budget, strict=True):
                 candidate = Path(entry.path)
+                if budget.policy.sysroot is not None:
+                    candidate = budget.policy.resolve(candidate, strict=False)
                 if candidate.is_file() and _is_elf(candidate, budget):
                     candidates.append(candidate)
             for candidate in sorted(candidates):
@@ -1188,13 +1234,15 @@ class DependencyResolver:
             path = path.replace(token, replacement)
         if "$" in path:
             return None
-        return Path(path)
+        return self.budget.policy.target_path(Path(path), self.budget)
 
     def _directories(
         self, parent: Path, runpath: list[str]
     ) -> Iterator[Path]:
         for raw_path in runpath:
-            expanded = self._expand(raw_path, parent.parent)
+            expanded = self._expand(
+                raw_path, self.budget.policy.origin(parent.parent)
+            )
             if expanded is not None:
                 yield expanded
         yield from self.library_paths
@@ -1206,8 +1254,12 @@ class DependencyResolver:
         if "/" in name:
             self.budget.consume_path_chars(len(str(parent.parent)) + len(name) + 1)
             candidate = Path(name)
-            if not candidate.is_absolute():
+            if candidate.is_absolute():
+                candidate = self.budget.policy.target_path(candidate, self.budget)
+            else:
                 candidate = parent.parent / candidate
+            if self.budget.policy.sysroot is not None:
+                candidate = self.budget.policy.resolve(candidate, strict=False)
             if candidate.is_file():
                 return candidate.resolve()
             return None
@@ -1215,6 +1267,8 @@ class DependencyResolver:
             self.budget.consume_work()
             self.budget.consume_path_chars(len(str(directory)) + len(name) + 1)
             candidate = directory / name
+            if self.budget.policy.sysroot is not None:
+                candidate = self.budget.policy.resolve(candidate, strict=False)
             if candidate.is_file():
                 try:
                     return candidate.resolve(strict=True)
@@ -1244,7 +1298,7 @@ def scan(
         path = queue.popleft()
         queued.remove(path)
         try:
-            canonical = path.resolve(strict=True)
+            canonical = budget.policy.resolve(path)
         except OSError as error:
             raise ScanError(f"{path}: cannot resolve file: {error}") from error
         if canonical in reports:
@@ -1277,21 +1331,24 @@ def scan(
         }
     )
     missing_records = [{"from": source, "name": name} for source, name in missing]
+    scope = {
+        "runtime_qualified": False,
+        "dependency_resolution": "filesystem-search-approximation",
+        "strict_checks": [
+            "missing-dependencies-if-recursive",
+            "missing-mandatory-glibc-symbols-if-providers",
+        ],
+        "limitations": [
+            "loader-search-order-and-scope-not-modeled",
+            "provider-symbol-versions-and-abi-not-verified",
+            "non-glibc-imports-not-checked",
+        ],
+    }
+    if budget.policy.sysroot is not None:
+        scope["sysroot"] = str(budget.policy.sysroot)
     return {
         "format": FORMAT_VERSION,
-        "scope": {
-            "runtime_qualified": False,
-            "dependency_resolution": "filesystem-search-approximation",
-            "strict_checks": [
-                "missing-dependencies-if-recursive",
-                "missing-mandatory-glibc-symbols-if-providers",
-            ],
-            "limitations": [
-                "loader-search-order-and-scope-not-modeled",
-                "provider-symbol-versions-and-abi-not-verified",
-                "non-glibc-imports-not-checked",
-            ],
-        },
+        "scope": scope,
         "roots": [str(path) for path in roots],
         "recursive": recursive,
         "objects": ordered_reports,
@@ -1445,7 +1502,7 @@ def _provider_analysis(
         budget.consume_work()
         budget.consume_path_chars(len(str(path)))
         try:
-            canonical = path.resolve(strict=True)
+            canonical = budget.policy.resolve(path)
         except OSError as error:
             raise ScanError(f"{path}: cannot resolve provider: {error}") from error
         if canonical not in seen_paths:
@@ -1533,6 +1590,8 @@ def text_report(report: dict[str, Any]) -> str:
         "non-GLIBC imports",
         "",
     ]
+    if "sysroot" in report["scope"]:
+        lines.insert(-1, f"sysroot: {report['scope']['sysroot']}")
     for item in report["objects"]:
         lines.append(item["path"])
         if item["soname"]:
@@ -1683,6 +1742,14 @@ def _parser() -> argparse.ArgumentParser:
         help="additional dependency/search directories (repeatable)",
     )
     parser.add_argument(
+        "--sysroot",
+        metavar="DIR",
+        help=(
+            "confine input/search paths to DIR; library paths are absolute "
+            "target paths, and ambient search variables are ignored"
+        ),
+    )
+    parser.add_argument(
         "--no-recursive",
         action="store_true",
         help="inspect only explicitly discovered roots",
@@ -1734,12 +1801,21 @@ def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
     try:
-        budget = ScanBudget()
+        policy = SearchPolicy(
+            Path(args.sysroot) if args.sysroot is not None else None
+        )
+        budget = ScanBudget(policy)
         configured_paths = _split_paths(args.library_path, budget)
-        if not configured_paths and os.environ.get("ELF_LIBRARY_PATH"):
+        if (
+            policy.sysroot is None and not configured_paths
+            and os.environ.get("ELF_LIBRARY_PATH")
+        ):
             configured_paths = _split_paths([os.environ["ELF_LIBRARY_PATH"]], budget)
         input_paths = args.paths
-        if not input_paths and os.environ.get("ELF_SCAN_PATHS"):
+        if (
+            policy.sysroot is None and not input_paths
+            and os.environ.get("ELF_SCAN_PATHS")
+        ):
             input_paths = [
                 str(path)
                 for path in _split_paths([os.environ["ELF_SCAN_PATHS"]], budget)
@@ -1747,6 +1823,7 @@ def main(argv: list[str] | None = None) -> int:
         library_paths = configured_paths + [
             Path(path) for path in DEFAULT_LIBRARY_PATHS
         ]
+        library_paths = [policy.target_path(path, budget) for path in library_paths]
         roots = discover_targets(input_paths, budget)
         report = scan(roots, library_paths, not args.no_recursive, budget)
         aliases = _provider_aliases(args.provider_alias)
