@@ -65,6 +65,14 @@ Synchronize external count reads and diagnostic-global changes with calls,
 and serialize locale changes separately. Custom program-name callbacks run under stderr's
 recursive stream lock with cancellation disabled.
 
+Obstack chunk sizes are hints, raised when necessary to fit the header and
+alignment padding. Zero selects defaults; nonzero alignment must be a power
+of two. Chunk spans are limited to `PTRDIFF_MAX`, since object and room sizes
+use pointer differences. Invalid alignment or unrepresentable growth invokes
+the allocation-failure handler with `EINVAL` or `EOVERFLOW`. That handler must
+exit or perform a non-local return; if it returns normally, the library aborts.
+The `_fast` macros remain unchecked and require callers to reserve room.
+
 ### Optional glibc binary runtime
 
 The runtime bridge provides:

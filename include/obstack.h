@@ -9,6 +9,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <errno.h>
+#include <stdlib.h>
 
 #if _OBSTACK_INTERFACE_VERSION == 1
 #define _OBSTACK_SIZE_T unsigned int
@@ -30,8 +32,9 @@
 #endif
 
 #ifndef __PTR_ALIGN
-#define __PTR_ALIGN(B, P, A) \
-    (sizeof(ptrdiff_t) < sizeof(void*) ? __BPTR_ALIGN(B, P, A) : (char*)(((ptrdiff_t)(P) + (A)) & ~(A)))
+#define __PTR_ALIGN(B, P, A)                                   \
+    (sizeof(ptrdiff_t) < sizeof(void*) ? __BPTR_ALIGN(B, P, A) \
+                                       : (char*)(((uintptr_t)(P) + (uintptr_t)(A)) & ~(uintptr_t)(A)))
 #endif
 
 #ifndef __attribute_pure__
@@ -100,6 +103,10 @@ struct obstack {
     unsigned alloc_failed : 1;
 };
 
+/* Zero selects default size/alignment. Alignment must be a power of two;
+   the size hint is raised to fit the chunk header and alignment padding.
+   Chunks cannot exceed PTRDIFF_MAX. Invalid alignment and unrepresentable
+   sizes invoke the failure handler with EINVAL and EOVERFLOW respectively. */
 extern int _obstack_begin(struct obstack*, _OBSTACK_SIZE_T, _OBSTACK_SIZE_T, void* (*)(size_t), void (*)(void*));
 extern int _obstack_begin_1(struct obstack*,
                             _OBSTACK_SIZE_T,
@@ -112,6 +119,12 @@ extern void _obstack_free(struct obstack*, void*);
 extern _OBSTACK_SIZE_T _obstack_memory_used(struct obstack*) __attribute_pure__;
 
 extern void (*obstack_alloc_failed_handler)(void);
+
+/* Failure handlers must not return. */
+static __inline__ __attribute__((__noreturn__)) void __obstack_alloc_failed(void) {
+    (*obstack_alloc_failed_handler)();
+    abort();
+}
 
 extern int obstack_exit_failure;
 
@@ -202,6 +215,10 @@ extern const char* name;
     __extension__({                             \
         struct obstack* __o = (H);              \
         _OBSTACK_SIZE_T __len = (length);       \
+        if (__len == (_OBSTACK_SIZE_T) - 1) {   \
+            errno = EOVERFLOW;                  \
+            __obstack_alloc_failed();           \
+        }                                       \
         if (obstack_room(__o) < __len + 1)      \
             _obstack_newchunk(__o, __len + 1);  \
         memcpy(__o->next_free, (where), __len); \
@@ -230,21 +247,22 @@ extern const char* name;
 
 #define obstack_blank_fast(H, length) ((H)->next_free += (length))
 
-#define obstack_finish(H)                                                       \
-    __extension__({                                                             \
-        struct obstack* __o1 = (H);                                             \
-        void* __value = (void*)__o1->object_base;                               \
-        if (__o1->next_free == __o1->object_base)                               \
-            __o1->maybe_empty_object = 1;                                       \
-        {                                                                       \
-            size_t __am = (size_t)__o1->alignment_mask;                         \
-            char* __tmp = (char*)(((uintptr_t)__o1->next_free + __am) & ~__am); \
-            if (__tmp > __o1->chunk_limit)                                      \
-                __tmp = __o1->chunk_limit;                                      \
-            __o1->next_free = __tmp;                                            \
-        }                                                                       \
-        __o1->object_base = __o1->next_free;                                    \
-        __value;                                                                \
+#define obstack_finish(H)                                                  \
+    __extension__({                                                        \
+        struct obstack* __o1 = (H);                                        \
+        void* __value = (void*)__o1->object_base;                          \
+        if (__o1->next_free == __o1->object_base)                          \
+            __o1->maybe_empty_object = 1;                                  \
+        {                                                                  \
+            size_t __am = (size_t)__o1->alignment_mask;                    \
+            size_t __padding = -(uintptr_t)__o1->next_free & __am;         \
+            size_t __room = (size_t)(__o1->chunk_limit - __o1->next_free); \
+            if (__padding > __room)                                        \
+                __padding = __room;                                        \
+            __o1->next_free += __padding;                                  \
+        }                                                                  \
+        __o1->object_base = __o1->next_free;                               \
+        __value;                                                           \
     })
 
 #define obstack_free(H, OBJ)                                                     \

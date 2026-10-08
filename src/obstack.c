@@ -29,15 +29,6 @@ static _OBSTACK_NORETURN void obstack_default_alloc_failed(void) {
 
 void (*obstack_alloc_failed_handler)(void) = obstack_default_alloc_failed;
 
-#ifndef __BPTR_ALIGN
-#define __BPTR_ALIGN(B, P, A) ((B) + ((((P) - (B)) + (A)) & ~(A)))
-#endif
-
-#ifndef __PTR_ALIGN
-#define __PTR_ALIGN(B, P, A) \
-    (sizeof(ptrdiff_t) < sizeof(void*) ? __BPTR_ALIGN(B, P, A) : (char*)(((ptrdiff_t)(P) + (A)) & ~(A)))
-#endif
-
 void xmalloc_failed(size_t size) {
     fprintf(stderr, "\nout of memory allocating %lu bytes\n", (unsigned long)size);
     exit(obstack_exit_failure);
@@ -71,6 +62,18 @@ static void call_freefun(struct obstack* h, void* chunk) {
     }
 }
 
+static size_t chunk_overhead(size_t mask, size_t base) {
+    if ((mask & (mask + 1)) != 0) {
+        errno = EINVAL;
+        __obstack_alloc_failed();
+    }
+    if (mask > (size_t)PTRDIFF_MAX - base) {
+        errno = EOVERFLOW;
+        __obstack_alloc_failed();
+    }
+    return base + mask;
+}
+
 static int _obstack_begin_worker(struct obstack* h, _OBSTACK_SIZE_T size, _OBSTACK_SIZE_T alignment) {
     if (alignment == 0) {
         alignment = DEFAULT_ALIGNMENT;
@@ -82,12 +85,19 @@ static int _obstack_begin_worker(struct obstack* h, _OBSTACK_SIZE_T size, _OBSTA
         size = 4096 - extra;
     }
 
+    size_t minimum = chunk_overhead(alignment - 1, sizeof(struct _obstack_chunk));
+    if (size < minimum)
+        size = minimum;
+    if ((size_t)size > (size_t)PTRDIFF_MAX) {
+        errno = EOVERFLOW;
+        __obstack_alloc_failed();
+    }
     h->chunk_size = size;
     h->alignment_mask = alignment - 1;
 
     struct _obstack_chunk* chunk = (struct _obstack_chunk*)call_chunkfun(h, h->chunk_size);
     if (!chunk) {
-        (*obstack_alloc_failed_handler)();
+        __obstack_alloc_failed();
     }
 
     chunk->prev = NULL;
@@ -133,29 +143,38 @@ void _obstack_newchunk(struct obstack* h, _OBSTACK_SIZE_T length) {
     struct _obstack_chunk* old_chunk = h->chunk;
     size_t obj_size = (size_t)(h->next_free - h->object_base);
 
+    if (length > (size_t)PTRDIFF_MAX - obj_size) {
+        errno = EOVERFLOW;
+        __obstack_alloc_failed();
+    }
     size_t new_size = obj_size + (size_t)length;
-    if (new_size < obj_size) {
-        (*obstack_alloc_failed_handler)();
-    }
 
-    if (SIZE_MAX - new_size < h->alignment_mask + 100) {
-        (*obstack_alloc_failed_handler)();
+    size_t base = sizeof(struct _obstack_chunk) > 100 ? sizeof(struct _obstack_chunk) : 100;
+    size_t overhead = chunk_overhead(h->alignment_mask, base);
+    if ((size_t)PTRDIFF_MAX - new_size < overhead) {
+        errno = EOVERFLOW;
+        __obstack_alloc_failed();
     }
-    new_size += h->alignment_mask + 100;
+    new_size += overhead;
 
     size_t growth = obj_size >> 3;
-    if (SIZE_MAX - new_size < growth) {
-        (*obstack_alloc_failed_handler)();
+    if ((size_t)PTRDIFF_MAX - new_size < growth) {
+        errno = EOVERFLOW;
+        __obstack_alloc_failed();
     }
     new_size += growth;
 
     if (new_size < h->chunk_size) {
         new_size = h->chunk_size;
     }
+    if (new_size > (size_t)PTRDIFF_MAX) {
+        errno = EOVERFLOW;
+        __obstack_alloc_failed();
+    }
 
     struct _obstack_chunk* new_chunk = (struct _obstack_chunk*)call_chunkfun(h, new_size);
     if (!new_chunk) {
-        (*obstack_alloc_failed_handler)();
+        __obstack_alloc_failed();
     }
     new_chunk->prev = old_chunk;
     new_chunk->limit = (char*)new_chunk + new_size;
