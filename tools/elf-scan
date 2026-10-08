@@ -30,6 +30,7 @@ MAX_SCAN_BYTES = 1024 * 1024 * 1024
 MAX_SCAN_OBJECTS = 4096
 MAX_SCAN_WORK = 1024 * 1024
 MAX_SCAN_STRING_BYTES = 64 * 1024 * 1024
+MAX_SCAN_PATH_CHARS = 64 * 1024 * 1024
 
 PT_LOAD = 1
 PT_DYNAMIC = 2
@@ -201,10 +202,12 @@ class ScanBudget:
         self.max_bytes = MAX_SCAN_BYTES
         self.max_work = MAX_SCAN_WORK
         self.max_string_bytes = MAX_SCAN_STRING_BYTES
+        self.max_path_chars = MAX_SCAN_PATH_CHARS
         self.objects = 0
         self.bytes = 0
         self.work = 0
         self.string_bytes = 0
+        self.path_chars = 0
 
     def check_pending(self, count: int) -> None:
         if count > self.max_objects - self.objects:
@@ -235,6 +238,13 @@ class ScanBudget:
 
     def remaining_string_bytes(self) -> int:
         return self.max_string_bytes - self.string_bytes
+
+    def consume_path_chars(self, count: int) -> None:
+        if count > self.max_path_chars - self.path_chars:
+            raise ScanError(
+                f"aggregate path character limit ({self.max_path_chars}) exceeded"
+            )
+        self.path_chars += count
 
     def consume_string_bytes(self, count: int) -> None:
         if count > self.remaining_string_bytes():
@@ -1030,10 +1040,15 @@ def _split_paths(values: Iterable[str]) -> list[Path]:
     return paths
 
 
-def _unique_paths(paths: Iterable[Path]) -> list[Path]:
+def _unique_paths(
+    paths: Iterable[Path], budget: ScanBudget | None = None
+) -> list[Path]:
     result: list[Path] = []
     seen: set[Path] = set()
     for path in paths:
+        if budget is not None:
+            budget.consume_work()
+            budget.consume_path_chars(len(str(path)))
         try:
             canonical = path.resolve(strict=True)
         except OSError:
@@ -1080,34 +1095,49 @@ def discover_targets(paths: list[str]) -> list[Path]:
 
 
 class DependencyResolver:
-    def __init__(self, library_paths: list[Path]):
-        self.library_paths = _unique_paths(library_paths)
+    def __init__(
+        self, library_paths: list[Path], budget: ScanBudget | None = None
+    ):
+        self.budget = budget if budget is not None else ScanBudget()
+        self.library_paths = _unique_paths(library_paths, self.budget)
 
-    @staticmethod
-    def _expand(path: str, origin: Path) -> Path | None:
-        path = path.replace("${ORIGIN}", str(origin)).replace(
-            "$ORIGIN", str(origin)
-        )
+    def _expand(self, path: str, origin: Path) -> Path | None:
+        replacement = str(origin)
+        for token in ("${ORIGIN}", "$ORIGIN"):
+            self.budget.consume_work()
+            self.budget.consume_path_chars(len(path) + len(replacement))
+            size = len(path) + path.count(token) * (len(replacement) - len(token))
+            self.budget.consume_path_chars(size)
+            path = path.replace(token, replacement)
         if "$" in path:
             return None
         return Path(path)
 
+    def _directories(
+        self, parent: Path, runpath: list[str]
+    ) -> Iterator[Path]:
+        for raw_path in runpath:
+            expanded = self._expand(raw_path, parent.parent)
+            if expanded is not None:
+                yield expanded
+        yield from self.library_paths
+        yield parent.parent
+
     def resolve(self, name: str, parent: Path, runpath: list[str]) -> Path | None:
+        self.budget.consume_work()
+        self.budget.consume_path_chars(len(name))
         if "/" in name:
+            self.budget.consume_path_chars(len(str(parent.parent)) + len(name) + 1)
             candidate = Path(name)
             if not candidate.is_absolute():
                 candidate = parent.parent / candidate
             if candidate.is_file():
                 return candidate.resolve()
             return None
-        candidates: list[Path] = []
-        for raw_path in runpath:
-            expanded = self._expand(raw_path, parent.parent)
-            if expanded is not None:
-                candidates.append(expanded / name)
-        candidates.extend(directory / name for directory in self.library_paths)
-        candidates.append(parent.parent / name)
-        for candidate in candidates:
+        for directory in self._directories(parent, runpath):
+            self.budget.consume_work()
+            self.budget.consume_path_chars(len(str(directory)) + len(name) + 1)
+            candidate = directory / name
             if candidate.is_file():
                 try:
                     return candidate.resolve(strict=True)
@@ -1123,7 +1153,7 @@ def scan(
     budget: ScanBudget | None = None,
 ) -> dict[str, Any]:
     budget = budget if budget is not None else ScanBudget()
-    resolver = DependencyResolver(library_paths)
+    resolver = DependencyResolver(library_paths, budget)
     queue: deque[Path] = deque()
     queued: set[Path] = set()
     for path in roots:
