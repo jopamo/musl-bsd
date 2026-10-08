@@ -1,6 +1,7 @@
 #include <error.h>
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,22 +14,42 @@ static void error_messagev(int status, int errnum, const char *fname,
 			   unsigned int lineno, const char *format,
 			   va_list ap, int with_location)
 {
-	static const char *last_fname;
+	static char *last_fname;
 	static unsigned int last_lineno;
+	static int have_last;
+	int cancel_state;
 
-	if (error_one_per_line && with_location && last_fname != NULL && fname != NULL &&
-	    last_lineno == lineno && strcmp(last_fname, fname) == 0)
-		return;
+	(void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cancel_state);
+	fflush(stdout);
+	flockfile(stderr);
+	if (error_one_per_line && with_location) {
+		int same_file = have_last && (fname == last_fname ||
+		    (fname != NULL && last_fname != NULL && strcmp(last_fname, fname) == 0));
+		if (same_file && last_lineno == lineno)
+			goto done;
+		if (!same_file) {
+			char *copy = fname != NULL ? strdup(fname) : NULL;
+			free(last_fname);
+			last_fname = copy;
+			/* An allocation failure drops suppression, not the diagnostic. */
+			have_last = fname == NULL || copy != NULL;
+		}
+		last_lineno = lineno;
+	}
 
 	if (error_print_progname != NULL) {
 		error_print_progname();
 	} else if (program_invocation_name != NULL &&
 		   program_invocation_name[0] != '\0') {
-		fprintf(stderr, "%s: ", program_invocation_name);
+		fprintf(stderr, "%s:%s", program_invocation_name, with_location ? "" : " ");
 	}
 
-	if (with_location && fname != NULL)
-		fprintf(stderr, "%s:%u: ", fname, lineno);
+	if (with_location) {
+		if (fname != NULL)
+			fprintf(stderr, "%s:%u: ", fname, lineno);
+		else
+			fputc(' ', stderr);
+	}
 
 	vfprintf(stderr, format, ap);
 
@@ -37,14 +58,13 @@ static void error_messagev(int status, int errnum, const char *fname,
 
 	fputc('\n', stderr);
 	error_message_count++;
-
-	if (with_location && fname != NULL) {
-		last_fname = fname;
-		last_lineno = lineno;
-	}
+	fflush(stderr);
 
 	if (status != 0)
 		exit(status);
+done:
+	funlockfile(stderr);
+	(void)pthread_setcancelstate(cancel_state, NULL);
 }
 
 void error(int status, int errnum, const char *format, ...)

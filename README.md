@@ -57,6 +57,14 @@ only when `invalid_byte` is non-null. Incomplete EOF is malformed input; a
 decoded NUL is `L'\0'`, not EOF. Keep the effective `LC_CTYPE` locale fixed for
 the reader's lifetime and do not interleave other reads or seeks on its stream.
 
+GNU-style `error()` and `error_at_line()` lock the whole stderr message and
+flush stdout before reporting. Per-line suppression owns its cached filename;
+allocation failure discards that cache rather than suppressing a diagnostic.
+Cancellation stays disabled until output is flushed and stderr is unlocked.
+Synchronize external count reads and diagnostic-global changes with calls,
+and serialize locale changes separately. Custom program-name callbacks run under stderr's
+recursive stream lock with cancellation disabled.
+
 ### Optional glibc binary runtime
 
 The runtime bridge provides:
