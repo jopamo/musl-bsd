@@ -16,6 +16,8 @@ from typing import Any
 SCHEMA_VERSION = 1
 INVENTORY_FORMAT = 1
 MAX_JSON_BYTES = 1024 * 1024 * 1024
+MAX_JSON_STRUCTURE = 16 * 1024 * 1024
+MAX_JSON_DEPTH = 64
 MANIFEST_SCOPE = "audited GLIBC-versioned compatibility symbols"
 QUALITIES = {"EXACT", "TRANSLATED", "DEGRADED", "STUB", "UNSUPPORTED"}
 SYMBOL_FIELDS = {
@@ -70,10 +72,40 @@ def _json_text(path: Path) -> str:
         os.close(fd)
 
 
+def _check_json_structure(text: str) -> None:
+    max_units, max_depth = MAX_JSON_STRUCTURE, MAX_JSON_DEPTH
+    units = depth = 0
+    quoted = escaped = False
+    for character in text:
+        if quoted:
+            if escaped:
+                escaped = False
+            elif character == "\\":
+                escaped = True
+            elif character == '"':
+                quoted = False
+            continue
+        if character in '{[":,':
+            units += 1
+            if units > max_units:
+                raise ManifestError(f"JSON structure limit ({max_units}) exceeded")
+        if character == '"':
+            quoted = True
+        elif character in "{[":
+            depth += 1
+            if depth > max_depth:
+                raise ManifestError(f"JSON nesting depth limit ({max_depth}) exceeded")
+        elif character in "}]":
+            depth -= 1
+    # The decoder, not this resource check, owns JSON syntax validation.
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     try:
+        text = _json_text(path)
+        _check_json_structure(text)
         value = json.loads(
-            _json_text(path),
+            text,
             object_pairs_hook=_unique_object,
             parse_constant=_reject_constant,
         )

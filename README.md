@@ -391,6 +391,10 @@ types and duplicate object reports are rejected before policy generation.
 JSON inputs must be regular files and cannot exceed 1 GiB each. Size checks
 and bounded reads use one descriptor; growth after the size check cannot
 bypass the byte limit. This does not freeze concurrent in-place edits.
+Before decoding objects, a lexical guard caps nesting at 64 and structural
+units at 16,777,216 per file. Units count string openings, object/array
+openings, commas and colons outside strings. Quoted/escaped punctuation does
+not consume structural units; the JSON decoder still validates syntax.
 The manifest's exact-field schema remains unchanged. Validate it with:
 
 ```sh
