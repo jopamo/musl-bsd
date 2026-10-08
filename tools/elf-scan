@@ -11,7 +11,7 @@ not to become a new compatibility manifest by itself.
 from __future__ import annotations
 
 import argparse
-import glob
+import fnmatch
 import json
 import os
 from pathlib import Path
@@ -31,6 +31,7 @@ MAX_SCAN_OBJECTS = 4096
 MAX_SCAN_WORK = 1024 * 1024
 MAX_SCAN_STRING_BYTES = 64 * 1024 * 1024
 MAX_SCAN_PATH_CHARS = 64 * 1024 * 1024
+MAX_DISCOVERY_ENTRIES = 65536
 
 PT_LOAD = 1
 PT_DYNAMIC = 2
@@ -203,11 +204,13 @@ class ScanBudget:
         self.max_work = MAX_SCAN_WORK
         self.max_string_bytes = MAX_SCAN_STRING_BYTES
         self.max_path_chars = MAX_SCAN_PATH_CHARS
+        self.max_discovery_entries = MAX_DISCOVERY_ENTRIES
         self.objects = 0
         self.bytes = 0
         self.work = 0
         self.string_bytes = 0
         self.path_chars = 0
+        self.discovery_entries = 0
 
     def check_pending(self, count: int) -> None:
         if count > self.max_objects - self.objects:
@@ -245,6 +248,14 @@ class ScanBudget:
                 f"aggregate path character limit ({self.max_path_chars}) exceeded"
             )
         self.path_chars += count
+
+    def discover_entry(self) -> None:
+        if self.discovery_entries >= self.max_discovery_entries:
+            raise ScanError(
+                f"target discovery entry limit ({self.max_discovery_entries}) exceeded"
+            )
+        self.consume_work()
+        self.discovery_entries += 1
 
     def consume_string_bytes(self, count: int) -> None:
         if count > self.remaining_string_bytes():
@@ -1031,9 +1042,14 @@ class ELFFile:
         return exported
 
 
-def _split_paths(values: Iterable[str]) -> list[Path]:
+def _split_paths(
+    values: Iterable[str], budget: ScanBudget | None = None
+) -> list[Path]:
     paths: list[Path] = []
     for value in values:
+        if budget is not None:
+            budget.consume_path_chars(len(value))
+            budget.consume_work(value.count(":") + 1)
         for item in value.split(":"):
             if item:
                 paths.append(Path(item))
@@ -1059,36 +1075,97 @@ def _unique_paths(
     return result
 
 
-def _is_elf(path: Path) -> bool:
+def _is_elf(path: Path, budget: ScanBudget | None = None) -> bool:
+    if budget is not None:
+        budget.consume_work()
     try:
         with _regular_file(path) as (fd, _metadata):
-            return os.read(fd, 4) == b"\x7fELF"
+            size = 4 if budget is None else min(4, budget.remaining_bytes() + 1)
+            magic = os.read(fd, size)
     except (OSError, ScanError):
         return False
+    if budget is not None:
+        budget.consume_bytes(len(magic))
+    return magic == b"\x7fELF"
 
 
-def discover_targets(paths: list[str]) -> list[Path]:
+def _directory_entries(
+    path: Path, budget: ScanBudget, strict: bool = False
+) -> Iterator[os.DirEntry]:
+    try:
+        with os.scandir(path) as entries:
+            for entry in entries:
+                budget.discover_entry()
+                budget.consume_path_chars(len(str(path)) + len(entry.name) + 1)
+                yield entry
+    except OSError as error:
+        if strict:
+            raise ScanError(f"{path}: cannot list directory: {error}") from error
+
+
+def _glob_matches(value: str, budget: ScanBudget) -> list[Path]:
+    budget.consume_work(value.count("/") + 1)
+    components = [part for part in value.split("/") if part]
+    paths = [Path("/") if value.startswith("/") else Path(".")]
+    for index, component in enumerate(components):
+        final = index == len(components) - 1
+        matches: list[Path] = []
+        for parent in paths:
+            if any(character in component for character in "*?["):
+                for entry in _directory_entries(parent, budget):
+                    budget.consume_path_chars(len(component) + len(entry.name))
+                    if entry.name.startswith(".") and not component.startswith("."):
+                        continue
+                    if not fnmatch.fnmatchcase(entry.name, component):
+                        continue
+                    candidate = Path(entry.path)
+                    if not final or value.endswith("/"):
+                        if not candidate.is_dir():
+                            continue
+                    matches.append(candidate)
+            else:
+                budget.discover_entry()
+                budget.consume_path_chars(len(str(parent)) + len(component) + 1)
+                candidate = parent / component
+                directory_only = not final or value.endswith("/")
+                exists = (
+                    candidate.is_dir() if directory_only else os.path.lexists(candidate)
+                )
+                if exists:
+                    matches.append(candidate)
+        paths = matches
+        if not paths:
+            break
+    return sorted(paths, key=str)
+
+
+def discover_targets(
+    paths: list[str], budget: ScanBudget | None = None
+) -> list[Path]:
+    budget = budget if budget is not None else ScanBudget()
     result: list[Path] = []
     for value in paths:
+        budget.discover_entry()
+        budget.consume_path_chars(len(value))
         path = Path(value)
         if any(character in value for character in "*?["):
-            matches = [Path(match) for match in sorted(glob.glob(value))]
+            matches = _glob_matches(value, budget)
             if not matches:
                 raise ScanError(f"{value}: no files matched")
             result.extend(matches)
         elif path.is_dir():
-            try:
-                candidates = sorted(path.iterdir())
-            except OSError as error:
-                raise ScanError(f"{path}: cannot list directory: {error}") from error
-            for candidate in candidates:
-                if candidate.is_file() and _is_elf(candidate):
-                    result.append(candidate)
+            candidates: list[Path] = []
+            for entry in _directory_entries(path, budget, strict=True):
+                candidate = Path(entry.path)
+                if candidate.is_file() and _is_elf(candidate, budget):
+                    candidates.append(candidate)
+            for candidate in sorted(candidates):
+                result.append(candidate)
         elif path.is_file():
             result.append(path)
         else:
             raise ScanError(f"{path}: file or directory does not exist")
-    result = _unique_paths(result)
+    result = _unique_paths(result, budget)
     if not result:
         raise ScanError("no ELF files found; pass an ELF file, directory, or glob")
     return result
@@ -1352,6 +1429,8 @@ def _provider_analysis(
     canonical_paths: list[Path] = []
     seen_paths: set[Path] = set()
     for path in provider_paths:
+        budget.consume_work()
+        budget.consume_path_chars(len(str(path)))
         try:
             canonical = path.resolve(strict=True)
         except OSError as error:
@@ -1630,20 +1709,21 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
-    configured_paths = _split_paths(args.library_path)
-    if not configured_paths and os.environ.get("ELF_LIBRARY_PATH"):
-        configured_paths = _split_paths([os.environ["ELF_LIBRARY_PATH"]])
-    input_paths = args.paths
-    if not input_paths and os.environ.get("ELF_SCAN_PATHS"):
-        input_paths = [
-            str(path) for path in _split_paths([os.environ["ELF_SCAN_PATHS"]])
-        ]
-    library_paths = _unique_paths(
-        configured_paths + [Path(path) for path in DEFAULT_LIBRARY_PATHS]
-    )
     try:
-        roots = discover_targets(input_paths)
         budget = ScanBudget()
+        configured_paths = _split_paths(args.library_path, budget)
+        if not configured_paths and os.environ.get("ELF_LIBRARY_PATH"):
+            configured_paths = _split_paths([os.environ["ELF_LIBRARY_PATH"]], budget)
+        input_paths = args.paths
+        if not input_paths and os.environ.get("ELF_SCAN_PATHS"):
+            input_paths = [
+                str(path)
+                for path in _split_paths([os.environ["ELF_SCAN_PATHS"]], budget)
+            ]
+        library_paths = configured_paths + [
+            Path(path) for path in DEFAULT_LIBRARY_PATHS
+        ]
+        roots = discover_targets(input_paths, budget)
         report = scan(roots, library_paths, not args.no_recursive, budget)
         aliases = _provider_aliases(args.provider_alias)
         if aliases and not args.provider:

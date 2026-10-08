@@ -303,19 +303,21 @@ Inputs must be regular files. Size checks and reads use one opened descriptor;
 reads stop with an error if input exceeds 512 MiB, including growth after
 the size check. GNU hash inspection caps aggregate bucket/chain work at
 16,777,216 steps per table and checks file-backed prefix/chain ranges.
-Each invocation permits at most 4,096 ELF reads and 1 GiB of full-input
-bytes across roots, dependencies and providers. Re-reading a graph object
+Each invocation permits at most 4,096 ELF reads and 1 GiB of input bytes
+across discovery probes, roots, dependencies and providers. Re-reading a graph object
 as a provider counts again. Limit failures do not emit a partial inventory.
 Parser/resolver work is capped at 1,048,576 units across structure reads,
 string reads, address-mapping candidates, search-path splitting, configured
-path canonicalization, expansion passes and dependency candidates. String searches and
-decodes share a 64 MiB source-byte allowance, including terminators and
-repeated names. Resolver path processing shares a separate 64 Mi-character
-allowance, charging expansion inputs/results and candidate joins before
+path canonicalization, discovery candidates, expansion passes and dependency
+candidates. String searches and decodes share a 64 MiB source-byte allowance,
+including terminators and repeated names. Path processing shares a separate
+64 Mi-character allowance, charging expansion inputs/results and candidate joins before
 allocation. Searches stop after a match rather than materializing every
 candidate. Search order and sequential ORIGIN replacement remain unchanged.
-These caps do not yet cover target discovery and do not bound filesystem
-operation latency.
+Discovery streams directory entries and glob components, allowing at most
+65,536 entries (including nonmatches and explicit/literal candidates) before
+sorting bounded results. Configured path splitting is charged before allocation.
+These caps do not bound filesystem operation latency.
 This does not freeze in-place file changes or snapshot a
 dependency graph.
 
