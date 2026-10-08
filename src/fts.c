@@ -128,7 +128,7 @@ static int cycle_init(struct cycle_state*);
 static void cycle_free(struct cycle_state*);
 static FTSENT* cycle_lookup(struct cycle_state*, dev_t, ino_t);
 static int cycle_insert(struct cycle_state*, dev_t, ino_t, FTSENT*);
-static void cycle_remove(struct cycle_state*, dev_t, ino_t);
+static void cycle_remove(struct cycle_state*, dev_t, ino_t, FTSENT*);
 static int fts_cycle_push(FTS*, FTSENT*);
 static void fts_cycle_pop(FTS*, FTSENT*);
 
@@ -377,6 +377,7 @@ FTSENT* fts_read(FTS* sp) {
     p->fts_instr = FTS_NOINSTR;
 
     if (instr == FTS_AGAIN) {
+        fts_cycle_pop(sp, p);
         p->fts_info = fts_stat(sp, p, 0, -1);
         return fts_return_dir(p);
     }
@@ -1188,14 +1189,14 @@ static int cycle_insert(struct cycle_state* cs, dev_t dev, ino_t ino, FTSENT* en
     return 0;
 }
 
-static void cycle_remove(struct cycle_state* cs, dev_t dev, ino_t ino) {
+static void cycle_remove(struct cycle_state* cs, dev_t dev, ino_t ino, FTSENT* owner) {
     if (!cs || !cs->buckets)
         return;
     size_t idx = cycle_hash(dev, ino, cs->nbuckets);
     struct cycle_entry** prev = &cs->buckets[idx];
     while (*prev) {
         struct cycle_entry* e = *prev;
-        if (e->dev == dev && e->ino == ino) {
+        if (e->dev == dev && e->ino == ino && e->ent == owner) {
             *prev = e->next;
             free(e);
             return;
@@ -1223,7 +1224,7 @@ static void fts_cycle_pop(FTS* sp, FTSENT* p) {
         case FTS_DNR:
         case FTS_DP:
         case FTS_ERR:
-            cycle_remove(CYCLE_STATE(sp), p->fts_dev, p->fts_ino);
+            cycle_remove(CYCLE_STATE(sp), p->fts_dev, p->fts_ino, p);
             break;
         default:
             break;
