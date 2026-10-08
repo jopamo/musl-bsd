@@ -45,6 +45,10 @@
 #endif
 
 static volatile sig_atomic_t signo[_NSIG];
+static const int caught_signals[] = {
+	SIGALRM, SIGHUP, SIGINT, SIGPIPE, SIGQUIT, SIGTERM,
+	SIGTSTP, SIGTTIN, SIGTTOU
+};
 
 static void handler(int);
 
@@ -53,10 +57,12 @@ readpassphrase(const char *prompt, char *buf, size_t bufsiz, int flags)
 {
 	ssize_t nr;
 	int input, output, save_errno, i, need_restart, tty_opened;
+	int setup_done, restore_error;
+	size_t installed;
+	unsigned char restored[_NSIG];
 	char ch, *p, *end;
 	struct termios term, oterm;
-	struct sigaction sa, savealrm, saveint, savehup, savequit, saveterm;
-	struct sigaction savetstp, savettin, savettou, savepipe;
+	struct sigaction sa, saved[sizeof(caught_signals) / sizeof(caught_signals[0])];
 
 	/* I suppose we could alloc on demand in this case (XXX). */
 	if (bufsiz == 0) {
@@ -71,6 +77,9 @@ restart:
 	nr = -1;
 	save_errno = 0;
 	need_restart = 0;
+	setup_done = restore_error = 0;
+	installed = 0;
+	memset(restored, 0, sizeof(restored));
 	/*
 	 * Read and write to /dev/tty if available.  If not, read from
 	 * stdin and write to stderr unless a tty is required.
@@ -121,15 +130,13 @@ restart:
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = 0;		/* don't restart system calls */
 	sa.sa_handler = handler;
-	(void)sigaction(SIGALRM, &sa, &savealrm);
-	(void)sigaction(SIGHUP, &sa, &savehup);
-	(void)sigaction(SIGINT, &sa, &saveint);
-	(void)sigaction(SIGPIPE, &sa, &savepipe);
-	(void)sigaction(SIGQUIT, &sa, &savequit);
-	(void)sigaction(SIGTERM, &sa, &saveterm);
-	(void)sigaction(SIGTSTP, &sa, &savetstp);
-	(void)sigaction(SIGTTIN, &sa, &savettin);
-	(void)sigaction(SIGTTOU, &sa, &savettou);
+	for (; installed < sizeof(caught_signals) / sizeof(caught_signals[0]); installed++) {
+		if (sigaction(caught_signals[installed], &sa, &saved[installed]) == -1) {
+			save_errno = errno;
+			goto restore;
+		}
+	}
+	setup_done = 1;
 
 	if (!(flags & RPP_STDIN))
 		(void)write(output, prompt, strlen(prompt));
@@ -153,35 +160,55 @@ restart:
 	if (!(term.c_lflag & ECHO))
 		(void)write(output, "\n", 1);
 
-	/* Restore old terminal settings and signals. */
+restore:
+	/* Restore only state that this invocation acquired. */
 	if (memcmp(&term, &oterm, sizeof(term)) != 0) {
 		const int sigttou = signo[SIGTTOU];
 
 		/* Ignore SIGTTOU generated when we are not the fg pgrp. */
-		while (tcsetattr(input, TCSAFLUSH|TCSASOFT, &oterm) == -1 &&
-		    errno == EINTR && !signo[SIGTTOU])
-			continue;
+		int result;
+		do {
+			result = tcsetattr(input, TCSAFLUSH|TCSASOFT, &oterm);
+		} while (result == -1 && errno == EINTR && !signo[SIGTTOU]);
+		if (result == -1) {
+			if (nr != -1 || !save_errno)
+				save_errno = errno;
+			nr = -1;
+			restore_error = 1;
+		}
 		signo[SIGTTOU] = sigttou;
 	}
-	(void)sigaction(SIGALRM, &savealrm, NULL);
-	(void)sigaction(SIGHUP, &savehup, NULL);
-	(void)sigaction(SIGINT, &saveint, NULL);
-	(void)sigaction(SIGQUIT, &savequit, NULL);
-	(void)sigaction(SIGPIPE, &savepipe, NULL);
-	(void)sigaction(SIGTERM, &saveterm, NULL);
-	(void)sigaction(SIGTSTP, &savetstp, NULL);
-	(void)sigaction(SIGTTIN, &savettin, NULL);
-	(void)sigaction(SIGTTOU, &savettou, NULL);
-	if (tty_opened)
-		(void)close(input);
+	for (size_t action = 0; action < installed; action++) {
+		int sig = caught_signals[action];
+		if (sigaction(sig, &saved[action], NULL) == -1) {
+			if (nr != -1 || !save_errno)
+				save_errno = errno;
+			nr = -1;
+			restore_error = 1;
+		} else {
+			restored[sig] = 1;
+		}
+	}
+	if (tty_opened && close(input) == -1) {
+		if (nr != -1 || !save_errno)
+			save_errno = errno;
+		nr = -1;
+		restore_error = 1;
+	}
 
 	/*
 	 * If we were interrupted by a signal, resend it to ourselves
 	 * now that we have restored the signal handlers.
 	 */
 	for (i = 0; i < _NSIG; i++) {
-		if (signo[i]) {
-			kill(getpid(), i);
+		if (signo[i] && restored[i]) {
+			if (kill(getpid(), i) == -1) {
+				if (nr != -1 || !save_errno)
+					save_errno = errno;
+				nr = -1;
+				restore_error = 1;
+				continue;
+			}
 			switch (i) {
 			case SIGTSTP:
 			case SIGTTIN:
@@ -190,7 +217,7 @@ restart:
 			}
 		}
 	}
-	if (need_restart)
+	if (need_restart && setup_done && !restore_error)
 		goto restart;
 
 	if (save_errno)

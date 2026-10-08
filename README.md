@@ -28,8 +28,12 @@ The project has two distinct roles:
 
 The passphrase implementation is derived from OpenBSD via libbsd commit
 `5d2dcb1b729d1faebc09aec5e78909efe10eed1d`, retaining its ISC license.
-It preserves the BSD flags, terminal restoration, and signal redelivery.
-Terminal setup failures are rejected before prompting or reading.
+It retains the BSD flags and attempts terminal and signal restoration before
+redelivery. Setup failures are rejected before prompting or reading. Cleanup
+failures return `NULL` without returning input; the first input/setup error
+takes precedence over a later cleanup error. A refused restoration can leave
+process state changed. Signals are resent only after their original action
+is restored.
 Like the BSD interface, it changes process-wide signal handlers; callers
 must serialize its use. It is not a cryptographic primitive or an RNG.
 
