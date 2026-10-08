@@ -451,43 +451,75 @@ class ELFFile:
     def _version_requirements(self) -> dict[int, dict[str, str]]:
         result: dict[int, dict[str, str]] = {}
         address = self.dynamic.get(DT_VERNEED)
-        count = self.dynamic.get(DT_VERNEEDNUM, 0)
-        if address is None:
+        count = self.dynamic.get(DT_VERNEEDNUM)
+        if address is None and count is None:
             return result
-        if count > MAX_TABLE_ENTRIES:
-            raise ScanError(f"{self.path}: unreasonable version-need count")
-        current = self._address_range(address, 16, "DT_VERNEED")
+        if address is None or count is None or not 0 < count <= MAX_TABLE_ENTRIES:
+            raise ScanError(f"{self.path}: invalid version-need address/count")
+        current = address
+        total_aux = 0
+        record_starts: set[int] = set()
+
+        def record_offset(location: int, what: str) -> int:
+            offset = self._address_range(location, 16, what)
+            if any(
+                start in record_starts
+                for start in range(location - 15, location + 16)
+            ):
+                raise ScanError(f"{self.path}: overlapping version-need records")
+            record_starts.add(location)
+            return offset
+
         for need_index in range(count):
             version, aux_count, file_offset, aux_offset, next_offset = (
                 self.reader.unpack(
-                    "<HHIII", current, f"version need {need_index}"
+                    "<HHIII",
+                    record_offset(current, "DT_VERNEED"),
+                    f"version need {need_index}",
                 )
             )
-            if version == 0 or aux_count == 0:
+            if version != 1 or aux_count == 0 or aux_offset < 16:
                 raise ScanError(f"{self.path}: malformed version need entry")
+            total_aux += aux_count
+            if total_aux > min(MAX_TABLE_ENTRIES, 0x7FFE):
+                raise ScanError(
+                    f"{self.path}: unreasonable version-need auxiliary count"
+                )
             library = self._string(file_offset, "version-need library")
+            if not library:
+                raise ScanError(f"{self.path}: empty version-need library")
             aux = current + aux_offset
             for aux_index in range(aux_count):
                 _hash, flags, other, name_offset, next_aux = self.reader.unpack(
                     "<IHHII",
-                    aux,
+                    record_offset(aux, "version-need auxiliary"),
                     f"version need auxiliary {need_index}:{aux_index}",
                 )
-                result[other] = {
-                    "version": self._string(name_offset, "version-need name"),
+                version_index = other & 0x7FFF
+                if version_index < 2 or version_index in result:
+                    raise ScanError(
+                        f"{self.path}: invalid or duplicate version-need index"
+                    )
+                name = self._string(name_offset, "version-need name")
+                if not name:
+                    raise ScanError(f"{self.path}: empty version-need name")
+                result[version_index] = {
+                    "version": name,
                     "library": library,
                     "flags": str(flags),
                 }
-                if next_aux == 0:
-                    break
-                if next_aux < 16:
+                if (
+                    aux_index + 1 == aux_count and next_aux != 0
+                    or aux_index + 1 < aux_count and next_aux < 16
+                ):
                     raise ScanError(
                         f"{self.path}: malformed version-need auxiliary link"
                     )
                 aux += next_aux
-            if next_offset == 0:
-                break
-            if next_offset < 16:
+            if (
+                need_index + 1 == count and next_offset != 0
+                or need_index + 1 < count and next_offset < 16
+            ):
                 raise ScanError(f"{self.path}: malformed version-need link")
             current += next_offset
         return result
@@ -503,6 +535,11 @@ class ELFFile:
         count = self._symbol_count()
         offset = self._address_range(address, count * syment, "dynamic symbols")
         version_address = self.dynamic.get(DT_VERSYM)
+        if version_address is None and any(
+            tag in self.dynamic
+            for tag in (DT_VERNEED, DT_VERNEEDNUM, DT_VERDEF, DT_VERDEFNUM)
+        ):
+            raise ScanError(f"{self.path}: version metadata without DT_VERSYM")
         versions: list[int] = []
         if version_address is not None:
             version_offset = self._address_range(
@@ -530,6 +567,11 @@ class ELFFile:
                 version_index = versions[index] & 0x7FFF
                 hidden = bool(versions[index] & 0x8000)
                 version = requirements.get(version_index)
+                if shndx == SHN_UNDEF and version_index >= 2 and version is None:
+                    raise ScanError(
+                        f"{self.path}: undefined symbol {index} has "
+                        f"unmapped version index {version_index}"
+                    )
             symbols.append(
                 {
                     "index": index,
