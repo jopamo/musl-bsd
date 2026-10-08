@@ -377,8 +377,10 @@ ssize_t __argp_fmtstream_printf(struct argp_fmtstream* fs, const char* fmt, ...)
         avail = fs->end - fs->p;
         out = vsnprintf(fs->p, avail, fmt, args);
         va_end(args);
+        if (out < 0)
+            return -1;
         if ((size_t)out >= avail)
-            size_guess = out + 1;
+            size_guess = (size_t)out + 1;
     } while ((size_t)out >= avail);
 
     fs->p += out;
