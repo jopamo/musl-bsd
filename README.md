@@ -161,6 +161,9 @@ User `LD_PRELOAD` entries are preserved rather than rewritten.
 The interpreter resolves the target to an absolute path before application
 code runs. The `/proc/self/exe` and re-execution adapters reuse that path even
 after a working-directory change; `argv[0]` remains the caller's original value.
+Re-execution with an empty argument vector supplies an empty `argv[0]`, as
+Linux does for a direct exec. A truncated executable path is rejected with
+`ENAMETOOLONG` rather than passed to the loader.
 
 ---
 
