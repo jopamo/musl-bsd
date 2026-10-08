@@ -1279,6 +1279,19 @@ def scan(
     missing_records = [{"from": source, "name": name} for source, name in missing]
     return {
         "format": FORMAT_VERSION,
+        "scope": {
+            "runtime_qualified": False,
+            "dependency_resolution": "filesystem-search-approximation",
+            "strict_checks": [
+                "missing-dependencies-if-recursive",
+                "missing-mandatory-glibc-symbols-if-providers",
+            ],
+            "limitations": [
+                "loader-search-order-and-scope-not-modeled",
+                "provider-symbol-versions-and-abi-not-verified",
+                "non-glibc-imports-not-checked",
+            ],
+        },
         "roots": [str(path) for path in roots],
         "recursive": recursive,
         "objects": ordered_reports,
@@ -1487,6 +1500,8 @@ def _provider_analysis(
 
     return {
         "matching_policy": "musl-name-based-runtime-resolution",
+        "scope": "exported-name-membership-only",
+        "runtime_qualified": False,
         "providers": providers,
         "aliases": [
             {"required": required, "provided": provided}
@@ -1510,6 +1525,12 @@ def text_report(report: dict[str, Any]) -> str:
         "ELF compatibility inventory",
         f"format: {report['format']}",
         f"roots: {len(report['roots'])}",
+        "runtime ABI qualification: not established",
+        f"dependency resolution: {report['scope']['dependency_resolution']}",
+        "strict checks: missing dependencies if recursive; "
+        "missing mandatory GLIBC symbols if providers supplied",
+        "not checked: loader search order/scope, provider symbol versions/ABI, "
+        "non-GLIBC imports",
         "",
     ]
     for item in report["objects"]:
@@ -1619,7 +1640,9 @@ def text_report(report: dict[str, Any]) -> str:
         lines.extend(
             [
                 "",
-                "Runtime provider analysis",
+                "Provider name analysis",
+                f"  scope: {analysis['scope']}",
+                "  runtime ABI qualification: not established",
                 f"  matching policy: {analysis['matching_policy']}",
                 f"  providers: {len(analysis['providers'])}",
                 f"  provided requirements: {analysis['provided_count']}",
@@ -1680,7 +1703,8 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help=(
             "return failure when a DT_NEEDED dependency or provider-backed "
-            "symbol requirement cannot be resolved"
+            "mandatory GLIBC symbol requirement cannot be resolved; "
+            "does not qualify runtime ABI compatibility"
         ),
     )
     parser.add_argument(

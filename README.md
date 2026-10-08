@@ -344,7 +344,13 @@ tools/elf-scan --format json \
 
 Provider aliases are accepted only when a configured provider exports the
 aliased symbol. Use `--strict` to fail on unresolved mandatory dependencies or
-provider-backed symbol requirements. Unresolved weak imports remain optional.
+provider-backed GLIBC symbol requirements. Unresolved weak imports remain optional.
+JSON `scope` and text reports identify dependency resolution as a filesystem
+search approximation, not runtime qualification. Provider analysis checks
+exported-name membership, not loader scope/order, symbol-version selection
+or semantic ABI compatibility. The historical `matching_policy` identifier
+remains for manifest interoperability; it does not establish those contracts.
+`--strict` does not check every non-GLIBC import.
 
 ### Compatibility manifest
 
