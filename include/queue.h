@@ -292,21 +292,17 @@ static inline void XSIMPLEQ_INIT_impl(void** first, void*** last, unsigned long*
         (listelm)->field.sqx_next = XSIMPLEQ_XOR(head, (elm));                               \
     } while (0)
 
-struct __xhead {
-    void* sqx_next;
-};
-
 #define XSIMPLEQ_REMOVE_HEAD(head, field)                                                        \
     do {                                                                                         \
-        struct __xhead* tmp = (struct __xhead*)XSIMPLEQ_FIRST(head);                             \
-        if (((head)->sqx_first = XSIMPLEQ_XOR(head, tmp->sqx_next)) == XSIMPLEQ_XOR(head, NULL)) \
+        __typeof((head)->sqx_first) __sqx_entry = XSIMPLEQ_FIRST(head);                           \
+        if (((head)->sqx_first = __sqx_entry->field.sqx_next) == XSIMPLEQ_XOR(head, NULL))        \
             (head)->sqx_last = XSIMPLEQ_XOR(head, &(head)->sqx_first);                           \
     } while (0)
 
 #define XSIMPLEQ_REMOVE_AFTER(head, elm, field)                                                      \
     do {                                                                                             \
-        struct __xhead* tmp = (struct __xhead*)XSIMPLEQ_NEXT(head, elm, field);                      \
-        if (((elm)->field.sqx_next = XSIMPLEQ_XOR(head, tmp->sqx_next)) == XSIMPLEQ_XOR(head, NULL)) \
+        __typeof((head)->sqx_first) __sqx_entry = XSIMPLEQ_NEXT(head, elm, field);                   \
+        if (((elm)->field.sqx_next = __sqx_entry->field.sqx_next) == XSIMPLEQ_XOR(head, NULL))      \
             (head)->sqx_last = XSIMPLEQ_XOR(head, &(elm)->field.sqx_next);                           \
     } while (0)
 
