@@ -13,6 +13,7 @@ from typing import Any
 
 
 SCHEMA_VERSION = 1
+INVENTORY_FORMAT = 1
 MANIFEST_SCOPE = "audited GLIBC-versioned compatibility symbols"
 QUALITIES = {"EXACT", "TRANSLATED", "DEGRADED", "STUB", "UNSUPPORTED"}
 SYMBOL_FIELDS = {
@@ -30,10 +31,27 @@ class ManifestError(Exception):
     """Manifest input is incomplete, malformed, or inconsistent."""
 
 
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ManifestError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
+def _reject_constant(value: str) -> None:
+    raise ManifestError(f"non-JSON numeric constant {value}")
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+        value = json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_unique_object,
+            parse_constant=_reject_constant,
+        )
+    except (OSError, UnicodeError, ValueError, RecursionError, ManifestError) as error:
         raise ManifestError(f"{path}: cannot read JSON: {error}") from error
     if not isinstance(value, dict):
         raise ManifestError(f"{path}: top-level JSON value must be an object")
@@ -51,6 +69,13 @@ def _require_bool(item: dict[str, Any], field: str, context: str) -> bool:
     value = item.get(field)
     if not isinstance(value, bool):
         raise ManifestError(f"{context}: {field} must be a boolean")
+    return value
+
+
+def _require_count(item: dict[str, Any], field: str, context: str) -> int:
+    value = item.get(field)
+    if type(value) is not int or value < 0:
+        raise ManifestError(f"{context}: {field} must be a nonnegative integer")
     return value
 
 
@@ -86,6 +111,8 @@ def _provider_implementation(item: dict[str, Any], context: str) -> str:
     ):
         raise ManifestError(f"{context}: providers must be a non-empty string list")
     names = {Path(path).name for path in providers}
+    if "" in names:
+        raise ManifestError(f"{context}: providers must name files")
     if any(name.startswith("libmusl-bsd-glibc-host.so") for name in names):
         provider = "musl-bsd-core"
     elif "libc.so" in names:
@@ -108,6 +135,8 @@ def _require_list(value: Any, context: str) -> list[Any]:
 def _inventory_requirements(
     inventory: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], dict[tuple[str, str, str, str], str]]:
+    if _require_count(inventory, "format", "inventory") != INVENTORY_FORMAT:
+        raise ManifestError(f"unsupported inventory format {inventory['format']!r}")
     summary = inventory.get("summary")
     analysis = inventory.get("provider_analysis")
     if not isinstance(summary, dict) or not isinstance(analysis, dict):
@@ -120,7 +149,10 @@ def _inventory_requirements(
     )
     if analysis.get("matching_policy") != "musl-name-based-runtime-resolution":
         raise ManifestError("inventory uses an unsupported provider matching policy")
-    if analysis.get("missing_count") != 0:
+    missing = _require_list(analysis.get("missing"), "provider_analysis.missing")
+    if _require_count(analysis, "missing_count", "provider_analysis") != len(missing):
+        raise ManifestError("provider_analysis.missing_count is inconsistent")
+    if missing:
         raise ManifestError("inventory has unresolved mandatory provider requirements")
 
     provided = _require_list(
@@ -130,31 +162,36 @@ def _inventory_requirements(
         analysis.get("unresolved_weak"),
         "provider_analysis.unresolved_weak",
     )
-    if analysis.get("provided_count") != len(provided):
+    if (
+        _require_count(analysis, "provided_count", "provider_analysis")
+        != len(provided)
+    ):
         raise ManifestError("provider_analysis.provided_count is inconsistent")
-    if analysis.get("unresolved_weak_count") != len(unresolved_weak):
+    if (
+        _require_count(analysis, "unresolved_weak_count", "provider_analysis")
+        != len(unresolved_weak)
+    ):
         raise ManifestError(
             "provider_analysis.unresolved_weak_count is inconsistent"
         )
     implementations: dict[tuple[str, str, str, str], str] = {}
-    outcomes = [
-        (
-            item,
-            _provider_implementation(item, f"provider_analysis.provided[{index}]"),
-        )
-        for index, item in enumerate(provided)
-    ]
-    outcomes.extend(
-        (item, "optional-unresolved")
-        for item in unresolved_weak
-    )
-    for index, (item, implementation) in enumerate(outcomes):
-        if not isinstance(item, dict):
-            raise ManifestError(f"provider outcome {index} must be an object")
-        key = _inventory_key(item, f"provider outcome {index}")
-        if key in implementations:
-            raise ManifestError(f"duplicate provider outcome for {key}")
-        implementations[key] = implementation
+    for group, items in (
+        ("provided", provided), ("unresolved_weak", unresolved_weak)
+    ):
+        for index, item in enumerate(items):
+            context = f"provider_analysis.{group}[{index}]"
+            if not isinstance(item, dict):
+                raise ManifestError(f"{context} must be an object")
+            key = _inventory_key(item, context)
+            if group == "unresolved_weak" and key[3] != "weak":
+                raise ManifestError(f"{context}: unresolved outcome must be weak")
+            implementation = (
+                _provider_implementation(item, context)
+                if group == "provided" else "optional-unresolved"
+            )
+            if key in implementations:
+                raise ManifestError(f"duplicate provider outcome for {key}")
+            implementations[key] = implementation
 
     normalized: list[dict[str, Any]] = []
     seen: set[tuple[str, str, str, str]] = set()
@@ -176,11 +213,14 @@ def _inventory_requirements(
 def _source_roots(inventory: dict[str, Any]) -> list[dict[str, Any]]:
     roots = _require_list(inventory.get("roots"), "roots")
     objects = _require_list(inventory.get("objects"), "objects")
-    by_path = {
-        item.get("path"): item
-        for item in objects
-        if isinstance(item, dict) and isinstance(item.get("path"), str)
-    }
+    by_path: dict[str, dict[str, Any]] = {}
+    for index, item in enumerate(objects):
+        if not isinstance(item, dict):
+            raise ManifestError(f"objects[{index}] must be an object")
+        path = _require_string(item, "path", f"objects[{index}]")
+        if path in by_path:
+            raise ManifestError(f"duplicate object report for {path}")
+        by_path[path] = item
     result = []
     for index, root in enumerate(roots):
         if not isinstance(root, str) or not root:
@@ -263,7 +303,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
         "symbols",
     }:
         raise ManifestError("manifest has missing or unknown top-level fields")
-    if manifest["schema"] != SCHEMA_VERSION:
+    if _require_count(manifest, "schema", "manifest") != SCHEMA_VERSION:
         raise ManifestError(f"unsupported manifest schema {manifest['schema']!r}")
     if manifest["scope"] != MANIFEST_SCOPE:
         raise ManifestError("manifest has an unsupported scope")
@@ -323,7 +363,7 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
             raise ManifestError(f"{context}: SONAME is not a basename")
         _require_string(item, "implementation", context)
         _require_string(item, "test", context)
-        if item["quality"] not in QUALITIES:
+        if not isinstance(item["quality"], str) or item["quality"] not in QUALITIES:
             raise ManifestError(f"{context}: invalid quality {item['quality']!r}")
         keys.append(key)
     if keys != sorted(keys):

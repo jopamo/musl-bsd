@@ -375,7 +375,12 @@ canonical sysroot. Without this option, existing host search behavior remains.
 ### Compatibility manifest
 
 `compatibility-symbols.json` is the checked runtime compatibility-policy
-manifest. Validate it with:
+manifest. The tool accepts inventory format 1 and manifest schema 1 as
+integers, not booleans or floating-point equivalents. JSON must use UTF-8,
+unique object keys and standard numeric literals. Provider outcome counts
+must match their arrays; unresolved outcomes must be weak. Invalid nested
+types and duplicate object reports are rejected before policy generation.
+The manifest's exact-field schema remains unchanged. Validate it with:
 
 ```sh
 tools/compatibility-manifest validate compatibility-symbols.json
