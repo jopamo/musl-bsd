@@ -48,6 +48,7 @@ char* alloca();
 #include <unistd.h>
 #endif
 #include <limits.h>
+#include <stdint.h>
 #include <assert.h>
 
 #ifndef _
@@ -298,7 +299,7 @@ static const struct argp_option* find_short_option(struct parser* parser, int ke
     for (group = parser->groups; group < parser->egroup; group++) {
         const struct argp_option* opts;
 
-        for (opts = group->argp->options; !__option_is_end(opts); opts++)
+        for (opts = group->argp->options; opts && !__option_is_end(opts); opts++)
             if (opts->key == key) {
                 *p = group;
                 return opts;
@@ -371,7 +372,7 @@ static const struct argp_option* find_long_option(struct parser* parser, const c
     for (group = parser->groups; group < parser->egroup; group++) {
         const struct argp_option* opts;
 
-        for (opts = group->argp->options; !__option_is_end(opts); opts++) {
+        for (opts = group->argp->options; opts && !__option_is_end(opts); opts++) {
             if (!opts->name)
                 continue;
             switch (match_option(arg, opts->name)) {
@@ -428,7 +429,7 @@ static struct group* convert_options(const struct argp* argp,
 
     if (opt || argp->parser) {
         /* This parser needs a group. */
-        if (cvt->short_end) {
+        if (cvt->short_end && opt) {
             /* Record any short options. */
             for (; !__option_is_end(opt); opt++)
                 if (__option_is_short(opt))
@@ -497,27 +498,39 @@ struct parser_sizes {
     size_t num_child_inputs; /* Child input slots.  */
 };
 
-/* For ARGP, increments the NUM_GROUPS field in SZS by the total
-   number of argp structures descended from it, and the SHORT_LEN by
-   the total number of short options. */
-static void calc_sizes(const struct argp* argp, struct parser_sizes* szs) {
+/* Count parser groups and child inputs, and short options when requested. */
+static error_t calc_sizes(const struct argp* argp, struct parser_sizes* szs, int count_short) {
     const struct argp_child* child = argp->children;
     const struct argp_option* opt = argp->options;
 
     if (opt || argp->parser) {
         /* This parser needs a group. */
+        if (szs->num_groups == SIZE_MAX)
+            return ENOMEM;
         szs->num_groups++;
-        if (opt) {
-            while (__option_is_short(opt++))
-                szs->short_len++;
+        if (opt && count_short) {
+            for (; !__option_is_end(opt); ++opt) {
+                if (__option_is_short(opt)) {
+                    if (szs->short_len == SIZE_MAX)
+                        return ENOMEM;
+                    szs->short_len++;
+                }
+            }
         }
     }
 
+    size_t num_children = 0;
     if (child)
         while (child->argp) {
-            calc_sizes((child++)->argp, szs);
+            if (num_children == UINT_MAX || szs->num_child_inputs == SIZE_MAX)
+                return ENOMEM;
             szs->num_child_inputs++;
+            num_children++;
+            error_t err = calc_sizes((child++)->argp, szs, count_short);
+            if (err)
+                return err;
         }
+    return 0;
 }
 
 static error_t parser_finalize(struct parser* parser, error_t err, int arg_ebadkey, int* end_index);
@@ -548,30 +561,33 @@ static error_t parser_init(struct parser* parser,
     szs.num_groups = 0;
     szs.num_child_inputs = 0;
 
-    if (argp)
-        calc_sizes(argp, &szs);
-
-    if (!(flags & ARGP_LONG_ONLY))
-        /* We have no use for the short option array. */
-        szs.short_len = 0;
+    if (argp) {
+        err = calc_sizes(argp, &szs, flags & ARGP_LONG_ONLY);
+        if (err)
+            return err;
+    }
 
     /* Lengths of the various bits of storage used by PARSER.  */
-#define GLEN (szs.num_groups + 1) * sizeof(struct group)
-#define CLEN (szs.num_child_inputs * sizeof(void*))
-#define SLEN (szs.short_len + 1)
-#define STORAGE(offset) ((void*)(((char*)parser->storage) + (offset)))
+    if (szs.num_groups > SIZE_MAX / sizeof(struct group) - 1 ||
+        szs.num_child_inputs > SIZE_MAX / sizeof(void*) || szs.short_len == SIZE_MAX)
+        return ENOMEM;
+    size_t groups_len = (szs.num_groups + 1) * sizeof(struct group);
+    size_t children_len = szs.num_child_inputs * sizeof(void*);
+    size_t short_len = szs.short_len + 1;
+    if (children_len > SIZE_MAX - groups_len || short_len > SIZE_MAX - groups_len - children_len)
+        return ENOMEM;
 
-    parser->storage = malloc(GLEN + CLEN + SLEN);
+    parser->storage = malloc(groups_len + children_len + short_len);
     if (!parser->storage)
         return ENOMEM;
 
     parser->groups = parser->storage;
 
-    parser->child_inputs = STORAGE(GLEN);
-    memset(parser->child_inputs, 0, szs.num_child_inputs * sizeof(void*));
+    parser->child_inputs = (void*)((char*)parser->storage + groups_len);
+    memset(parser->child_inputs, 0, children_len);
 
     if (flags & ARGP_LONG_ONLY)
-        parser->short_opts = STORAGE(GLEN + CLEN);
+        parser->short_opts = (char*)parser->storage + groups_len + children_len;
     else
         parser->short_opts = NULL;
 
