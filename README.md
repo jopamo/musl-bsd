@@ -170,6 +170,20 @@ its supplied `envp`, then forwards that environment unchanged. `execv` and
 early-preload validation and core → early → user ordering apply to both startup
 and re-execution.
 
+The executable-path adapter reports the startup pathname for the process's
+lifetime. Renaming or unlinking that file does not change its result; a later
+re-exec still asks musl's loader to open the original name and fails if it is
+gone. The runtime does not retain an executable fd or promise object identity.
+An fd-based launch requires its `/proc/self/fd` or `/dev/fd` name to remain
+resolvable during interpreter startup. A close-on-exec descriptor cannot
+satisfy that requirement.
+
+The runtime exec and executable-path adapters are not async-signal-safe:
+they can allocate and resolve libc symbols. Do not use them in a signal
+handler or between fork and exec in the child of a multithreaded process.
+Publication retry/fork tests do not qualify that POSIX contract. These
+limitations do not apply to source-archive consumers, which use libc directly.
+
 ---
 
 ## Security Model

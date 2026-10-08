@@ -3053,7 +3053,7 @@
       "name": "readlink",
       "quality": "UNSUPPORTED",
       "soname": "libc.so.6",
-      "test": "tools/elf-scan:provider-analysis",
+      "test": "compat/loader",
       "version": "GLIBC_2.2.5"
     },
     {
