@@ -73,7 +73,11 @@
 #endif
 
 int open64(const char* path, int oflag, ...) {
-    if (oflag & O_CREAT) {
+    if ((oflag & O_CREAT)
+#ifdef O_TMPFILE
+        || (oflag & O_TMPFILE) == O_TMPFILE
+#endif
+    ) {
         va_list ap;
         mode_t mode;
 
