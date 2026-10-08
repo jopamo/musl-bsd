@@ -265,6 +265,10 @@ RESULT_TYPE OBSTACK_VPRINTF(struct obstack* obstack, const char* __restrict fmt,
         if (written < 0) {
             return written;
         }
+        if ((size_t)written >= required) {
+            errno = EOVERFLOW;
+            return -1;
+        }
     }
 
     obstack->next_free = dest + (size_t)written;

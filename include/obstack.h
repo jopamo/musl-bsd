@@ -115,6 +115,9 @@ extern void (*obstack_alloc_failed_handler)(void);
 
 extern int obstack_exit_failure;
 
+/* Formatting measures, writes, and may retry, so conversions such as %n can
+   run more than once. A result that outgrows the retry capacity fails with
+   EOVERFLOW without appending bytes; chunk growth may relocate the object. */
 extern int obstack_vprintf(struct obstack*, const char* __restrict, va_list);
 extern int obstack_printf(struct obstack*, const char* __restrict, ...) __attribute__((format(printf, 2, 3)));
 extern size_t obstack_calculate_object_size(struct obstack* ob);
