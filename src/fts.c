@@ -117,9 +117,9 @@ static FTSENT* fts_build(FTS*, int);
 static void fts_lfree(FTSENT*);
 static void fts_load(FTS*, FTSENT*);
 static size_t fts_maxarglen(char* const*);
-static void fts_padjust(FTS*, FTSENT*);
+static void fts_padjust(FTS*, FTSENT*, char*);
 static size_t fts_pow2(size_t);
-static int fts_palloc(FTS*, size_t);
+static int fts_palloc(FTS*, size_t, FTSENT*);
 static FTSENT* fts_sort(FTS*, FTSENT*, size_t);
 static unsigned short fts_stat(FTS*, FTSENT*, int, int);
 static void fts_follow(FTS*, FTSENT*);
@@ -223,7 +223,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
         if (need < floor)
             need = floor;
 #endif
-        if (fts_palloc(sp, need)) {
+        if (fts_palloc(sp, need, NULL)) {
             cycle_free(CYCLE_STATE(sp));
             free(sp);
             return NULL;
@@ -713,16 +713,12 @@ static FTSENT* fts_build(FTS* sp, int type) {
             goto mem_fail;
 
         if (dnamlen >= maxlen) {
-            char* oldaddr = sp->fts_path;
-            if (fts_palloc(sp, pathlen + 1)) {
+            if (fts_palloc(sp, pathlen + 1, head ? head : cur)) {
                 free(p);
                 goto mem_fail;
             }
-            if (oldaddr != sp->fts_path) {
-                fts_padjust(sp, head ? head : cur);
-                if (ISSET(FTS_NOCHDIR))
-                    cp = sp->fts_path + len;
-            }
+            if (ISSET(FTS_NOCHDIR))
+                cp = sp->fts_path + len;
             maxlen = sp->fts_pathlen - len;
         }
         p->fts_path = sp->fts_path;
@@ -1005,7 +1001,7 @@ static size_t fts_pow2(size_t x) {
     return x;
 }
 
-static int fts_palloc(FTS* sp, size_t need) {
+static int fts_palloc(FTS* sp, size_t need, FTSENT* head) {
     const size_t pad = 256;
     const size_t limit = fts_path_capacity_limit();
 
@@ -1020,30 +1016,39 @@ static int fts_palloc(FTS* sp, size_t need) {
     else
         need = limit;
 
-    char* newbuf = realloc(sp->fts_path, need);
+    if (need <= sp->fts_pathlen)
+        return 0;
+    char* newbuf = malloc(need);
     if (!newbuf)
         return 1;
 
+    char* oldbuf = sp->fts_path;
+    if (oldbuf) {
+        memcpy(newbuf, oldbuf, sp->fts_pathlen);
+        fts_padjust(sp, head, newbuf);
+    }
     sp->fts_path = newbuf;
     sp->fts_pathlen = (__fts_length_t)need;
+    free(oldbuf);
     return 0;
 }
 
-static void fts_padjust(FTS* sp, FTSENT* head) {
-    char* addr = sp->fts_path;
-#define ADJUST(e)                                                      \
-    do {                                                               \
-        if ((e)->fts_accpath != (e)->fts_name) {                       \
-            size_t delta = (size_t)((e)->fts_accpath - (e)->fts_path); \
-            (e)->fts_accpath = addr + delta;                           \
-        }                                                              \
-        (e)->fts_path = addr;                                          \
+static void fts_padjust(FTS* sp, FTSENT* head, char* addr) {
+    const uintptr_t oldaddr = (uintptr_t)sp->fts_path;
+    /* Only shared-buffer access paths move; error fallback may borrow a name
+       from another entry. Both allocations stay alive through this pass. */
+#define ADJUST(e)                                                    \
+    do {                                                             \
+        uintptr_t access = (uintptr_t)(e)->fts_accpath;              \
+        if (access >= oldaddr && access - oldaddr < sp->fts_pathlen) \
+            (e)->fts_accpath = addr + (size_t)(access - oldaddr);    \
+        (e)->fts_path = addr;                                        \
     } while (0)
 
     for (FTSENT* p = sp->fts_child; p; p = p->fts_link)
         ADJUST(p);
 
-    for (FTSENT* p = head; p && p->fts_level >= FTS_ROOTLEVEL;) {
+    for (FTSENT* p = head; p && p->fts_level >= FTS_ROOTPARENTLEVEL;) {
         ADJUST(p);
         p = p->fts_link ? p->fts_link : p->fts_parent;
     }
