@@ -415,7 +415,8 @@ static struct hol* make_hol(const struct argp* argp, struct hol_cluster* cluster
     unsigned num_short_options = 0;
     struct hol* hol = malloc(sizeof(struct hol));
 
-    assert(hol);
+    if (!hol)
+        return NULL;
 
     hol->entries = 0;
     hol->short_options = 0;
@@ -430,19 +431,30 @@ static struct hol* make_hol(const struct argp* argp, struct hol_cluster* cluster
 
         /* Calculate the space needed.  */
         for (o = opts; !oend(o); o++) {
-            if (!oalias(o))
+            if (!oalias(o)) {
+                if (hol->num_entries == UINT_MAX)
+                    goto fail;
                 hol->num_entries++;
-            if (oshort(o))
+            }
+            if (oshort(o)) {
+                if (num_short_options == UINT_MAX)
+                    goto fail;
                 num_short_options++; /* This is an upper bound.  */
+            }
         }
 
-        hol->entries = malloc(sizeof(struct hol_entry) * hol->num_entries);
-        hol->short_options = malloc(num_short_options + 1);
-
-        assert(hol->entries && hol->short_options);
 #if SIZE_MAX <= UINT_MAX
-        assert(hol->num_entries <= SIZE_MAX / sizeof(struct hol_entry));
+        if (hol->num_entries > SIZE_MAX / sizeof(struct hol_entry) || num_short_options == SIZE_MAX)
+            goto fail;
 #endif
+        if (hol->num_entries != 0) {
+            hol->entries = malloc(sizeof(struct hol_entry) * hol->num_entries);
+            if (!hol->entries)
+                goto fail;
+        }
+        hol->short_options = malloc((size_t)num_short_options + 1);
+        if (!hol->short_options)
+            goto fail;
 
         /* Fill in the entries.  */
         so = hol->short_options;
@@ -455,6 +467,8 @@ static struct hol* make_hol(const struct argp* argp, struct hol_cluster* cluster
             entry->argp = argp;
 
             do {
+                if (entry->num == INT_MAX)
+                    goto fail;
                 entry->num++;
                 if (oshort(o) && !find_char(o->key, hol->short_options, so))
                     /* O has a valid short option which hasn't already been used.*/
@@ -466,6 +480,13 @@ static struct hol* make_hol(const struct argp* argp, struct hol_cluster* cluster
     }
 
     return hol;
+
+fail:
+    free(hol->entries);
+    free(hol->short_options);
+    free(hol);
+    __set_errno(ENOMEM);
+    return NULL;
 }
 
 /* Add a new cluster to HOL, with the given GROUP and HEADER (taken from the
@@ -753,7 +774,7 @@ static void hol_sort(struct hol* hol) {
 
 /* Append MORE to HOL, destroying MORE in the process.  Options in HOL shadow
    any in MORE with the same name.  */
-static void hol_append(struct hol* hol, struct hol* more) {
+static int hol_append(struct hol* hol, struct hol* more) {
     struct hol_cluster** cl_end = &hol->clusters;
 
     /* Steal MORE's cluster list, and add it to the end of HOL's.  */
@@ -765,6 +786,8 @@ static void hol_append(struct hol* hol, struct hol* more) {
     /* Merge entries.  */
     if (more->num_entries > 0) {
         if (hol->num_entries == 0) {
+            free(hol->entries);
+            free(hol->short_options);
             hol->num_entries = more->num_entries;
             hol->entries = more->entries;
             hol->short_options = more->short_options;
@@ -779,15 +802,25 @@ static void hol_append(struct hol* hol, struct hol* more) {
             unsigned left;
             char *so, *more_so;
             struct hol_entry* e;
+            if (more->num_entries > UINT_MAX - hol->num_entries)
+                goto fail;
             unsigned num_entries = hol->num_entries + more->num_entries;
-            struct hol_entry* entries = malloc(num_entries * sizeof(struct hol_entry));
-            unsigned hol_so_len = strlen(hol->short_options);
-            char* short_options = malloc(hol_so_len + strlen(more->short_options) + 1);
-
-            assert(entries && short_options);
 #if SIZE_MAX <= UINT_MAX
-            assert(num_entries <= SIZE_MAX / sizeof(struct hol_entry));
+            if (num_entries > SIZE_MAX / sizeof(struct hol_entry))
+                goto fail;
 #endif
+            size_t hol_so_len = strlen(hol->short_options);
+            size_t more_so_len = strlen(more->short_options);
+            if (hol_so_len == SIZE_MAX || more_so_len > SIZE_MAX - hol_so_len - 1)
+                goto fail;
+            struct hol_entry* entries = malloc(num_entries * sizeof(struct hol_entry));
+            if (!entries)
+                goto fail;
+            char* short_options = malloc(hol_so_len + more_so_len + 1);
+            if (!short_options) {
+                free(entries);
+                goto fail;
+            }
 
             __mempcpy(__mempcpy(entries, hol->entries, hol->num_entries * sizeof(struct hol_entry)), more->entries,
                       more->num_entries * sizeof(struct hol_entry));
@@ -796,7 +829,7 @@ static void hol_append(struct hol* hol, struct hol* more) {
 
             /* Fix up the short options pointers from HOL.  */
             for (e = entries, left = hol->num_entries; left > 0; e++, left--)
-                e->short_options += (short_options - hol->short_options);
+                e->short_options = short_options + (e->short_options - hol->short_options);
 
             /* Now add the short options from MORE, fixing up its entries
                too.  */
@@ -834,6 +867,12 @@ static void hol_append(struct hol* hol, struct hol* more) {
     }
 
     hol_free(more);
+    return 0;
+
+fail:
+    hol_free(more);
+    __set_errno(ENOMEM);
+    return -1;
 }
 
 /* Inserts enough spaces to make sure STREAM is at column COL.  */
@@ -1215,6 +1254,8 @@ static void hol_usage(struct hol* hol, argp_fmtstream_t stream) {
 static struct hol* argp_hol(const struct argp* argp, struct hol_cluster* cluster) {
     const struct argp_child* child = argp->children;
     struct hol* hol = make_hol(argp, cluster);
+    if (!hol)
+        return NULL;
     if (child)
         while (child->argp) {
             struct hol_cluster* child_cluster =
@@ -1223,10 +1264,19 @@ static struct hol* argp_hol(const struct argp* argp, struct hol_cluster* cluster
                      ? hol_add_cluster(hol, child->group, child->header, child - argp->children, cluster, argp)
                      /* Just merge it into the parent's cluster.  */
                      : cluster);
-            hol_append(hol, argp_hol(child->argp, child_cluster));
+            if ((child->group || child->header) && !child_cluster)
+                goto fail;
+            struct hol* more = argp_hol(child->argp, child_cluster);
+            if (!more || hol_append(hol, more) != 0)
+                goto fail;
             child++;
         }
     return hol;
+
+fail:
+    hol_free(hol);
+    __set_errno(ENOMEM);
+    return NULL;
 }
 
 /* Calculate how many different levels with alternative args strings exist in
@@ -1393,6 +1443,7 @@ static int argp_doc(const struct argp* argp,
    needed. */
 static void _help(const struct argp* argp, const struct argp_state* state, FILE* stream, unsigned flags, char* name) {
     int anything = 0; /* Whether we've output anything.  */
+    int saved_errno = 0;
     struct hol* hol = 0;
     argp_fmtstream_t fs;
 
@@ -1415,6 +1466,10 @@ static void _help(const struct argp* argp, const struct argp_state* state, FILE*
 
     if (flags & (ARGP_HELP_USAGE | ARGP_HELP_SHORT_USAGE | ARGP_HELP_LONG)) {
         hol = argp_hol(argp, 0);
+        if (!hol) {
+            saved_errno = errno;
+            goto out;
+        }
 
         /* If present, these options always come last.  */
         hol_set_group(hol, "help", -1);
@@ -1506,6 +1561,7 @@ Try `%s --help' or `%s --usage' for more information.\n"),
         anything = 1;
     }
 
+out:
 #if 0 || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
   __funlockfile (stream);
 #endif
@@ -1514,6 +1570,8 @@ Try `%s --help' or `%s --usage' for more information.\n"),
         hol_free(hol);
 
     __argp_fmtstream_free(fs);
+    if (saved_errno)
+        __set_errno(saved_errno);
 }
 
 /* Output a usage message for ARGP to STREAM.  FLAGS are from the set
