@@ -28,6 +28,8 @@ MAX_FILE_SIZE = 512 * 1024 * 1024
 MAX_TABLE_ENTRIES = 16 * 1024 * 1024
 MAX_SCAN_BYTES = 1024 * 1024 * 1024
 MAX_SCAN_OBJECTS = 4096
+MAX_SCAN_WORK = 1024 * 1024
+MAX_SCAN_STRING_BYTES = 64 * 1024 * 1024
 
 PT_LOAD = 1
 PT_DYNAMIC = 2
@@ -197,8 +199,12 @@ class ScanBudget:
     def __init__(self) -> None:
         self.max_objects = MAX_SCAN_OBJECTS
         self.max_bytes = MAX_SCAN_BYTES
+        self.max_work = MAX_SCAN_WORK
+        self.max_string_bytes = MAX_SCAN_STRING_BYTES
         self.objects = 0
         self.bytes = 0
+        self.work = 0
+        self.string_bytes = 0
 
     def check_pending(self, count: int) -> None:
         if count > self.max_objects - self.objects:
@@ -220,11 +226,31 @@ class ScanBudget:
             )
         self.bytes += count
 
+    def consume_work(self, count: int = 1) -> None:
+        if count > self.max_work - self.work:
+            raise ScanError(
+                f"aggregate metadata work limit ({self.max_work}) exceeded"
+            )
+        self.work += count
+
+    def remaining_string_bytes(self) -> int:
+        return self.max_string_bytes - self.string_bytes
+
+    def consume_string_bytes(self, count: int) -> None:
+        if count > self.remaining_string_bytes():
+            raise ScanError(
+                f"aggregate string byte limit ({self.max_string_bytes}) exceeded"
+            )
+        self.string_bytes += count
+
 
 class Reader:
-    def __init__(self, data: bytes, path: Path):
+    def __init__(
+        self, data: bytes, path: Path, budget: ScanBudget | None = None
+    ):
         self.data = data
         self.path = path
+        self.budget = budget if budget is not None else ScanBudget()
 
     def range(self, offset: int, size: int, what: str) -> None:
         if offset < 0 or size < 0 or offset > len(self.data) or size > len(
@@ -236,6 +262,7 @@ class Reader:
             )
 
     def unpack(self, fmt: str, offset: int, what: str) -> tuple[Any, ...]:
+        self.budget.consume_work()
         size = struct.calcsize(fmt)
         self.range(offset, size, what)
         return struct.unpack_from(fmt, self.data, offset)
@@ -245,11 +272,17 @@ class Reader:
         return self.data[offset : offset + size]
 
     def c_string(self, offset: int, limit: int, what: str) -> str:
+        self.budget.consume_work()
         self.range(offset, 0, what)
-        end = min(len(self.data), offset + limit)
+        allowance = min(limit, self.budget.remaining_string_bytes() + 1)
+        end = min(len(self.data), offset + allowance)
         nul = self.data.find(b"\0", offset, end)
         if nul < 0:
+            # A capped search cannot establish untermination beyond its window.
+            if allowance < limit and end - offset == allowance:
+                self.budget.consume_string_bytes(allowance)
             raise ScanError(f"{self.path}: unterminated {what}")
+        self.budget.consume_string_bytes(nul - offset + 1)
         return self.data[offset:nul].decode("utf-8", "surrogateescape")
 
 
@@ -313,7 +346,7 @@ class ELFFile:
         self.path = path
         budget = budget if budget is not None else ScanBudget()
         budget.begin_object()
-        self.reader = Reader(_file_bytes(path, budget), path)
+        self.reader = Reader(_file_bytes(path, budget), path, budget)
         self.data = self.reader.data
         self._parse_header()
         self._parse_program_headers()
@@ -392,6 +425,7 @@ class ELFFile:
 
     def _vaddr_offset(self, address: int, size: int = 1) -> int:
         for vaddr, _memsz, offset, filesz in self.load_segments:
+            self.reader.budget.consume_work()
             if address < vaddr:
                 continue
             delta = address - vaddr
@@ -881,9 +915,9 @@ class ELFFile:
         runpath: list[str] = []
         for tag in (DT_RUNPATH, DT_RPATH):
             if tag in self.dynamic:
-                runpath.extend(
-                    self._string(self.dynamic[tag], "runpath").split(":")
-                )
+                value = self._string(self.dynamic[tag], "runpath")
+                self.reader.budget.consume_work(value.count(":") + 1)
+                runpath.extend(value.split(":"))
         soname = (
             self._string(self.dynamic[DT_SONAME], "DT_SONAME")
             if DT_SONAME in self.dynamic
@@ -1110,6 +1144,7 @@ def scan(
             continue
         elf = ELFFile(canonical, budget)
         report = elf.report()
+        del elf
         reports[canonical] = report
         if not recursive:
             continue

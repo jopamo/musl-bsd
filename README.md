@@ -306,6 +306,11 @@ the size check. GNU hash inspection caps aggregate bucket/chain work at
 Each invocation permits at most 4,096 ELF reads and 1 GiB of full-input
 bytes across roots, dependencies and providers. Re-reading a graph object
 as a provider counts again. Limit failures do not emit a partial inventory.
+Parser work is capped at 1,048,576 units across structure reads, string reads,
+address-mapping candidates and search-path splitting. String searches and
+decodes share a 64 MiB source-byte allowance, including terminators and
+repeated names. These caps do not yet cover target discovery or resolver
+search/expansion work.
 This does not freeze in-place file changes or snapshot a
 dependency graph.
 
