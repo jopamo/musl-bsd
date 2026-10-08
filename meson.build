@@ -290,6 +290,7 @@ loader_policy_source = files('src/compat/loader_policy.c')
 preload_policy_source = files('src/compat/preload_policy.c')
 compat_exec_source = files('src/compat/exec.c')
 compat_readlink_source = files('src/compat/readlink.c')
+compat_pthread_source = files('src/compat/pthread.c')
 compat_interpose_sources = []
 if glibc_runtime_enabled
   compat_interpose_sources += [
@@ -301,7 +302,7 @@ endif
 
 pthread_abi_supported = glibc_runtime_enabled
 if pthread_abi_supported
-  compat_interpose_sources += 'src/compat/pthread.c'
+  compat_interpose_sources += compat_pthread_source
 elif glibc_runtime_enabled
   warning('glibc pthread ABI bridge is disabled: no verified fixture for ' + cpu_family)
 endif

@@ -237,6 +237,20 @@ No environment variable or runtime option can weaken this check.
 
 ## ELF Inventory and Compatibility Policy
 
+### Pthread resolver contract
+
+The pthread bridge publishes its libc function table all at once. Any missing
+entry makes resolution permanently fail with `ENOSYS`; later-loaded providers
+do not retry or enable a partial table. Pthread adapters return the error code,
+while semaphore adapters return `-1` and set `errno`.
+
+The initializing thread disables cancellation before claiming resolver
+ownership and restores its previous state after publishing success or failure.
+Cold lookup preserves the caller's `errno`. Recursive lookup returns `ENOSYS`
+instead of waiting for itself. A child can reclaim another thread's inherited
+in-progress resolver using the PID tag. This state recovery does not qualify
+loader calls after a multithreaded fork or async-signal-safe use.
+
 ### Optional early preload
 
 Some ELF binaries require a dependency to be present in the process's initial

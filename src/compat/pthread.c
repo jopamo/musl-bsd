@@ -144,6 +144,7 @@ static int resolve_native(void)
 	uint32_t state;
 	uint32_t pid;
 	int missing = 0;
+	int cancel_state, saved_errno;
 	void *address;
 
 	for (;;) {
@@ -173,11 +174,16 @@ static int resolve_native(void)
 		pid = (uint32_t)getpid();
 		running = RESOLVER_STATUS(pid, RESOLVER_RUNNING);
 		expected = RESOLVER_UNINITIALIZED;
+		saved_errno = errno;
+		/* Acquire and publish the table without abandoning RUNNING. */
+		(void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cancel_state);
 		if (__atomic_compare_exchange_n(&resolver_status, &expected,
 						running, 0,
 						__ATOMIC_ACQ_REL,
 						__ATOMIC_ACQUIRE))
 			break;
+		(void)pthread_setcancelstate(cancel_state, NULL);
+		errno = saved_errno;
 	}
 
 	resolver_active = 1;
@@ -241,11 +247,13 @@ static int resolve_native(void)
 
 #undef RESOLVE
 
-	resolver_active = 0;
 	__atomic_store_n(&resolver_status,
 			 RESOLVER_STATUS(pid, missing ? RESOLVER_FAILED :
 					 RESOLVER_READY),
 			 __ATOMIC_RELEASE);
+	resolver_active = 0;
+	(void)pthread_setcancelstate(cancel_state, NULL);
+	errno = saved_errno;
 	return missing ? ENOSYS : 0;
 }
 
