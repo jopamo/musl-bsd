@@ -1,5 +1,6 @@
 *.md
 !README.md
+!HACKING.md
 docs/
 build*
 doc/
