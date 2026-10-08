@@ -684,11 +684,16 @@ class ELFFile:
     ]:
         tables: list[tuple[int, int, int, str]] = []
 
-        def add_table(address: int | None, size: int | None, entry_size: int,
-                      kind: str) -> None:
-            if address is None or size is None:
+        def add_table(
+            address: int | None, size: int | None,
+            entry_size: int | None, kind: str
+        ) -> None:
+            if address is None and size is None:
                 return
-            if entry_size <= 0:
+            if address is None or size is None:
+                raise ScanError(f"{self.path}: incomplete {kind} metadata")
+            expected_size = 24 if kind.endswith("RELA") else 16
+            if entry_size != expected_size:
                 raise ScanError(f"{self.path}: invalid {kind} entry size")
             if size % entry_size:
                 raise ScanError(f"{self.path}: malformed {kind} size")
@@ -697,16 +702,24 @@ class ELFFile:
         add_table(
             self.dynamic.get(DT_RELA),
             self.dynamic.get(DT_RELASZ),
-            self.dynamic.get(DT_RELAENT, 24),
+            self.dynamic.get(DT_RELAENT),
             "RELA",
         )
         add_table(
             self.dynamic.get(DT_REL),
             self.dynamic.get(DT_RELSZ),
-            self.dynamic.get(DT_RELENT, 16),
+            self.dynamic.get(DT_RELENT),
             "REL",
         )
-        if DT_JMPREL in self.dynamic:
+        if any(
+            tag in self.dynamic
+            for tag in (DT_JMPREL, DT_PLTRELSZ, DT_PLTREL)
+        ):
+            if not all(
+                tag in self.dynamic
+                for tag in (DT_JMPREL, DT_PLTRELSZ, DT_PLTREL)
+            ):
+                raise ScanError(f"{self.path}: incomplete PLT metadata")
             plt_type = self.dynamic.get(DT_PLTREL)
             if plt_type == DT_RELA:
                 entry_size = self.dynamic.get(DT_RELAENT, 24)
@@ -751,16 +764,16 @@ class ELFFile:
                     addend = 0
                 relocation_type = info & 0xFFFFFFFF
                 symbol_index = info >> 32
+                if symbol_index >= len(symbols):
+                    raise ScanError(
+                        f"{self.path}: relocation symbol index {symbol_index} "
+                        "exceeds dynamic symbol table"
+                    )
                 type_name = R_X86_64_NAMES.get(
                     relocation_type, f"R_X86_64_{relocation_type}"
                 )
                 type_counts[type_name] = type_counts.get(type_name, 0) + 1
-                symbol = (
-                    symbols[symbol_index]
-                    if symbol_index < len(symbols)
-                    else None
-                )
-                symbol_name = symbol["name"] if symbol else ""
+                symbol_name = symbols[symbol_index]["name"]
                 record = {
                     "type": type_name,
                     "offset": relocation_offset,
