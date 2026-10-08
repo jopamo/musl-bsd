@@ -75,9 +75,13 @@ The `_fast` macros remain unchecked and require callers to reserve room.
 
 FTS path buffers are bounded by both `__fts_length_t` and `PTRDIFF_MAX`.
 Paths must leave space for the terminator within that capacity. Padding and
-power-of-two growth stop at the bound; `fts_pathlen` records the actual
+power-of-two growth stop at the bound; `FTS.fts_pathlen` records the actual
 allocation size rather than a capped larger allocation. Unrepresentable
-paths fail with `ENAMETOOLONG`.
+paths fail with `ENAMETOOLONG`. Root and sibling lists cannot exceed the
+public count representation or `PTRDIFF_MAX / sizeof(FTSENT *)`; oversized
+lists fail with `EOVERFLOW`. Sort-array padding clips to that bound, and
+`FTS.fts_nitems` records the exact array capacity. Entry allocation checks
+name representation and the complete name/stat span before allocating.
 
 ### Optional glibc binary runtime
 

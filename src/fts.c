@@ -34,6 +34,12 @@ static inline size_t fts_path_capacity_limit(void) {
     return max < (size_t)PTRDIFF_MAX ? max : (size_t)PTRDIFF_MAX;
 }
 
+static inline size_t fts_array_capacity_limit(void) {
+    size_t max = fts_length_max();
+    size_t span = (size_t)PTRDIFF_MAX / sizeof(FTSENT*);
+    return max < span ? max : span;
+}
+
 #ifndef ALIGNBYTES
 #define ALIGNBYTES (sizeof(long) - 1)
 #endif
@@ -114,7 +120,7 @@ static size_t fts_maxarglen(char* const*);
 static void fts_padjust(FTS*, FTSENT*);
 static size_t fts_pow2(size_t);
 static int fts_palloc(FTS*, size_t);
-static FTSENT* fts_sort(FTS*, FTSENT*, int);
+static FTSENT* fts_sort(FTS*, FTSENT*, size_t);
 static unsigned short fts_stat(FTS*, FTSENT*, int, int);
 static void fts_follow(FTS*, FTSENT*);
 static int fts_safe_changedir(FTS*, FTSENT*, int, const char*);
@@ -167,7 +173,7 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
     FTSENT* root = NULL;
     FTSENT* parent;
     FTSENT* prev = NULL;
-    int nitems = 0;
+    size_t nitems = 0;
 
     if ((options & ~FTS_OPTIONMASK) || argv == NULL) {
         errno = EINVAL;
@@ -244,7 +250,13 @@ FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, cons
             free(sp);
             return NULL;
         }
-        p = fts_alloc(sp, *argv, alen);
+        if (nitems == fts_array_capacity_limit()) {
+            errno = EOVERFLOW;
+            p = NULL;
+        }
+        else {
+            p = fts_alloc(sp, *argv, alen);
+        }
         if (!p) {
             fts_lfree(root);
             free(parent);
@@ -582,7 +594,7 @@ static FTSENT* fts_build(FTS* sp, int type) {
     DIR* dirp = NULL;
     struct dirent* dp;
     size_t len, maxlen;
-    int nitems = 0;
+    size_t nitems = 0;
     int cderrno = 0;
     int descend = 0;
     int level;
@@ -691,6 +703,10 @@ static FTSENT* fts_build(FTS* sp, int type) {
             goto mem_fail;
         }
         size_t pathlen = len + dnamlen;
+        if (nitems == fts_array_capacity_limit()) {
+            errno = EOVERFLOW;
+            goto mem_fail;
+        }
 
         p = fts_alloc(sp, dp->d_name, dnamlen);
         if (!p)
@@ -905,27 +921,30 @@ static void fts_follow(FTS* sp, FTSENT* p) {
     }
 }
 
-static FTSENT* fts_sort(FTS* sp, FTSENT* head, int nitems) {
-    if ((unsigned int)nitems > sp->fts_nitems) {
-        FTSENT** a = safe_recallocarray(sp->fts_array, sp->fts_nitems, nitems + 40, sizeof(FTSENT*));
+static FTSENT* fts_sort(FTS* sp, FTSENT* head, size_t nitems) {
+    if (nitems > sp->fts_nitems) {
+        size_t spare = fts_array_capacity_limit() - nitems;
+        if (spare > 40)
+            spare = 40;
+        size_t capacity = nitems + spare;
+        FTSENT** a = safe_recallocarray(sp->fts_array, sp->fts_nitems, capacity, sizeof(FTSENT*));
         if (!a) {
             free(sp->fts_array);
             sp->fts_array = NULL;
             sp->fts_nitems = 0;
             return head;
         }
-        sp->fts_nitems = fts_length_cap((size_t)nitems + 40);
+        sp->fts_nitems = (__fts_length_t)capacity;
         sp->fts_array = a;
     }
     FTSENT** ap = sp->fts_array;
-    int i;
     for (FTSENT* p = head; p; p = p->fts_link)
         *ap++ = p;
 
-    qsort(sp->fts_array, (size_t)nitems, sizeof(FTSENT*), (int (*)(const void*, const void*))sp->fts_compar);
+    qsort(sp->fts_array, nitems, sizeof(FTSENT*), (int (*)(const void*, const void*))sp->fts_compar);
 
     FTSENT* newhead = sp->fts_array[0];
-    for (i = 0; i < nitems - 1; i++)
+    for (size_t i = 0; i < nitems - 1; i++)
         sp->fts_array[i]->fts_link = sp->fts_array[i + 1];
     sp->fts_array[nitems - 1]->fts_link = NULL;
 
@@ -933,16 +952,21 @@ static FTSENT* fts_sort(FTS* sp, FTSENT* head, int nitems) {
 }
 
 static FTSENT* fts_alloc(FTS* sp, const char* name, size_t namelen) {
-    size_t len = sizeof(FTSENT) + namelen + 1;
+    size_t len = sizeof(FTSENT) + 1;
     if (!ISSET(FTS_NOSTAT))
         len += sizeof(__fts_stat_t) + ALIGNBYTES;
+    if (namelen > fts_length_max() || namelen > (size_t)PTRDIFF_MAX - len) {
+        errno = ENAMETOOLONG;
+        return NULL;
+    }
+    len += namelen;
 
     FTSENT* p = calloc(1, len);
     if (!p)
         return NULL;
 
     p->fts_path = sp->fts_path;
-    p->fts_namelen = fts_length_cap(namelen);
+    p->fts_namelen = (__fts_length_t)namelen;
     p->fts_instr = FTS_NOINSTR;
 
     if (!ISSET(FTS_NOSTAT)) {

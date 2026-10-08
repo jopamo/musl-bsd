@@ -214,7 +214,7 @@ libobstack_static = static_library(
 
 install_headers('include/obstack.h', subdir: '')
 
-fts_sources = ['src/fts.c']
+fts_sources = files('src/fts.c')
 
 libfts = shared_library(
   'fts',
