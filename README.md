@@ -50,6 +50,14 @@ mask to retain job-control behavior. It is not a cryptographic primitive or an R
 
 The source-compatibility layer remains portable independently of the optional glibc binary runtime.
 
+The mount/pidfd feature macros in `musl-bsd-source.pc` promise declarations
+and archive symbols, not kernel support or permission to perform an operation.
+Wrappers return `ENOSYS` when their syscall number is absent at build time,
+and otherwise forward the kernel result and errno. Linux mount headers
+remain a build dependency; older headers may leave `struct mount_attr`
+incomplete, so callers need a header defining it to construct an object.
+Pidfd signal declarations require POSIX.1-2008 or GNU signal types.
+
 The multibyte reader owns byte input from its `FILE` and retains partial bytes
 after an I/O error. Call `clearerr()` before retrying; the retry starts conversion
 from the retained bytes. Malformed input reports `EILSEQ`, consuming one byte

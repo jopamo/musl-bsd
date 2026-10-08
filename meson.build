@@ -323,6 +323,8 @@ libargp_static = static_library(
 )
 
 compat_glibc_source = files('src/compat/glibc.c')
+compat_mount_source = files('src/compat/mount.c')
+source_pidfd_source = files('src/source/pidfd.c')
 compat_common_sources = [
   'src/compat/core.c',
   'src/compat/dlfcn.c',
@@ -330,7 +332,7 @@ compat_common_sources = [
   'src/compat/fs64.c',
   compat_glibc_source,
   'src/compat/math.c',
-  'src/compat/mount.c',
+  compat_mount_source,
   'src/compat/string.c',
   'src/compat/time.c',
   'src/compat/version.c',
@@ -338,7 +340,7 @@ compat_common_sources = [
 
 compat_source_sources = [
   'src/source/mb-reader.c',
-  'src/source/pidfd.c',
+  source_pidfd_source,
   'src/source/readpassphrase.c',
 ]
 

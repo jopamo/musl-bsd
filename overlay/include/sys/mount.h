@@ -9,6 +9,8 @@
 #include <linux/mount.h>
 #include <stddef.h>
 
+struct mount_attr;
+
 /*
  * musl exposes the new mount API kernel constants, but not the glibc-style
  * wrapper functions. Declare libc-like entry points here and provide the
