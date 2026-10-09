@@ -136,7 +136,7 @@ static __thread int resolver_active;
 #define RESOLVER_STATUS_STATE(status) ((uint32_t)(status))
 #define RESOLVER_STATUS_PID(status) ((uint32_t)((status) >> 32))
 
-static int resolve_native(void)
+static __attribute__((noinline)) int resolve_native_slow(void)
 {
 	uint64_t status;
 	uint64_t expected;
@@ -255,6 +255,18 @@ static int resolve_native(void)
 	(void)pthread_setcancelstate(cancel_state, NULL);
 	errno = saved_errno;
 	return missing ? ENOSYS : 0;
+}
+
+static inline int resolve_native(void)
+{
+	uint32_t state = RESOLVER_STATUS_STATE(
+		__atomic_load_n(&resolver_status, __ATOMIC_ACQUIRE));
+
+	if (state == RESOLVER_READY)
+		return 0;
+	if (state == RESOLVER_FAILED)
+		return ENOSYS;
+	return resolve_native_slow();
 }
 
 static int native_pthread_ready(void)

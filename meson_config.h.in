@@ -12,7 +12,6 @@
 
 #mesondefine HAVE_EX_USAGE
 
-#mesondefine HAVE_ASPRINTF
 #mesondefine HAVE_STRCHRNUL
 #mesondefine HAVE_STRNDUP
 #mesondefine HAVE_MEMPCPY
@@ -20,28 +19,9 @@
 #mesondefine HAVE_DECL_PROGRAM_INVOCATION_NAME
 #mesondefine HAVE_DECL_PROGRAM_INVOCATION_SHORT_NAME
 
-#mesondefine HAVE_DECL_FREAD_UNLOCKED
 #mesondefine HAVE_DECL_FWRITE_UNLOCKED
-#mesondefine HAVE_DECL_CLEARERR_UNLOCKED
-#mesondefine HAVE_DECL_FEOF_UNLOCKED
-#mesondefine HAVE_DECL_FERROR_UNLOCKED
-#mesondefine HAVE_DECL_FFLUSH_UNLOCKED
-#mesondefine HAVE_DECL_FGETS_UNLOCKED
-#mesondefine HAVE_DECL_FPUTC_UNLOCKED
 #mesondefine HAVE_DECL_FPUTS_UNLOCKED
 #mesondefine HAVE_FLOCKFILE
 #mesondefine HAVE_FUNLOCKFILE
 #mesondefine HAVE_DECL_GETC_UNLOCKED
-#mesondefine HAVE_DECL_GETCHAR_UNLOCKED
 #mesondefine HAVE_DECL_PUTC_UNLOCKED
-#mesondefine HAVE_DECL_PUTCHAR_UNLOCKED
-
-#if __GNUC__ && HAVE_GCC_ATTRIBUTE
-# define NORETURN __attribute__ ((__noreturn__))
-# define PRINTF_STYLE(f, a) __attribute__ ((__format__ (__printf__, f, a)))
-# define UNUSED __attribute__ ((__unused__))
-#else
-# define NORETURN
-# define PRINTF_STYLE(f, a)
-# define UNUSED
-#endif

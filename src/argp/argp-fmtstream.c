@@ -40,11 +40,6 @@
 #define isblank(ch) ((ch) == ' ' || (ch) == '\t')
 #endif
 
-#if 0
-#include <wchar.h>
-#include <libio/libioP.h>
-#endif
-
 #define INIT_BUF_SIZE 200
 #define PRINTF_SIZE_GUESS 150
 
@@ -80,32 +75,16 @@ argp_fmtstream_t __argp_make_fmtstream(FILE* stream, size_t lmargin, size_t rmar
 
     return fs;
 }
-#if 0
-/* Not exported.  */
-#ifdef weak_alias
-weak_alias (__argp_make_fmtstream, argp_make_fmtstream)
-#endif
-#endif
 
 /* Flush FS to its stream, and free it (but don't close the stream).  */
 void __argp_fmtstream_free(argp_fmtstream_t fs) {
     __argp_fmtstream_update(fs);
     if (fs->p > fs->buf) {
-#if 0
-      __fxprintf (fs->stream, "%.*s", (int) (fs->p - fs->buf), fs->buf);
-#else
         fwrite_unlocked(fs->buf, 1, fs->p - fs->buf, fs->stream);
-#endif
     }
     free(fs->buf);
     free(fs);
 }
-#if 0
-/* Not exported.  */
-#ifdef weak_alias
-weak_alias (__argp_fmtstream_free, argp_fmtstream_free)
-#endif
-#endif
 
 /* Process FS's buffer so that line wrapping is done from POINT_OFFS to the
    end of its buffer.  This code is mostly from glibc stdio/linewrap.c.  */
@@ -133,11 +112,6 @@ void __argp_fmtstream_update(argp_fmtstream_t fs) {
                 /* No buffer space for spaces.  Must flush.  */
                 size_t i;
                 for (i = 0; i < pad; i++) {
-#if 0
-		  if (_IO_fwide (fs->stream, 0) > 0)
-		    putwc_unlocked (L' ', fs->stream);
-		  else
-#endif
                     putc_unlocked(' ', fs->stream);
                 }
             }
@@ -261,14 +235,9 @@ void __argp_fmtstream_update(argp_fmtstream_t fs) {
                 else
                 /* Output the first line so we can use the space.  */
                 {
-#if 0
-		  __fxprintf (fs->stream, "%.*s\n",
-			      (int) (nl - fs->buf), fs->buf);
-#else
                     if (nl > fs->buf)
                         fwrite_unlocked(fs->buf, 1, nl - fs->buf, fs->stream);
                     putc_unlocked('\n', fs->stream);
-#endif
 
                     len += buf - fs->buf;
                     nl = buf = fs->buf;
@@ -285,11 +254,6 @@ void __argp_fmtstream_update(argp_fmtstream_t fs) {
                     *nl++ = ' ';
             else
                 for (i = 0; i < fs->wmargin; ++i)
-#if 0
-	      if (_IO_fwide (fs->stream, 0) > 0)
-		putwc_unlocked (L' ', fs->stream);
-	      else
-#endif
                     putc_unlocked(' ', fs->stream);
 
             /* Copy the tail of the original buffer into the current buffer
@@ -324,12 +288,7 @@ int __argp_fmtstream_ensure(struct argp_fmtstream* fs, size_t amount) {
         /* Flush FS's buffer.  */
         __argp_fmtstream_update(fs);
 
-#if 0
-      __fxprintf (fs->stream, "%.*s", (int) (fs->p - fs->buf), fs->buf);
-      wrote = fs->p - fs->buf;
-#else
         wrote = fwrite_unlocked(fs->buf, 1, fs->p - fs->buf, fs->stream);
-#endif
         if (wrote == fs->p - fs->buf) {
             fs->p = fs->buf;
             fs->point_offs = 0;
@@ -387,11 +346,5 @@ ssize_t __argp_fmtstream_printf(struct argp_fmtstream* fs, const char* fmt, ...)
 
     return out;
 }
-#if 0
-/* Not exported.  */
-#ifdef weak_alias
-weak_alias (__argp_fmtstream_printf, argp_fmtstream_printf)
-#endif
-#endif
 
 #endif /* !ARGP_FMTSTREAM_USE_LINEWRAP */

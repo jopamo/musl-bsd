@@ -47,11 +47,6 @@ char* alloca();
 #include <ctype.h>
 #include <limits.h>
 #include <stdint.h>
-#if 0
-#include <../libio/libioP.h>
-#include <wchar.h>
-#endif
-
 #ifndef _
 /* This is for other GNU distributions with internationalized messages.  */
 #if defined HAVE_LIBINTL_H
@@ -67,13 +62,6 @@ char* alloca();
 char* strndup(const char* s, size_t size);
 #endif /* !HAVE_STRNDUP */
 
-#if !HAVE_MEMPCPY
-void* mempcpy(void* to, const void* from, size_t size);
-#endif /* !HAVE_MEMPCPY */
-
-#if !HAVE_STRCHRNUL
-char* strchrnul(const char* s, int c);
-#endif /* !HAVE_STRCHRNUL */
 #endif /* !_LIBC */
 
 /* can't use macro due to double evaluation */
@@ -1668,17 +1656,6 @@ weak_alias(__argp_state_help, argp_state_help)
 	  __flockfile (stream);
 #endif
 
-#if 0
-	  char *buf;
-
-	  if (__vasprintf_internal (&buf, fmt, ap, mode_flags) < 0)
-	    buf = NULL;
-
-	  __fxprintf (stream, "%s: %s\n",
-		      state ? state->name : __argp_short_program_name(), buf);
-
-	  free (buf);
-#else
             fputs_unlocked(state ? state->name : __argp_short_program_name(), stream);
             putc_unlocked(':', stream);
             putc_unlocked(' ', stream);
@@ -1686,7 +1663,6 @@ weak_alias(__argp_state_help, argp_state_help)
             vfprintf(stream, fmt, ap);
 
             putc_unlocked('\n', stream);
-#endif
 
             __argp_state_help(state, stream, ARGP_HELP_STD_ERR);
 
@@ -1729,49 +1705,21 @@ weak_alias(__argp_error, argp_error)
 	  __flockfile (stream);
 #endif
 
-#if 0
-	  __fxprintf (stream, "%s",
-		      state ? state->name : __argp_short_program_name());
-#else
             fputs_unlocked(state ? state->name : __argp_short_program_name(), stream);
-#endif
 
             if (fmt) {
-#if 0
-	      char *buf;
-
-	      if (__vasprintf_internal (&buf, fmt, ap, mode_flags) < 0)
-		buf = NULL;
-
-	      __fxprintf (stream, ": %s", buf);
-
-	      free (buf);
-#else
                 putc_unlocked(':', stream);
                 putc_unlocked(' ', stream);
 
                 vfprintf(stream, fmt, ap);
-#endif
             }
 
             if (errnum) {
-#if 0
-                char buf[200];
-
-	      __fxprintf (stream, ": %s",
-			  __strerror_r (errnum, buf, sizeof (buf)));
-#else
                 putc_unlocked(':', stream);
                 putc_unlocked(' ', stream);
                 fputs(strerror(errnum), stream);
-#endif
             }
 
-#if 0
-	  if (_IO_fwide (stream, 0) > 0)
-	    putwc_unlocked (L'\n', stream);
-	  else
-#endif
             putc_unlocked('\n', stream);
 
 #if HAVE_FLOCKFILE && HAVE_FUNLOCKFILE

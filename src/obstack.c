@@ -250,48 +250,30 @@ size_t obstack_calculate_object_size(struct obstack* ob) {
 }
 
 RESULT_TYPE OBSTACK_VPRINTF(struct obstack* obstack, const char* __restrict fmt, va_list ap) {
-    va_list measure;
-    va_copy(measure, ap);
-    int needed = vsnprintf(NULL, 0, fmt, measure);
-    va_end(measure);
-    if (needed < 0) {
-        return needed;
-    }
-
-    size_t total = (size_t)needed + 1;
-    if (obstack_room(obstack) < total) {
-        _obstack_newchunk(obstack, total);
-    }
-
+    size_t total = obstack_room(obstack);
     char* dest = obstack->next_free;
-    va_list copy;
-    va_copy(copy, ap);
-    int written = vsnprintf(dest, total, fmt, copy);
-    va_end(copy);
-    if (written < 0) {
-        return written;
-    }
-
-    if ((size_t)written >= total) {
-        size_t required = (size_t)written + 1;
-        if (obstack_room(obstack) < required) {
-            _obstack_newchunk(obstack, required);
-        }
-        dest = obstack->next_free;
+    for (unsigned int attempt = 0;; ++attempt) {
+        va_list copy;
         va_copy(copy, ap);
-        written = vsnprintf(dest, required, fmt, copy);
+        int written = vsnprintf(dest, total, fmt, copy);
         va_end(copy);
         if (written < 0) {
             return written;
         }
-        if ((size_t)written >= required) {
+        if ((size_t)written < total) {
+            obstack->next_free = dest + (size_t)written;
+            return written;
+        }
+        if (attempt == 2) {
             errno = EOVERFLOW;
             return -1;
         }
+        total = (size_t)written + 1;
+        if (obstack_room(obstack) < total) {
+            _obstack_newchunk(obstack, total);
+        }
+        dest = obstack->next_free;
     }
-
-    obstack->next_free = dest + (size_t)written;
-    return written;
 }
 
 RESULT_TYPE OBSTACK_PRINTF(struct obstack* obstack, const char* __restrict fmt, ...) {

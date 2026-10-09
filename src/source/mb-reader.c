@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <musl-bsd/mb-reader.h>
 
 #include <errno.h>
@@ -11,8 +15,13 @@ void musl_bsd_mb_reader_init(struct musl_bsd_mb_reader* reader, FILE* stream) {
 static int next_byte(struct musl_bsd_mb_reader* reader) {
     int byte;
 
-    if (reader->pending_len == 0)
+    if (reader->pending_len == 0) {
+#if HAVE_DECL_GETC_UNLOCKED
+        return getc_unlocked(reader->stream);
+#else
         return fgetc(reader->stream);
+#endif
+    }
 
     byte = reader->pending[0];
     reader->pending_len--;

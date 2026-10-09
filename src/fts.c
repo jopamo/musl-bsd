@@ -111,7 +111,7 @@ static inline FTSENT* fts_return_dir(FTSENT* ent) {
 }
 
 /* helpers */
-static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size);
+static void* safe_reallocarray(void* ptr, size_t nmemb, size_t size);
 static FTSENT* fts_alloc(FTS*, const char*, size_t) __attribute__((nonnull));
 static FTSENT* fts_build(FTS*, int);
 static void fts_lfree(FTSENT*);
@@ -148,23 +148,17 @@ static int fts_directory_flags(FTS* sp, FTSENT* p) {
     return flags;
 }
 
-static void* safe_recallocarray(void* ptr, size_t oldnmemb, size_t newnmemb, size_t size) {
-    if (size != 0 && newnmemb > SIZE_MAX / size) {
+static void* safe_reallocarray(void* ptr, size_t nmemb, size_t size) {
+    if (size != 0 && nmemb > SIZE_MAX / size) {
         errno = ENOMEM;
         return NULL;
     }
-    const size_t oldsz = oldnmemb * size;
-    const size_t newsz = newnmemb * size;
+    const size_t newsz = nmemb * size;
     if (newsz == 0) {
         free(ptr);
         return NULL;
     }
-    void* ret = realloc(ptr, newsz);
-    if (!ret)
-        return NULL;
-    if (newsz > oldsz)
-        memset((char*)ret + oldsz, 0, newsz - oldsz);
-    return ret;
+    return realloc(ptr, newsz);
 }
 
 FTS* fts_open(char* const* argv, int options, int (*compar)(const FTSENT**, const FTSENT**)) {
@@ -866,12 +860,8 @@ static unsigned short fts_stat(FTS* sp, FTSENT* p, int follow, int dfd) {
         if (ISDOT(p->fts_name))
             return FTS_DOT;
 
-        for (FTSENT* t = p->fts_parent; t->fts_level >= FTS_ROOTLEVEL; t = t->fts_parent) {
-            if (p->fts_ino == t->fts_ino && p->fts_dev == t->fts_dev) {
-                p->fts_cycle = t;
-                return FTS_DC;
-            }
-        }
+        /* read/children register ancestors before child metadata; AGAIN
+           removes the current entry before restatting it. */
         FTSENT* cyc = cycle_lookup(CYCLE_STATE(sp), p->fts_dev, p->fts_ino);
         if (cyc) {
             p->fts_cycle = cyc;
@@ -911,7 +901,7 @@ static FTSENT* fts_sort(FTS* sp, FTSENT* head, size_t nitems) {
         if (spare > 40)
             spare = 40;
         size_t capacity = nitems + spare;
-        FTSENT** a = safe_recallocarray(sp->fts_array, sp->fts_nitems, capacity, sizeof(FTSENT*));
+        FTSENT** a = safe_reallocarray(sp->fts_array, capacity, sizeof(FTSENT*));
         if (!a) {
             free(sp->fts_array);
             sp->fts_array = NULL;

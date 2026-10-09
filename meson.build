@@ -52,16 +52,12 @@ conf_data.set10('HAVE_EX_USAGE', cc.has_header_symbol('sysexits.h', 'EX_USAGE'))
 # Match the feature namespace used by the library translation units.
 stdio_prefix = '#define _GNU_SOURCE 1\n#include <stdio.h>'
 foreach function : [
-  'clearerr_unlocked', 'feof_unlocked', 'ferror_unlocked', 'fflush_unlocked',
-  'fgets_unlocked', 'fputc_unlocked', 'fputs_unlocked', 'fread_unlocked',
-  'fwrite_unlocked', 'getc_unlocked', 'getchar_unlocked', 'putc_unlocked',
-  'putchar_unlocked',
+  'fputs_unlocked', 'fwrite_unlocked', 'getc_unlocked', 'putc_unlocked',
 ]
   conf_data.set10('HAVE_DECL_' + function.to_upper(), cc.has_function(function, prefix: stdio_prefix))
 endforeach
 conf_data.set10('HAVE_FLOCKFILE', cc.has_function('flockfile', prefix: stdio_prefix))
 conf_data.set10('HAVE_FUNLOCKFILE', cc.has_function('funlockfile', prefix: stdio_prefix))
-conf_data.set10('HAVE_ASPRINTF', cc.has_function('asprintf', prefix: stdio_prefix))
 
 string_prefix = '#define _GNU_SOURCE 1\n#include <string.h>'
 foreach function : ['mempcpy', 'strchrnul', 'strndup']
@@ -249,7 +245,7 @@ endif
 
 obstack_sources = ['src/obstack.c']
 
-libobstack = shared_library(
+obstack_libraries = both_libraries(
   'obstack',
   obstack_sources,
   include_directories: inc,
@@ -260,19 +256,14 @@ libobstack = shared_library(
   link_depends: obstack_link_deps
 )
 
-libobstack_static = static_library(
-  'obstack',
-  obstack_sources,
-  include_directories: inc,
-  install: true,
-  c_args: c_flags
-)
+libobstack = obstack_libraries.get_shared_lib()
+libobstack_static = obstack_libraries.get_static_lib()
 
 install_headers('include/obstack.h', subdir: '')
 
 fts_sources = files('src/fts.c')
 
-libfts = shared_library(
+fts_libraries = both_libraries(
   'fts',
   fts_sources,
   include_directories: inc,
@@ -283,13 +274,8 @@ libfts = shared_library(
   link_depends: fts_link_deps
 )
 
-libfts_static = static_library(
-  'fts',
-  fts_sources,
-  include_directories: inc,
-  install: true,
-  c_args: c_flags
-)
+libfts = fts_libraries.get_shared_lib()
+libfts_static = fts_libraries.get_static_lib()
 
 install_headers('include/fts.h', subdir: '')
 
@@ -303,7 +289,7 @@ argp_source = files([
     'src/argp/argp-pvh.c'
 ])
 
-libargp = shared_library(
+argp_libraries = both_libraries(
   'argp',
   argp_source,
   include_directories: inc,
@@ -314,13 +300,8 @@ libargp = shared_library(
   link_depends: argp_link_deps
 )
 
-libargp_static = static_library(
-  'argp',
-  argp_source,
-  include_directories: inc,
-  install: true,
-  c_args: c_flags
-)
+libargp = argp_libraries.get_shared_lib()
+libargp_static = argp_libraries.get_static_lib()
 
 compat_glibc_source = files('src/compat/glibc.c')
 compat_mount_source = files('src/compat/mount.c')
@@ -361,8 +342,6 @@ endif
 pthread_abi_supported = glibc_runtime_enabled
 if pthread_abi_supported
   compat_interpose_sources += compat_pthread_source
-elif glibc_runtime_enabled
-  warning('glibc pthread ABI bridge is disabled: no verified fixture for ' + cpu_family)
 endif
 
 libcompat_static = static_library(

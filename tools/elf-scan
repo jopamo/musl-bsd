@@ -940,10 +940,12 @@ class ELFFile:
                         f"{self.path}: relocation symbol index {symbol_index} "
                         "exceeds dynamic symbol table"
                     )
-                type_name = R_X86_64_NAMES.get(
-                    relocation_type, f"R_X86_64_{relocation_type}"
-                )
+                type_name = R_X86_64_NAMES.get(relocation_type)
+                if type_name is None:
+                    type_name = f"R_X86_64_{relocation_type}"
                 type_counts[type_name] = type_counts.get(type_name, 0) + 1
+                if relocation_type not in TLS_RELOCATION_TYPES and relocation_type != 37:
+                    continue
                 symbol_name = symbols[symbol_index]["name"]
                 record = {
                     "type": type_name,
